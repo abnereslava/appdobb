@@ -1,0 +1,124 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null && request.auth.token.email != null;
+    }
+
+    function userEmail() {
+      return request.auth.token.email;
+    }
+
+    function accessPath() {
+      return /databases/$(database)/documents/accessIndex/$(userEmail());
+    }
+
+    function hasAccess() {
+      return signedIn() && exists(accessPath());
+    }
+
+    function access() {
+      return get(accessPath());
+    }
+
+    function activeAccess() {
+      return hasAccess() && access().data.active == true;
+    }
+
+    // Verifica ownership: suporta profileId (legado) e profileIds (multi-bebê)
+    function ownProfile(profileId) {
+      return activeAccess() && (
+        access().data.profileId == profileId ||
+        (access().data.keys().hasAny(['profileIds']) &&
+         profileId in access().data.profileIds)
+      );
+    }
+
+    function isAdmin() {
+      return activeAccess()
+        && access().data.role == 'admin'
+        && access().data.permissions.admin.manage == true;
+    }
+
+    function canUse(profileId, resourceName, actionName) {
+      return ownProfile(profileId)
+        && access().data.permissions[resourceName][actionName] == true;
+    }
+
+    // Validação para criação/atualização pelo admin (inclui profileIds como campo opcional)
+    function validAccessDoc(emailId) {
+      return request.resource.data.keys().hasOnly([
+        'email', 'profileId', 'profileIds', 'role', 'active', 'permissions',
+        'createdAt', 'updatedAt'
+      ])
+      && request.resource.data.email == emailId
+      && request.resource.data.profileId is string
+      && request.resource.data.role in ['admin', 'user']
+      && request.resource.data.active is bool
+      && request.resource.data.permissions is map;
+    }
+
+    // Usuário pode atualizar apenas profileIds e updatedAt no próprio documento
+    function onlyUpdatingProfileIds(emailId) {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return signedIn()
+        && emailId == userEmail()
+        && changed.hasOnly(['profileIds', 'updatedAt'])
+        && request.resource.data.profileIds is list
+        && resource.data.profileId in request.resource.data.profileIds;
+    }
+
+    match /appSettings/{docId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /accessIndex/{emailId} {
+      allow get: if signedIn() && (emailId == userEmail() || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isAdmin() && validAccessDoc(emailId);
+      allow update: if (isAdmin() && validAccessDoc(emailId))
+                    || onlyUpdatingProfileIds(emailId);
+      allow delete: if isAdmin() && emailId != userEmail();
+    }
+
+    match /profiles/{profileId} {
+      allow read: if isAdmin() || canUse(profileId, 'perfil', 'read');
+      allow create: if isAdmin()
+                    || canUse(profileId, 'perfil', 'write')
+                    || (activeAccess()
+                        && access().data.keys().hasAny(['profileIds'])
+                        && profileId in access().data.profileIds);
+      allow update: if isAdmin() || canUse(profileId, 'perfil', 'write');
+      allow delete: if isAdmin() || canUse(profileId, 'perfil', 'delete');
+
+      match /members/{uid} {
+        allow read: if isAdmin()
+          || (signedIn() && request.auth.uid == uid && ownProfile(profileId));
+        allow create, update: if isAdmin()
+          || (signedIn()
+              && request.auth.uid == uid
+              && ownProfile(profileId)
+              && request.resource.data.email == userEmail());
+        allow delete: if isAdmin() && request.auth.uid != uid;
+      }
+
+      match /events/{eventId} {
+        allow read: if isAdmin() || canUse(profileId, 'historico', 'read');
+        allow create, update: if isAdmin() || canUse(profileId, 'historico', 'write');
+        allow delete: if isAdmin() || canUse(profileId, 'historico', 'delete');
+      }
+
+      match /consultations/{consultationId} {
+        allow read: if isAdmin() || canUse(profileId, 'agenda', 'read');
+        allow create, update: if isAdmin() || canUse(profileId, 'agenda', 'write');
+        allow delete: if isAdmin() || canUse(profileId, 'agenda', 'delete');
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
