@@ -86,6 +86,30 @@ const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov'
 let filtroAtivo  = 'todos';
 let buscaAtiva   = '';
 
+// Estado da agenda
+let buscaAgendaAtiva = '';
+let modoAgenda          = localStorage.getItem('modo-agenda') || 'lista';
+let mesCalendarioAtivo  = { ano: new Date().getFullYear(), mes: new Date().getMonth() };
+let diaCalendarioAberto = null;
+
+// Filtro de data compartilhado entre Histórico e Agenda
+let filtroDataInicio = '';
+let filtroDataFim    = '';
+
+// Paginação de eventos
+let eventosCache    = [];
+let eventosCursor   = null;
+let eventosEsgotado = false;
+let eventosCarregando = false;
+let _observerTimeline = null;
+
+// Paginação de consultas
+let consultasCache    = [];
+let consultasCursor   = null;
+let consultasEsgotado = false;
+let consultasCarregando = false;
+let _observerAgenda   = null;
+
 // Usuário autenticado e contexto de acesso (preenchidos pelo módulo auth.js)
 let usuarioAtual    = null;
 let acessoAtual     = null;   // { autorizado, profileId, profileIds, role, permissions }
@@ -164,6 +188,67 @@ async function excluirConsulta(id) {
   await window._db.excluirConsulta(profileIdAtivo, id);
 }
 
+// Paginação de eventos
+async function _carregarPaginaEventos() {
+  if (!profileIdAtivo || !window._db || eventosEsgotado || eventosCarregando) return;
+  eventosCarregando = true;
+  try {
+    const res = await window._db.listarEventosPaginados(profileIdAtivo, eventosCursor, filtroDataInicio, filtroDataFim);
+    eventosCache  = [...eventosCache, ...res.docs];
+    eventosCursor = res.cursor;
+    if (res.docs.length < 20) eventosEsgotado = true;
+  } catch (e) {
+    console.error('Erro ao paginar eventos:', e);
+  }
+  eventosCarregando = false;
+}
+
+async function resetarERecarregarEventos() {
+  if (_observerTimeline) { _observerTimeline.disconnect(); _observerTimeline = null; }
+  eventosCache = []; eventosCursor = null; eventosEsgotado = false;
+  await _carregarPaginaEventos();
+  renderizarTimeline();
+}
+
+async function carregarMaisEventos() {
+  await _carregarPaginaEventos();
+  renderizarTimeline();
+}
+
+// Paginação de consultas
+async function _carregarPaginaConsultas() {
+  if (!profileIdAtivo || !window._db || consultasEsgotado || consultasCarregando) return;
+  consultasCarregando = true;
+  try {
+    const res = await window._db.listarConsultasPaginadas(profileIdAtivo, consultasCursor, filtroDataInicio, filtroDataFim);
+    consultasCache  = [...consultasCache, ...res.docs];
+    consultasCursor = res.cursor;
+    if (res.docs.length < 20) consultasEsgotado = true;
+  } catch (e) {
+    console.error('Erro ao paginar consultas:', e);
+  }
+  consultasCarregando = false;
+}
+
+async function resetarERecarregarConsultas() {
+  if (_observerAgenda) { _observerAgenda.disconnect(); _observerAgenda = null; }
+  consultasCache = []; consultasCursor = null; consultasEsgotado = false;
+  await _carregarPaginaConsultas();
+  renderizarAgenda();
+}
+
+async function carregarMaisConsultas() {
+  await _carregarPaginaConsultas();
+  renderizarAgenda();
+}
+
+function alterarFiltroData(inicio, fim) {
+  filtroDataInicio = inicio;
+  filtroDataFim    = fim;
+  resetarERecarregarEventos();
+  resetarERecarregarConsultas();
+}
+
 function gerarId() { return Date.now().toString(36) + Math.random().toString(36).substr(2,5); }
 
 
@@ -173,7 +258,14 @@ function gerarId() { return Date.now().toString(36) + Math.random().toString(36)
 
 function aplicarTema(sexo) {
   const mapa = { menino: 'menino', menina: 'menina' };
-  document.body.setAttribute('data-theme', mapa[sexo] || 'beige');
+  const tema = mapa[sexo] || 'beige';
+  localStorage.setItem('tema-genero', tema);
+  // Sempre atualiza o atributo de gênero (usado para cores primárias no dark mode)
+  document.body.setAttribute('data-genero', tema);
+  // Só aplica o tema de fundo se não estiver no dark mode
+  if (document.body.getAttribute('data-theme') !== 'dark') {
+    document.body.setAttribute('data-theme', tema);
+  }
 }
 
 
@@ -191,7 +283,7 @@ function saltarBotaoPerfil() {
 }
 
 function showView(nome) {
-  if (!temPerfil && (nome === 'timeline' || nome === 'agenda')) {
+  if (!temPerfil && (nome === 'timeline' || nome === 'agenda' || nome === 'calendario')) {
     mostrarToast('Crie o perfil do bebê primeiro.', 'error');
     saltarBotaoPerfil();
     return;
@@ -205,9 +297,10 @@ function showView(nome) {
   if (vista)  vista.classList.add('active');
   if (navBtn) navBtn.classList.add('active');
 
-  if (nome === 'home')     renderizarHome();
-  if (nome === 'timeline') renderizarTimeline();
-  if (nome === 'agenda')   renderizarAgenda();
+  if (nome === 'home')       renderizarHome();
+  if (nome === 'timeline')   resetarERecarregarEventos();
+  if (nome === 'agenda')     resetarERecarregarConsultas();
+  if (nome === 'calendario') { diaCalendarioAberto = null; renderizarAbaCalendario(); }
 }
 
 function abrirModal(id)  { const m = document.getElementById(id); if (m) m.classList.add('open');    document.body.style.overflow = 'hidden'; }
@@ -238,6 +331,7 @@ function atualizarNavSemPerfil() {
   const btns = [
     document.getElementById('nav-timeline'),
     document.getElementById('nav-agenda'),
+    document.getElementById('nav-calendario'),
     document.getElementById('nav-add'),
   ];
   btns.forEach(b => {
@@ -289,7 +383,7 @@ async function renderizarHome() {
     container.innerHTML = `
       <div class="welcome-screen">
         <div class="welcome-icon">${IMG_BRINQUEDO}</div>
-        <h1 class="welcome-title">Bem-vinda!</h1>
+        <h1 class="welcome-title">Bem-vindo(a)!</h1>
         <p class="welcome-text">Vamos criar o perfil do seu bebê para acompanhar toda a sua jornada de saúde com carinho e organização.</p>
         <button class="btn-primary" style="max-width:280px;" onclick="abrirFormPerfil()">Criar Perfil do Bebê</button>
       </div>`;
@@ -312,9 +406,8 @@ async function renderizarHome() {
   const premHTML    = prematuro ? `<span class="badge-prematuro">Prematuro · ${perfil.semanasGestacao}sem</span>` : '';
 
   const statsHTML = [];
-  statsHTML.push(`<div class="profile-stat"><div class="profile-stat-value">${totalEventos}</div><div class="profile-stat-label">Eventos</div></div>`);
-  if (perfil.peso)   statsHTML.push(`<div class="profile-stat" style="border-left:1px solid var(--border);padding-left:20px;"><div class="profile-stat-value">${perfil.peso}<span style="font-size:12px;"> kg</span></div><div class="profile-stat-label">Peso</div></div>`);
-  if (perfil.altura) statsHTML.push(`<div class="profile-stat" style="border-left:1px solid var(--border);padding-left:20px;"><div class="profile-stat-value">${perfil.altura}<span style="font-size:12px;"> cm</span></div><div class="profile-stat-label">Altura</div></div>`);
+  if (perfil.peso)   statsHTML.push(`<div class="profile-stat"><div class="profile-stat-value">${perfil.peso}<span style="font-size:12px;"> kg</span></div><div class="profile-stat-label">Peso</div></div>`);
+  if (perfil.altura) statsHTML.push(`<div class="profile-stat" style="${statsHTML.length?'border-left:1px solid var(--border);padding-left:20px;':''}"><div class="profile-stat-value">${perfil.altura}<span style="font-size:12px;"> cm</span></div><div class="profile-stat-label">Altura</div></div>`);
 
   const infoNasc = [];
   if (perfil.viaNascimento)   infoNasc.push({ label:'Via de parto',          value: VIAS_NASCIMENTO[perfil.viaNascimento] || perfil.viaNascimento });
@@ -548,9 +641,10 @@ async function salvarPerfil(event) {
 
 async function renderizarTimeline() {
   const container = document.getElementById('view-timeline');
-  container.innerHTML = `<div class="carregando-view"><div class="login-spinner"></div></div>`;
+  if (_observerTimeline) { _observerTimeline.disconnect(); _observerTimeline = null; }
 
-  const todos = await carregarEventos();
+  const todos  = eventosCache;
+  const perfil = await carregarPerfil();
 
   let lista = filtroAtivo === 'todos' ? todos : todos.filter(e => e.categoria === filtroAtivo);
   if (buscaAtiva.trim()) {
@@ -561,34 +655,29 @@ async function renderizarTimeline() {
       (e.hospital||'').toLowerCase().includes(b) ||
       (e.observacoes||'').toLowerCase().includes(b));
   }
-  lista.sort((a,b) => new Date(b.data) - new Date(a.data));
 
   const filtros = [
-    { valor:'todos', label:`Todos (${todos.length})` },
+    { valor:'todos', label:`Todos (${todos.length}${!eventosEsgotado?'+':''})` },
     ...Object.entries(CATEGORIAS)
       .filter(([v]) => todos.some(e => e.categoria === v))
       .map(([v,c]) => ({ valor:v, label:`${c.icone} ${c.label} (${todos.filter(e=>e.categoria===v).length})` }))
   ];
 
-  // Constrói itens da linha do tempo ilustrada
   const itensHTML = lista.map((evento, idx) => {
     const cat  = CATEGORIAS[evento.categoria] || CATEGORIAS.outro;
     const lado = idx % 2 === 0 ? 'tl-esquerda' : 'tl-direita';
     const dataFmt = formatarDataCurta(evento.data);
     const meta    = [evento.medico, evento.hospital].filter(Boolean).join(' · ');
-
-    const cartao = `
+    const cartao  = `
       <div class="tl-card" onclick="abrirDetalheEvento('${evento.id}')">
         <span class="tl-card-category badge-${evento.categoria}">${cat.label}</span>
         <div class="tl-card-title">${esc(evento.titulo)}</div>
         ${meta ? `<div class="tl-card-meta">${esc(meta)}</div>` : ''}
       </div>`;
-
     const dataBolha = `
       <div class="tl-date-bubble tl-bubble-${evento.categoria}" onclick="abrirDetalheEvento('${evento.id}')">
         ${dataFmt}
       </div>`;
-
     return `
       <div class="tl-item ${lado}">
         <div class="tl-content">${cartao}</div>
@@ -601,39 +690,82 @@ async function renderizarTimeline() {
       </div>`;
   }).join('');
 
+  const nascLabel = perfil?.dataNascimento
+    ? (perfil.sexo === 'menino' ? 'Nascido em' : perfil.sexo === 'menina' ? 'Nascida em' : 'Nascido(a) em')
+    : null;
+  const nascFmt = nascLabel
+    ? (() => { const [a,m,d] = perfil.dataNascimento.split('-'); return `${d}/${m}/${a}`; })()
+    : null;
+
+  const filtroDataAtivo = filtroDataInicio || filtroDataFim;
+  const fmtD = s => s ? s.split('-').reverse().join('/') : '';
+
   container.innerHTML = `
     <div>
-      <div class="tl-header" style="margin-bottom:12px;">
+      <div class="tl-header" style="margin-bottom:${nascFmt ? '4px' : '12px'};">
         <h1 class="page-title">Histórico de Saúde</h1>
         <button class="btn-secondary btn-sm" onclick="abrirFormEvento(null)">+ Novo</button>
       </div>
+      ${nascFmt ? `<div class="historico-nascimento" onclick="showView('home')" title="Ver perfil">${nascLabel} ${nascFmt}</div>` : ''}
 
       <div class="search-box">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input class="search-input" type="search" placeholder="Buscar evento, médico, hospital..." value="${esc(buscaAtiva)}" oninput="buscarEventos(this.value)" />
       </div>
 
+      <div class="filtro-datas">
+        <input class="filtro-data-input" type="date" title="Data início" value="${filtroDataInicio}"
+          onchange="alterarFiltroData(this.value, filtroDataFim)" />
+        <span class="filtro-datas-sep">→</span>
+        <input class="filtro-data-input" type="date" title="Data fim" value="${filtroDataFim}"
+          onchange="alterarFiltroData(filtroDataInicio, this.value)" />
+        ${filtroDataAtivo ? `<button class="filtro-datas-limpar" onclick="limparFiltroData()" title="Limpar filtro de datas">×</button>` : ''}
+      </div>
+
       <div class="timeline-filters">
         ${filtros.map(f => `<button class="filter-btn ${filtroAtivo===f.valor?'active':''}" onclick="filtrarPorCategoria('${f.valor}')">${f.label}</button>`).join('')}
       </div>
 
+      ${filtroDataAtivo ? `<div class="paginacao-info">Período: ${fmtD(filtroDataInicio)||'início'} → ${fmtD(filtroDataFim)||'hoje'}</div>` : ''}
+
       ${lista.length === 0
         ? `<div class="empty-state">
-            <div class="empty-icon">${filtroAtivo==='todos'&&!buscaAtiva ? IMG_URSINHOBEM : SEARCH_SVG}</div>
-            <div class="empty-title">${filtroAtivo==='todos'&&!buscaAtiva?'Nenhum evento ainda':'Nenhum resultado'}</div>
-            <p class="empty-text">${filtroAtivo==='todos'&&!buscaAtiva?'Adicione o primeiro evento usando o botão + abaixo.':'Tente outro filtro ou termo de busca.'}</p>
-            ${filtroAtivo==='todos'&&!buscaAtiva?`<button class="btn-primary" style="max-width:220px;margin-top:8px;" onclick="abrirFormEvento(null)">+ Adicionar Evento</button>`:''}
+            <div class="empty-icon">${filtroAtivo==='todos'&&!buscaAtiva&&!filtroDataAtivo ? IMG_URSINHOBEM : SEARCH_SVG}</div>
+            <div class="empty-title">${filtroAtivo==='todos'&&!buscaAtiva&&!filtroDataAtivo?'Nenhum evento ainda':'Nenhum resultado'}</div>
+            <p class="empty-text">${filtroAtivo==='todos'&&!buscaAtiva&&!filtroDataAtivo?'Adicione o primeiro evento usando o botão + abaixo.':'Tente outro filtro ou termo de busca.'}</p>
+            ${filtroAtivo==='todos'&&!buscaAtiva&&!filtroDataAtivo?`<button class="btn-primary" style="max-width:220px;margin-top:8px;" onclick="abrirFormEvento(null)">+ Adicionar Evento</button>`:''}
           </div>`
         : `<div class="tl-wrapper">
             <div class="tl-axis"></div>
             ${itensHTML}
           </div>`
       }
+
+      ${!eventosEsgotado
+        ? `<div id="sentinela-timeline" class="sentinela-paginacao">
+            ${eventosCarregando ? '<div class="sentinela-spinner"><div class="login-spinner"></div></div>' : ''}
+           </div>`
+        : (todos.length > 0 ? `<div class="paginacao-fim">Fim do histórico · ${todos.length} evento${todos.length!==1?'s':''}</div>` : '')
+      }
     </div>`;
+
+  if (!eventosEsgotado) {
+    const sentinela = document.getElementById('sentinela-timeline');
+    if (sentinela) {
+      _observerTimeline = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting && !eventosCarregando && !eventosEsgotado) {
+          carregarMaisEventos();
+        }
+      }, { rootMargin: '200px' });
+      _observerTimeline.observe(sentinela);
+    }
+  }
 }
 
 function filtrarPorCategoria(cat) { filtroAtivo = cat; renderizarTimeline(); }
 function buscarEventos(txt)        { buscaAtiva  = txt; renderizarTimeline(); }
+function buscarAgenda(txt)         { buscaAgendaAtiva = txt; renderizarAgenda(); }
+function limparFiltroData()        { alterarFiltroData('', ''); }
 
 
 /* ================================================
@@ -646,6 +778,20 @@ async function abrirFormEvento(id) {
   set('evento-id', '');
   set('evento-data', new Date().toISOString().split('T')[0]);
   document.getElementById('titulo-modal-evento').textContent = id ? 'Editar Evento' : 'Novo Evento';
+
+  // Carrega a data mínima permitida com base na data de nascimento do perfil
+  const _perfil = await carregarPerfil();
+  const _dataMinEl = document.getElementById('evento-data-min');
+  const _dataInputEl = document.getElementById('evento-data');
+  if (_perfil?.dataNascimento) {
+    const nascMs  = new Date(_perfil.dataNascimento + 'T00:00:00').getTime();
+    const minDate = new Date(nascMs - 315 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    if (_dataMinEl)   _dataMinEl.value = minDate;
+    if (_dataInputEl) _dataInputEl.min = minDate;
+  } else {
+    if (_dataMinEl)   _dataMinEl.value = '';
+    if (_dataInputEl) _dataInputEl.removeAttribute('min');
+  }
 
   if (id) {
     const ev = await window._db.carregarEvento(acessoAtual.profileId, id);
@@ -693,6 +839,13 @@ async function salvarEvento(event) {
   if (!titulo)    { mostrarToast('Digite o título.', 'error'); return; }
   if (!categoria) { mostrarToast('Selecione a categoria.', 'error'); return; }
   if (!data)      { mostrarToast('Selecione a data.', 'error'); return; }
+
+  const dataMinStr = document.getElementById('evento-data-min')?.value;
+  if (dataMinStr && data < dataMinStr) {
+    const [a,m,d] = dataMinStr.split('-');
+    mostrarToast(`Data inválida: anterior ao início da gestação viável (antes de ${d}/${m}/${a}).`, 'error');
+    return;
+  }
 
   const idExistente = document.getElementById('evento-id').value;
 
@@ -784,31 +937,65 @@ async function confirmarExclusaoEvento(id) {
    ================================================ */
 
 async function renderizarAgenda() {
-  const container  = document.getElementById('view-agenda');
-  container.innerHTML = `<div class="carregando-view"><div class="login-spinner"></div></div>`;
+  await renderizarAgendaLista();
+}
 
-  const consultas  = await carregarConsultas();
-  const hoje       = new Date(); hoje.setHours(0,0,0,0);
+async function renderizarAgendaLista() {
+  const container = document.getElementById('view-agenda');
+  if (_observerAgenda) { _observerAgenda.disconnect(); _observerAgenda = null; }
 
-  const proximas  = consultas.filter(c => c.status !== 'cancelada' && new Date(c.data + 'T00:00:00') >= hoje).sort((a,b)=>new Date(a.data)-new Date(b.data));
-  const passadas  = consultas.filter(c => c.status === 'cancelada' || new Date(c.data + 'T00:00:00') < hoje).sort((a,b)=>new Date(b.data)-new Date(a.data));
+  const consultas = consultasCache;
+  const hoje      = new Date(); hoje.setHours(0,0,0,0);
+
+  let proximas = consultas.filter(c => c.status !== 'cancelada' && new Date(c.data + 'T00:00:00') >= hoje).sort((a,b)=>new Date(a.data)-new Date(b.data));
+  let passadas = consultas.filter(c => c.status === 'cancelada' || new Date(c.data + 'T00:00:00') < hoje).sort((a,b)=>new Date(b.data)-new Date(a.data));
+
+  if (buscaAgendaAtiva.trim()) {
+    const b = buscaAgendaAtiva.toLowerCase();
+    const filtrar = lista => lista.filter(c =>
+      (c.medico||'').toLowerCase().includes(b) ||
+      (c.local||'').toLowerCase().includes(b) ||
+      (TIPOS_CONSULTA[c.tipo]||c.tipo||'').toLowerCase().includes(b) ||
+      (c.observacoes||'').toLowerCase().includes(b));
+    proximas = filtrar(proximas);
+    passadas = filtrar(passadas);
+  }
+
+  const filtroDataAtivo = filtroDataInicio || filtroDataFim;
+  const fmtD = s => s ? s.split('-').reverse().join('/') : '';
+  const semFiltros = !buscaAgendaAtiva && !filtroDataAtivo;
 
   container.innerHTML = `
     <div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div class="tl-header" style="margin-bottom:12px;">
         <h1 class="page-title">Agenda de Consultas</h1>
         <button class="btn-secondary btn-sm" onclick="abrirFormConsulta(null)">+ Nova</button>
       </div>
 
-      <!-- Próximas Consultas -->
+      <div class="search-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="search-input" type="search" placeholder="Buscar médico, local, tipo..." value="${esc(buscaAgendaAtiva)}" oninput="buscarAgenda(this.value)" />
+      </div>
+
+      <div class="filtro-datas">
+        <input class="filtro-data-input" type="date" title="Data início" value="${filtroDataInicio}"
+          onchange="alterarFiltroData(this.value, filtroDataFim)" />
+        <span class="filtro-datas-sep">→</span>
+        <input class="filtro-data-input" type="date" title="Data fim" value="${filtroDataFim}"
+          onchange="alterarFiltroData(filtroDataInicio, this.value)" />
+        ${filtroDataAtivo ? `<button class="filtro-datas-limpar" onclick="limparFiltroData()" title="Limpar filtro de datas">×</button>` : ''}
+      </div>
+
+      ${filtroDataAtivo ? `<div class="paginacao-info">Período: ${fmtD(filtroDataInicio)||'início'} → ${fmtD(filtroDataFim)||'hoje'}</div>` : ''}
+
       <div class="agenda-secao">
-        <div class="agenda-secao-titulo">Próximas (${proximas.length})</div>
+        <div class="agenda-secao-titulo">Próximas (${proximas.length}${!consultasEsgotado&&!filtroDataAtivo?'+':''})</div>
         ${proximas.length === 0
           ? `<div class="empty-state" style="padding:24px;">
-              <div class="empty-icon">${IMG_AGENDA}</div>
-              <div class="empty-title">Nenhuma consulta agendada</div>
-              <p class="empty-text">Adicione a próxima consulta do bebê.</p>
-              <button class="btn-primary" style="max-width:220px;margin-top:8px;" onclick="abrirFormConsulta(null)">+ Agendar Consulta</button>
+              <div class="empty-icon">${semFiltros ? IMG_AGENDA : SEARCH_SVG}</div>
+              <div class="empty-title">${semFiltros ? 'Nenhuma consulta agendada' : 'Nenhum resultado'}</div>
+              <p class="empty-text">${semFiltros ? 'Adicione a próxima consulta do bebê.' : 'Tente outro filtro ou termo de busca.'}</p>
+              ${semFiltros ? `<button class="btn-primary" style="max-width:220px;margin-top:8px;" onclick="abrirFormConsulta(null)">+ Agendar Consulta</button>` : ''}
             </div>`
           : proximas.map((c, idx) => renderizarCardConsulta(c, idx === 0)).join('')
         }
@@ -819,7 +1006,197 @@ async function renderizarAgenda() {
         <div class="agenda-secao-titulo">Histórico (${passadas.length})</div>
         ${passadas.map(c => renderizarCardConsulta(c, false)).join('')}
       </div>` : ''}
+
+      ${!consultasEsgotado
+        ? `<div id="sentinela-agenda" class="sentinela-paginacao">
+            ${consultasCarregando ? '<div class="sentinela-spinner"><div class="login-spinner"></div></div>' : ''}
+           </div>`
+        : (consultas.length > 0 ? `<div class="paginacao-fim">Fim da agenda · ${consultas.length} consulta${consultas.length!==1?'s':''}</div>` : '')
+      }
     </div>`;
+
+  if (!consultasEsgotado) {
+    const sentinela = document.getElementById('sentinela-agenda');
+    if (sentinela) {
+      _observerAgenda = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting && !consultasCarregando && !consultasEsgotado) {
+          carregarMaisConsultas();
+        }
+      }, { rootMargin: '200px' });
+      _observerAgenda.observe(sentinela);
+    }
+  }
+}
+
+let seletorMesAberto = false;
+
+async function renderizarAbaCalendario() {
+  // Redireciona para a view correta e chama o calendário
+  const container = document.getElementById('view-calendario');
+  container.innerHTML = `<div class="carregando-view"><div class="login-spinner"></div></div>`;
+  await renderizarCalendarioNaView(container);
+}
+
+function toggleSeletorMes() {
+  seletorMesAberto = !seletorMesAberto;
+  // Re-renderiza apenas o calendário na view ativa
+  const container = document.getElementById('view-calendario');
+  if (container?.classList.contains('active')) renderizarAbaCalendario();
+  else renderizarAgendaCalendario();
+}
+
+function selecionarMesAno(mes, ano) {
+  mesCalendarioAtivo = { ano, mes };
+  diaCalendarioAberto = null;
+  seletorMesAberto = false;
+  const container = document.getElementById('view-calendario');
+  if (container?.classList.contains('active')) renderizarAbaCalendario();
+  else renderizarAgendaCalendario();
+}
+
+function _renderizarSeletorMes() {
+  const { ano } = mesCalendarioAtivo;
+  const mesesAbr = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  return `
+    <div class="cal-seletor-mes" onclick="event.stopPropagation()">
+      <div class="cal-seletor-ano">
+        <button class="cal-nav-btn" onclick="selecionarMesAno(mesCalendarioAtivo.mes, ${ano-1})">&#8592;</button>
+        <span class="cal-seletor-ano-num">${ano}</span>
+        <button class="cal-nav-btn" onclick="selecionarMesAno(mesCalendarioAtivo.mes, ${ano+1})">&#8594;</button>
+      </div>
+      <div class="cal-seletor-grid">
+        ${mesesAbr.map((m, i) => `
+          <button class="cal-seletor-mes-btn ${i === mesCalendarioAtivo.mes && ano === mesCalendarioAtivo.ano ? 'ativo' : ''}"
+                  onclick="selecionarMesAno(${i}, ${ano})">${m}</button>
+        `).join('')}
+      </div>
+    </div>`;
+}
+
+async function _buildCalendarioHTML(container) {
+  const { ano, mes } = mesCalendarioAtivo;
+  const [todosEventos, todasConsultas] = await Promise.all([carregarEventos(), carregarConsultas()]);
+
+  const primeiroDia = new Date(ano, mes, 1).getDay();
+  const diasNoMes   = new Date(ano, mes + 1, 0).getDate();
+  const hoje        = new Date();
+  const hojeStr     = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}`;
+
+  const eventosPorDia   = {};
+  const consultasPorDia = {};
+  todosEventos.forEach(e => {
+    if (!eventosPorDia[e.data]) eventosPorDia[e.data] = [];
+    eventosPorDia[e.data].push(e);
+  });
+  todasConsultas.filter(c => c.status !== 'cancelada').forEach(c => {
+    if (!consultasPorDia[c.data]) consultasPorDia[c.data] = [];
+    consultasPorDia[c.data].push(c);
+  });
+
+  const nomeMes    = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][mes];
+  const diasSemana = ['D','S','T','Q','Q','S','S'];
+
+  let celulas = '';
+  for (let i = 0; i < primeiroDia; i++) celulas += `<div class="cal-dia cal-dia-vazio"></div>`;
+  for (let dia = 1; dia <= diasNoMes; dia++) {
+    const dStr  = `${ano}-${String(mes+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+    const temC  = !!consultasPorDia[dStr];
+    const temE  = !!eventosPorDia[dStr];
+    const isHoje = dStr === hojeStr;
+    const aberto = diaCalendarioAberto === dia;
+    celulas += `
+      <div class="cal-dia ${isHoje?'cal-dia-hoje':''} ${temC||temE?'cal-dia-com-itens':''} ${aberto?'cal-dia-aberto':''}"
+           onclick="abrirDiaCalendario(${dia})">
+        <span class="cal-dia-num">${dia}</span>
+        <div class="cal-marcadores">
+          ${temC ? '<span class="cal-marcador cal-marcador-consulta"></span>' : ''}
+          ${temE ? '<span class="cal-marcador cal-marcador-evento"></span>'   : ''}
+        </div>
+      </div>`;
+  }
+
+  let itensDiaHTML = '';
+  if (diaCalendarioAberto) {
+    const dStr = `${ano}-${String(mes+1).padStart(2,'0')}-${String(diaCalendarioAberto).padStart(2,'0')}`;
+    const cs   = consultasPorDia[dStr] || [];
+    const es   = eventosPorDia[dStr]   || [];
+    if (cs.length || es.length) {
+      itensDiaHTML = `
+        <div class="cal-itens-dia">
+          ${cs.map(c => {
+            const tipo = TIPOS_CONSULTA[c.tipo] || c.tipo;
+            return `<div class="cal-item-card cal-item-consulta" onclick="abrirDetalheConsulta('${c.id}')">
+              <span class="cal-item-badge">Consulta</span>
+              <span class="cal-item-titulo">${esc(c.medico || tipo)}</span>
+              ${c.hora ? `<span class="cal-item-hora">${c.hora}</span>` : ''}
+            </div>`;
+          }).join('')}
+          ${es.map(e => {
+            const cat = CATEGORIAS[e.categoria] || CATEGORIAS.outro;
+            return `<div class="cal-item-card cal-item-evento" onclick="abrirDetalheEvento('${e.id}')">
+              <span class="cal-item-badge">${cat.label}</span>
+              <span class="cal-item-titulo">${esc(e.titulo)}</span>
+            </div>`;
+          }).join('')}
+        </div>`;
+    }
+  }
+
+  const temItensNoMes = Object.keys({...eventosPorDia, ...consultasPorDia})
+    .some(d => d.startsWith(`${ano}-${String(mes+1).padStart(2,'0')}`));
+
+  return `
+    <div>
+      <div class="tl-header" style="margin-bottom:8px;">
+        <h1 class="page-title">Calendário</h1>
+        <button class="btn-exportar" onclick="exportarTodasConsultas()" title="Exportar consultas (.ics)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar
+        </button>
+      </div>
+
+      <div class="cal-header">
+        <button class="cal-nav-btn" onclick="navegarMesCalendario(-1)">&#8592;</button>
+        <button class="cal-mes-titulo-btn" onclick="toggleSeletorMes()" title="Selecionar mês/ano">
+          ${nomeMes} ${ano}
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5;margin-left:3px"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <button class="cal-nav-btn" onclick="navegarMesCalendario(1)">&#8594;</button>
+      </div>
+
+      ${seletorMesAberto ? _renderizarSeletorMes() : ''}
+
+      <div class="cal-grid">
+        ${diasSemana.map(d => `<div class="cal-dia-semana">${d}</div>`).join('')}
+        ${celulas}
+      </div>
+
+      ${itensDiaHTML}
+
+      ${!temItensNoMes && !diaCalendarioAberto
+        ? `<p style="text-align:center;font-size:13px;color:var(--text-muted);padding:16px 0;">Nenhum evento ou consulta neste mês.</p>`
+        : ''}
+    </div>`;
+}
+
+async function renderizarCalendarioNaView(container) {
+  container.innerHTML = await _buildCalendarioHTML(container);
+}
+
+function abrirDiaCalendario(dia) {
+  diaCalendarioAberto = diaCalendarioAberto === dia ? null : dia;
+  renderizarAbaCalendario();
+}
+
+function navegarMesCalendario(delta) {
+  diaCalendarioAberto = null;
+  seletorMesAberto = false;
+  let { ano, mes } = mesCalendarioAtivo;
+  mes += delta;
+  if (mes < 0)  { mes = 11; ano--; }
+  if (mes > 11) { mes = 0;  ano++; }
+  mesCalendarioAtivo = { ano, mes };
+  renderizarAbaCalendario();
 }
 
 function renderizarCardConsulta(c, destaque) {
@@ -896,6 +1273,17 @@ async function abrirDetalheConsulta(id) {
         <div class="detail-label">Status</div>
         <div class="detail-value" style="font-weight:600;">${{ agendada:'Agendada', realizada:'Realizada', cancelada:'Cancelada' }[c.status]||c.status}</div>
       </div>
+      ${c.status !== 'cancelada' ? `
+      <div style="display:flex;gap:8px;padding-top:12px;flex-wrap:wrap;">
+        <button class="btn-exportar-detalhe" id="btn-ics-detalhe">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar .ics
+        </button>
+        <a class="btn-exportar-detalhe" href="${linkGoogleCalendar(c)}" target="_blank" rel="noopener">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Google Agenda
+        </a>
+      </div>` : ''}
       <div style="display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--border);">
         ${opcoes.map(o => `<button class="btn-ghost" style="${o.estilo||''};" onclick="${o.acao.toString().replace(/"/g,"'")}">${o.label}</button>`).join('')}
         <button class="btn-ghost" onclick="fecharModal('modal-evento-detalhe')">Fechar</button>
@@ -906,13 +1294,17 @@ async function abrirDetalheConsulta(id) {
   document.getElementById('titulo-modal-detalhe').textContent = 'Consulta Agendada';
   document.getElementById('conteudo-evento-detalhe').innerHTML = html;
 
+  // Botão .ics individual
+  const btnIcs = document.getElementById('btn-ics-detalhe');
+  if (btnIcs) btnIcs.onclick = () => exportarConsultaICS(c);
+
   // Vincula as ações diretamente (já que inline onclick não funciona bem com funções complexas)
-  const btns = document.querySelectorAll('#conteudo-evento-detalhe button');
+  const btns = document.querySelectorAll('#conteudo-evento-detalhe .btn-ghost');
   btns.forEach((btn, i) => {
     if (opcoes[i]) btn.onclick = opcoes[i].acao;
   });
   // Último botão: fechar
-  const lastBtn = document.querySelector('#conteudo-evento-detalhe button:last-child');
+  const lastBtn = document.querySelector('#conteudo-evento-detalhe .btn-ghost:last-child');
   if (lastBtn) lastBtn.onclick = () => fecharModal('modal-evento-detalhe');
 
   abrirModal('modal-evento-detalhe');
@@ -948,7 +1340,88 @@ async function confirmarExclusaoConsulta(id) {
 
 
 /* ================================================
-   11. FORMULÁRIO DE CONSULTA
+   11. EXPORTAÇÃO DE CALENDÁRIO (.ics)
+   ================================================ */
+
+function _icsEscape(s) {
+  return (s || '').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n');
+}
+
+function gerarICS(consultas) {
+  const uid = () => Math.random().toString(36).substr(2,9) + '@linhatempobebeapp';
+  const linhas = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Linha do Tempo do Bebê//PT','CALSCALE:GREGORIAN'];
+  consultas.filter(c => c.status !== 'cancelada').forEach(c => {
+    const tipo    = TIPOS_CONSULTA[c.tipo] || c.tipo || '';
+    const resumo  = _icsEscape([tipo, c.medico].filter(Boolean).join(' - '));
+    const local   = _icsEscape(c.local || '');
+    const descr   = _icsEscape(c.observacoes || '');
+    const dataStr = (c.data || '').replace(/-/g,'');
+    linhas.push('BEGIN:VEVENT');
+    linhas.push(`UID:${uid()}`);
+    if (c.hora) {
+      const horaStr = c.hora.replace(':','') + '00';
+      linhas.push(`DTSTART:${dataStr}T${horaStr}`);
+      linhas.push(`DTEND:${dataStr}T${horaStr}`);
+    } else {
+      linhas.push(`DTSTART;VALUE=DATE:${dataStr}`);
+      linhas.push(`DTEND;VALUE=DATE:${dataStr}`);
+    }
+    linhas.push(`SUMMARY:${resumo}`);
+    if (local)  linhas.push(`LOCATION:${local}`);
+    if (descr)  linhas.push(`DESCRIPTION:${descr}`);
+    linhas.push('END:VEVENT');
+  });
+  linhas.push('END:VCALENDAR');
+  return linhas.join('\r\n');
+}
+
+function baixarArquivo(nome, conteudo, tipo) {
+  const blob = new Blob([conteudo], { type: tipo });
+  if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], nome, { type: tipo })] })) {
+    navigator.share({ files: [new File([blob], nome, { type: tipo })] }).catch(() => _baixarViaLink(blob, nome));
+  } else {
+    _baixarViaLink(blob, nome);
+  }
+}
+
+function _baixarViaLink(blob, nome) {
+  const url = URL.createObjectURL(blob);
+  const a   = document.createElement('a');
+  a.href = url; a.download = nome;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function linkGoogleCalendar(consulta) {
+  const tipo  = TIPOS_CONSULTA[consulta.tipo] || consulta.tipo || '';
+  const texto = [tipo, consulta.medico].filter(Boolean).join(' - ');
+  const data  = (consulta.data || '').replace(/-/g,'');
+  let dates   = data + '/' + data;
+  if (consulta.hora) {
+    const h = consulta.hora.replace(':','') + '00';
+    dates   = `${data}T${h}/${data}T${h}`;
+  }
+  const p = new URLSearchParams({ action:'TEMPLATE', text:texto, dates, location:consulta.local||'', details:consulta.observacoes||'' });
+  return `https://calendar.google.com/calendar/render?${p}`;
+}
+
+async function exportarTodasConsultas() {
+  const todas = await carregarConsultas();
+  const validas = todas.filter(c => c.status !== 'cancelada');
+  if (!validas.length) { mostrarToast('Nenhuma consulta para exportar.', 'error'); return; }
+  const ics = gerarICS(validas);
+  baixarArquivo('agenda-consultas.ics', ics, 'text/calendar');
+}
+
+function exportarConsultaICS(consulta) {
+  const ics = gerarICS([consulta]);
+  const tipo = TIPOS_CONSULTA[consulta.tipo] || 'consulta';
+  baixarArquivo(`${tipo.toLowerCase().replace(/\s+/g,'-')}.ics`, ics, 'text/calendar');
+}
+
+/* ================================================
+   12. FORMULÁRIO DE CONSULTA
    ================================================ */
 
 async function abrirFormConsulta(id) {
@@ -1072,9 +1545,10 @@ function mostrarToast(msg, tipo='') {
 function atualizarVistaAtiva() {
   const v = document.querySelector('.view.active');
   if (!v) return;
-  if (v.id === 'view-timeline') renderizarTimeline();
-  else if (v.id === 'view-agenda') renderizarAgenda();
-  else renderizarHome(); // async, chamada sem await intencional
+  if (v.id === 'view-timeline')   resetarERecarregarEventos();
+  else if (v.id === 'view-agenda') resetarERecarregarConsultas();
+  else if (v.id === 'view-calendario') renderizarAbaCalendario();
+  else renderizarHome();
 }
 
 
@@ -1157,7 +1631,22 @@ async function salvarNovoBebe(event) {
    14. SWIPE HORIZONTAL ENTRE VISTAS
    ================================================ */
 
-const ORDEM_VISTAS = ['home', 'timeline', 'agenda'];
+const ORDEM_VISTAS = ['home', 'timeline', 'agenda', 'calendario'];
+
+function animarTransicaoVista(viewAtual, proximoNome, direcao) {
+  const entradaClass = direcao === 'esquerda' ? 'vista-entrando-direita' : 'vista-entrando-esquerda';
+
+  // Adiciona a classe ANTES de showView tornar a view visível,
+  // assim a animação começa exatamente no momento em que ela aparece.
+  const novaView = document.getElementById('view-' + proximoNome);
+  if (novaView) novaView.classList.add(entradaClass);
+
+  showView(proximoNome);
+
+  if (novaView) {
+    novaView.addEventListener('animationend', () => novaView.classList.remove(entradaClass), { once: true });
+  }
+}
 
 function iniciarSwipe() {
   const app = document.getElementById('app');
@@ -1197,7 +1686,8 @@ function iniciarSwipe() {
     const proxIdx = dx < 0 ? idxAtual + 1 : idxAtual - 1;
     if (proxIdx < 0 || proxIdx >= ORDEM_VISTAS.length) return;
 
-    showView(ORDEM_VISTAS[proxIdx]);
+    const direcao = dx < 0 ? 'esquerda' : 'direita';
+    animarTransicaoVista(vistaAtiva, ORDEM_VISTAS[proxIdx], direcao);
   }, { passive: true });
 }
 
@@ -1302,18 +1792,26 @@ function atualizarNomeBebe(nomeCompleto) {
 }
 
 function alternarDarkMode() {
-  const isDark     = document.body.getAttribute('data-theme') === 'dark';
-  const proximo    = isDark ? 'beige' : 'dark';
+  const atual   = document.body.getAttribute('data-theme');
+  const isDark  = atual === 'dark';
+  if (!isDark) {
+    // Salva o tema de gênero atual antes de entrar no dark
+    localStorage.setItem('tema-genero', atual || 'beige');
+  }
+  const proximo = isDark ? (localStorage.getItem('tema-genero') || 'beige') : 'dark';
   document.body.setAttribute('data-theme', proximo);
   localStorage.setItem('tema-dark', proximo === 'dark' ? '1' : '0');
-  // Atualiza o ícone na barra sem re-renderizar tudo
   const btnTema = document.querySelector('.btn-dark-mode');
   if (btnTema) btnTema.innerHTML = proximo === 'dark' ? SVG_SOL : SVG_LUA;
 }
 
 function aplicarTemaInicial() {
+  const genero = localStorage.getItem('tema-genero') || 'beige';
+  document.body.setAttribute('data-genero', genero);
   if (localStorage.getItem('tema-dark') === '1') {
     document.body.setAttribute('data-theme', 'dark');
+  } else {
+    document.body.setAttribute('data-theme', genero);
   }
 }
 

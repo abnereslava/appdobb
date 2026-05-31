@@ -14,6 +14,11 @@ import {
   increment,
   collection,
   serverTimestamp,
+  query,
+  orderBy,
+  limit,
+  startAfter,
+  where,
 } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js';
 
 import { db } from './firebase-config.js';
@@ -68,6 +73,17 @@ window._db = {
     return snap.docs.map(d => ({ id: d.id, ...d.data() }));
   },
 
+  async listarEventosPaginados(profileId, cursor, dataInicio, dataFim) {
+    const col = collection(db, 'profiles', profileId, 'events');
+    const constraints = [orderBy('data', 'desc'), limit(20)];
+    if (dataInicio) constraints.push(where('data', '>=', dataInicio));
+    if (dataFim)    constraints.push(where('data', '<=', dataFim));
+    if (cursor)     constraints.push(startAfter(cursor));
+    const snap = await getDocs(query(col, ...constraints));
+    const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    return { docs, cursor: snap.docs[snap.docs.length - 1] || null };
+  },
+
   async carregarEvento(profileId, eventoId) {
     const snap = await getDoc(doc(db, 'profiles', profileId, 'events', eventoId));
     return snap.exists() ? { id: snap.id, ...snap.data() } : null;
@@ -94,6 +110,17 @@ window._db = {
   async listarConsultas(profileId) {
     const snap = await getDocs(collection(db, 'profiles', profileId, 'consultations'));
     return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  },
+
+  async listarConsultasPaginadas(profileId, cursor, dataInicio, dataFim) {
+    const col = collection(db, 'profiles', profileId, 'consultations');
+    const constraints = [orderBy('data', 'desc'), limit(20)];
+    if (dataInicio) constraints.push(where('data', '>=', dataInicio));
+    if (dataFim)    constraints.push(where('data', '<=', dataFim));
+    if (cursor)     constraints.push(startAfter(cursor));
+    const snap = await getDocs(query(col, ...constraints));
+    const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    return { docs, cursor: snap.docs[snap.docs.length - 1] || null };
   },
 
   async carregarConsulta(profileId, consultaId) {

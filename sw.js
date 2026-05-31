@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bebe-shell-v1';
+const CACHE_NAME = 'bebe-shell-v2';
 
 const SHELL_FILES = [
   '/',
@@ -42,21 +42,31 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
+// Estratégia: Network-first (web-first)
+// Sempre tenta a rede primeiro; só usa o cache se offline ou erro de rede.
+// Recursos de terceiros (Firebase, CDN) são ignorados.
 self.addEventListener('fetch', event => {
-  // Não interceptar requisições ao Firebase/Google — apenas arquivos estáticos
   const url = new URL(event.request.url);
+
+  // Ignora requisições a origens externas (Firebase, Google Fonts, CDN)
   if (url.origin !== location.origin) return;
 
+  // Ignora métodos não-GET
+  if (event.request.method !== 'GET') return;
+
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(response => {
+    fetch(event.request)
+      .then(response => {
+        // Atualiza o cache com a resposta mais recente da rede
         if (response && response.status === 200 && response.type === 'basic') {
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         }
         return response;
-      });
-    })
+      })
+      .catch(() => {
+        // Offline: serve do cache
+        return caches.match(event.request);
+      })
   );
 });

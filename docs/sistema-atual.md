@@ -1,248 +1,159 @@
-# Sistema Atual: Linha do Tempo do Bebe
+# Sistema Atual: Linha do Tempo do Bebê
 
-## 1. Visao geral
+## 1. Visão geral
 
-O aplicativo "Linha do Tempo do Bebe" e uma aplicacao web estatica, pensada para uso em tela mobile, que permite registrar informacoes basicas de um bebe, acompanhar eventos de saude em uma linha do tempo e organizar consultas medicas em uma agenda.
+O aplicativo "Linha do Tempo do Bebê" é uma PWA mobile-first que permite registrar e acompanhar a saúde de um bebê: perfil, histórico de eventos médicos, agenda de consultas e calendário visual. Os dados são armazenados no Firebase Firestore; a autenticação usa Firebase Auth. O app funciona com múltiplos perfis de bebê por conta.
 
-O sistema roda diretamente no navegador e armazena os dados localmente em `localStorage`. Nao ha backend, autenticacao, banco de dados remoto ou sincronizacao entre dispositivos no codigo atual.
+## 2. Público e objetivo
 
-## 2. Publico e objetivo
+Pais, mães ou responsáveis pelo bebê que desejam manter um histórico organizado de saúde, incluindo:
 
-O objetivo do aplicativo e ajudar responsaveis a manter um historico organizado da saude do bebe, incluindo:
-
-- perfil do bebe;
-- dados de nascimento;
-- alergias;
-- eventos de saude;
-- medicamentos usados em eventos;
-- gastos associados a eventos;
-- consultas agendadas, realizadas ou canceladas.
-
-[Inferencia] O publico principal sao pais, maes ou responsaveis pelo bebe.
+- perfil completo do bebê (nascimento, alergias, peso, altura);
+- eventos de saúde categorizados (doenças, vacinas, cirurgias, etc.);
+- agenda de consultas com contagem regressiva;
+- calendário mensal unificado de eventos e consultas;
+- exportação de consultas para apps de calendário externos.
 
 ## 3. Telas principais
 
 ### Perfil
 
-Arquivo relacionado: `index.html` e `app.js`.
+Exibe, quando o perfil existe:
 
-A tela de perfil e a primeira visualizacao do aplicativo. Quando nao existe perfil salvo, o sistema exibe uma tela de boas-vindas com botao para criar o perfil do bebe.
-
-Quando o perfil existe, a tela exibe:
-
-- nome completo;
-- idade calculada a partir da data de nascimento;
-- foto por URL ou inicial do nome;
-- sexo, quando informado;
-- aviso de prematuridade quando a gestacao tem menos de 37 semanas;
-- quantidade total de eventos;
-- peso e altura, quando informados;
-- informacoes de nascimento;
+- nome completo e idade calculada;
+- foto (por URL);
+- sexo (com badge de gênero);
+- aviso de prematuridade (< 37 semanas);
+- peso e altura;
+- informações de nascimento (via de parto, local, semanas de gestação, tipos sanguíneos, amamentação);
 - alergias agrupadas por tipo;
 - total gasto em eventos;
-- ultimos eventos registrados.
+- últimos 3 eventos registrados.
 
-### Historico de saude
+Sem perfil: tela de boas-vindas "Bem-vindo(a)!" com botão para criar.
 
-A tela de historico mostra os eventos de saude em formato de linha do tempo ilustrada.
+### Histórico de Saúde
 
-Recursos identificados:
+Linha do tempo ilustrada com:
 
-- listagem de eventos em ordem decrescente de data;
-- alternancia visual dos itens entre esquerda e direita;
-- filtros por categoria;
-- busca por titulo, medico, hospital e observacoes;
-- estado vazio quando nao ha eventos ou resultados;
-- abertura de detalhes do evento;
-- criacao, edicao e exclusao de eventos.
+- paginação incremental (20 itens/vez via Firestore `limit/startAfter`);
+- scroll infinito automático via `IntersectionObserver`;
+- filtro por categoria (doença, acidente, alergia, consulta, vacina, cirurgia, outro);
+- busca por título, médico, hospital e observações;
+- filtro por intervalo de datas (compartilhado com a Agenda);
+- data de nascimento clicável no cabeçalho (redireciona ao Perfil);
+- validação de data mínima: eventos não podem ser registrados antes de 45 semanas antes do nascimento;
+- criação, edição e exclusão de eventos com formulário completo.
 
-Categorias existentes:
+### Agenda de Consultas
 
-- doenca;
-- acidente;
-- alergia;
-- consulta;
-- vacina;
-- cirurgia;
-- outro.
+Lista de consultas dividida em Próximas e Histórico:
 
-### Agenda de consultas
+- paginação incremental com scroll infinito;
+- busca por médico, local e tipo;
+- filtro por intervalo de datas (compartilhado com o Histórico);
+- destaque para a próxima consulta;
+- contagem regressiva ("Hoje!", "Amanhã", "em X dias");
+- marcação como Realizada ou Cancelada;
+- no detalhe: botão "Exportar .ics" (individual) e botão "Google Agenda" (link direto).
 
-A tela de agenda organiza consultas em duas secoes:
+### Calendário
 
-- proximas consultas: consultas nao canceladas com data igual ou posterior ao dia atual;
-- historico: consultas canceladas ou com data passada.
+Aba dedicada na nav bar (após Agenda):
 
-Recursos identificados:
+- grid mensal com 7 colunas;
+- marcadores por tipo: ponto na cor primária = consulta, ponto âmbar = evento de saúde;
+- dia atual destacado;
+- clique no nome do mês: abre seletor rápido (12 meses + controle de ano por setas);
+- navegação entre meses com setas ← →;
+- clique em dia com itens: expande lista abaixo do grid;
+- itens clicáveis abrem o modal de detalhe correspondente;
+- botão "Exportar" no cabeçalho: gera `.ics` com todas as consultas não-canceladas.
 
-- criacao e edicao de consultas;
-- exibicao de tipo, data, horario, medico, local e status;
-- destaque visual para a proxima consulta;
-- contagem regressiva simples, como "Hoje", "Amanha" ou "em X dias";
-- marcacao de consulta como realizada;
-- cancelamento de consulta;
-- exclusao de consulta.
+## 4. Navegação
 
-## 4. Formularios e modais
+Barra inferior fixa com 5 itens: **Perfil · + · Histórico · Agenda · Calendário**
 
-O aplicativo usa modais tipo bottom sheet para edicao e visualizacao.
+- O botão "+" abre menu rápido para criar evento ou consulta.
+- Swipe horizontal entre abas com animação de slide (entrada da direita/esquerda conforme direção).
+- Abas Histórico, Agenda e Calendário ficam desabilitadas visualmente enquanto não há perfil criado.
 
-### Modal de perfil
+## 5. Temas visuais
 
-Campos identificados:
+Controlado pelos atributos `data-theme` e `data-genero` no `<body>`:
 
-- nome completo;
-- data de nascimento;
-- sexo;
-- via de nascimento;
-- semanas de gestacao;
-- local de nascimento;
-- tipo sanguineo do bebe;
-- tipo sanguineo da mae;
-- amamentacao;
-- peso;
-- altura;
-- URL da foto;
-- alergias com tipo, descricao e severidade.
+| `data-theme` | `data-genero` | Resultado |
+|---|---|---|
+| `beige` | qualquer | Tema bege neutro |
+| `menino` | `menino` | Azul |
+| `menina` | `menina` | Rosa |
+| `dark` | `beige` | Dark neutro |
+| `dark` | `menino` | Dark com acentos azuis |
+| `dark` | `menina` | Dark com acentos rosa |
 
-Validacoes identificadas:
+O `data-genero` persiste independentemente do modo dark, garantindo que as cores de gênero sejam mantidas ao alternar o tema escuro.
 
-- nome completo obrigatorio;
-- data de nascimento obrigatoria;
-- aviso visual para prematuridade abaixo de 37 semanas.
+## 6. Exportação de calendário
 
-### Modal de evento
+- **Arquivo .ics**: gerado no cliente (RFC 5545), compatível com Google Agenda, Apple Calendar e Outlook. Disponível individual (modal de consulta) e em lote (cabeçalho do Calendário).
+- **Link Google Agenda**: URL `calendar.google.com/render?action=TEMPLATE&...` abre evento pré-preenchido em nova aba. Disponível no modal de consulta individual.
+- **Mobile**: usa Web Share API (`navigator.share`) quando disponível, com fallback para download direto.
 
-Campos identificados:
+Não há sincronização bidirecional com Google Calendar (escopo de feature futura).
 
-- titulo;
-- categoria;
-- data;
-- descricao;
-- tratamento;
-- medico;
-- hospital ou postinho;
-- medicamentos;
-- custo;
-- URL de imagem;
-- observacoes.
+## 7. Autenticação e multi-perfil
 
-Validacoes identificadas:
+- Login por Google via Firebase Auth.
+- Cada conta pode ter múltiplos perfis de bebê.
+- Seletor de bebê ativo no cabeçalho (chip com nome + dropdown).
+- Papéis: `usuario` (acesso próprio) e `admin` (gerenciamento de acessos via `admin.html`).
 
-- titulo obrigatorio;
-- categoria obrigatoria;
-- data obrigatoria;
-- medicamento duplicado no mesmo evento e bloqueado.
+## 8. Armazenamento — Firebase Firestore
 
-### Modal de detalhe de evento
+| Coleção | Documento | Conteúdo |
+|---|---|---|
+| `profiles/{profileId}` | perfil do bebê | `babyProfile`, contadores |
+| `profiles/{profileId}/events/{id}` | evento de saúde | todos os campos do evento |
+| `profiles/{profileId}/consultations/{id}` | consulta | todos os campos da consulta |
+| `accessIndex/{email}` | acesso do usuário | `profileIds`, `role`, `permissions` |
 
-Exibe os dados preenchidos do evento e permite:
+Queries de listagem usam `orderBy('data', 'desc')` com `limit(20)` e `startAfter` para paginação eficiente.
 
-- editar;
-- excluir.
+## 9. PWA e Service Worker
 
-### Modal de consulta
+- Manifest com ícones e `display: standalone`.
+- Service Worker em `sw.js` (cache `bebe-shell-v2`):
+  - **Estratégia: Network-first** — sempre tenta a rede; fallback para cache offline.
+  - Shell files (HTML, CSS, JS, imagens) são pré-cacheados no `install`.
+  - Requisições externas (Firebase, CDN) não são interceptadas.
 
-Campos identificados:
+## 10. Arquivos principais
 
-- tipo de consulta;
-- data;
-- horario;
-- medico;
-- local ou clinica;
-- observacoes;
-- status.
+| Arquivo | Responsabilidade |
+|---|---|
+| `index.html` | Estrutura HTML, todas as views, modais, formulários, nav bar |
+| `style.css` | Temas (beige/menino/menina/dark+gênero), layout, componentes |
+| `app.js` | Toda a lógica: auth state, renderização, paginação, exportação, swipe, temas |
+| `auth.js` | Firebase Auth, controle de acesso, inicialização de sessão |
+| `firestore-api.js` | Abstração do Firestore (`window._db`), queries paginadas |
+| `firebase-config.js` | Configuração do projeto Firebase |
+| `sw.js` | Service Worker PWA (network-first) |
+| `admin.html` / `admin.js` | Painel de gerenciamento de acessos (role: admin) |
 
-Status existentes:
+## 11. Specs de funcionalidades implementadas
 
-- agendada;
-- realizada;
-- cancelada.
+| Funcionalidade | Pasta |
+|---|---|
+| Autenticação Firebase + admin | `specs/firebase-auth-admin/` |
+| Data de nascimento no Histórico + restrição de data | `specs/historico-restricao-nascimento/` |
+| Filtro por data + paginação incremental | `specs/filtro-por-data-paginacao/` |
+| Exportação .ics e Google Agenda | `specs/exportar-calendario/` |
+| Aba dedicada de Calendário | `specs/aba-calendario/` |
 
-Validacoes identificadas:
+## 12. Limitações e riscos
 
-- tipo obrigatorio;
-- data obrigatoria.
-
-## 5. Armazenamento de dados
-
-Os dados sao salvos no `localStorage` do navegador usando as seguintes chaves:
-
-- `bebe_perfil`;
-- `bebe_eventos`;
-- `bebe_consultas`.
-
-Impactos desse modelo:
-
-- os dados ficam apenas no navegador/dispositivo atual;
-- limpar dados do navegador pode apagar os registros;
-- outro navegador, perfil de usuario ou aparelho nao tera acesso aos dados;
-- nao ha controle de versao, backup automatico ou recuperacao remota.
-
-## 6. Temas visuais
-
-O tema e controlado pelo atributo `data-theme` no elemento `body`.
-
-Temas existentes:
-
-- `beige`: tema padrao;
-- `menino`: tema azul;
-- `menina`: tema rosa.
-
-O tema e aplicado com base no sexo salvo no perfil. Quando o sexo nao e informado ou nao corresponde aos valores esperados, o sistema usa o tema padrao.
-
-## 7. Navegacao
-
-A navegacao principal e feita por uma barra inferior fixa com quatro acoes:
-
-- Perfil;
-- Historico;
-- botao central de adicionar;
-- Agenda.
-
-O botao central abre um menu rapido com opcoes para criar:
-
-- novo evento de saude;
-- nova consulta.
-
-## 8. Estados e mensagens
-
-Estados identificados:
-
-- perfil inexistente;
-- lista de eventos vazia;
-- busca sem resultado;
-- agenda sem proximas consultas;
-- evento ou consulta nao encontrada;
-- confirmacao antes de excluir evento ou consulta.
-
-Mensagens sao exibidas em um toast fixo na parte inferior da tela. Tipos usados:
-
-- sucesso;
-- erro.
-
-## 9. Arquivos principais
-
-- `index.html`: estrutura HTML, containers das telas, barra de navegacao, modais e formularios.
-- `style.css`: temas, layout mobile, componentes visuais, modais, formularios, timeline e agenda.
-- `app.js`: regras de dados, renderizacao das telas, navegacao, formularios, persistencia local, filtros, busca, calculos e interacoes.
-- `docs/AGENTS.md`: instrucoes de processo para documentacao, especificacao e implementacao de funcionalidades.
-
-## 10. Limitacoes e riscos
-
-- Nao ha autenticacao ou controle de acesso.
-- Nao ha backend ou sincronizacao.
-- Nao ha criptografia dos dados salvos localmente.
-- URLs de fotos e imagens sao carregadas diretamente; se a URL estiver indisponivel, a imagem e ocultada.
-- O aplicativo depende de JavaScript habilitado.
-- [Nao confirmado] Nao ha manifest, service worker ou instalacao PWA no codigo analisado.
-- [Nao confirmado] Nao ha suite de testes automatizados no projeto atual.
-- [Nao confirmado] Nao ha politica de privacidade ou aviso sobre armazenamento local de dados sensiveis de saude.
-
-## 11. Pontos pouco claros
-
-- [Nao confirmado] O projeto nao define processo de deploy.
-- [Nao confirmado] O projeto nao indica se deve funcionar offline alem do carregamento local dos arquivos.
-- [Nao confirmado] O projeto nao indica requisitos formais de acessibilidade.
-- [Nao confirmado] O projeto nao indica publico exato, responsavel legal ou contexto medico.
-
+- Sem criptografia dos dados no Firestore além das regras de segurança.
+- Filtro por texto (busca) não é server-side: combina paginação Firestore com filtragem local, o que pode fazer o "Carregar mais" parecer vazio com buscas muito específicas.
+- Calendário carrega todos os eventos/consultas do mês sem paginação (aceitável pelo volume mensal esperado).
+- Sem testes automatizados; validação manual obrigatória.
+- Sem política de privacidade ou aviso sobre dados sensíveis de saúde.
