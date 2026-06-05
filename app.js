@@ -20,12 +20,14 @@ const IMG_BRINQUEDO    = `<img src="img/brinquedo.png"    class="img-icon-ilustr
 const IMG_URSINHOBEM   = `<img src="img/ursinhobem.png"   class="img-icon-ilustracao" alt="" />`;
 const IMG_AGENDA       = `<img src="img/agenda.png"       class="img-icon-ilustracao" alt="" />`;
 
-// Ícones de categoria → PNG onde há correspondência, SVG nos demais
-const IMG_DOENCA   = `<img src="img/ursinhodoente.png" class="category-icon-img" alt="" />`;
+// Ícones de categoria → imagens PNG
+const IMG_DOENCA   = `<img src="img/termometro.png"    class="category-icon-img" alt="" />`;
 const IMG_ACIDENTE = `<img src="img/curativo.png"      class="category-icon-img" alt="" />`;
 const IMG_CONSULTA = `<img src="img/calendario.png"    class="category-icon-img" alt="" />`;
 const IMG_CIRURGIA = `<img src="img/cirurgia.png"      class="category-icon-img" alt="" />`;
-const IMG_REMEDIOS = `<img src="img/remedios.png"      class="category-icon-img" alt="" />`;
+const IMG_ALERGIA  = `<img src="img/alergia.png"       class="category-icon-img" alt="" />`;
+const IMG_VACINA   = `<img src="img/vacina.png"        class="category-icon-img" alt="" />`;
+const IMG_OUTRO    = `<img src="img/outro.png"         class="category-icon-img" alt="" />`;
 
 // SVGs mantidos: ícones sem PNG correspondente e ícones inline funcionais
 const SEARCH_SVG  = `<svg class="category-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
@@ -33,18 +35,15 @@ const CLOCK_SVG   = `<svg class="inline-icon" viewBox="0 0 24 24"><circle cx="12
 const WARNING_SVG = `<svg class="inline-icon" viewBox="0 0 24 24" style="color: #c0392b; margin-right: 4px;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
 const MALE_SVG    = `<svg class="inline-icon" viewBox="0 0 24 24" style="margin-right: 4px; color: #2a62a0;"><circle cx="10" cy="14" r="5"/><path d="M14 10L19 5"/><path d="M14 5h5v5"/></svg>`;
 const FEMALE_SVG  = `<svg class="inline-icon" viewBox="0 0 24 24" style="margin-right: 4px; color: #a03458;"><circle cx="12" cy="9" r="5"/><path d="M12 14v7"/><path d="M9 18h6"/></svg>`;
-const ALERGIA_SVG = `<svg class="category-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v7M12 15v7M2 12h7M15 12h7M5.6 5.6l4.9 4.9M13.5 13.5l4.9 4.9M18.4 5.6l-4.9 4.9M10.5 13.5l-4.9 4.9"/></svg>`;
-const VACINA_SVG  = `<svg class="category-icon" viewBox="0 0 24 24"><path d="m21 3-3 3M18 2l4 4M14 8l-8.5 8.5L3 19l2.5-2.5L14 8zM12 6l4 4M8.5 9.5l3 3M6 12l3 3M3 21l-1 1"/></svg>`;
-const OUTRO_SVG   = `<svg class="category-icon" viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>`;
 
 const CATEGORIAS = {
   doenca:   { label: 'Doença',   icone: IMG_DOENCA   },
   acidente: { label: 'Acidente', icone: IMG_ACIDENTE },
-  alergia:  { label: 'Alergia',  icone: ALERGIA_SVG  },
+  alergia:  { label: 'Alergia',  icone: IMG_ALERGIA  },
   consulta: { label: 'Consulta', icone: IMG_CONSULTA },
-  vacina:   { label: 'Vacina',   icone: VACINA_SVG   },
+  vacina:   { label: 'Vacina',   icone: IMG_VACINA   },
   cirurgia: { label: 'Cirurgia', icone: IMG_CIRURGIA },
-  outro:    { label: 'Outro',    icone: OUTRO_SVG    },
+  outro:    { label: 'Outro',    icone: IMG_OUTRO    },
 };
 
 const TIPOS_CONSULTA = {
@@ -1657,8 +1656,12 @@ function iniciarSwipe() {
   let arrastando = false;
 
   app.addEventListener('touchstart', e => {
+    arrastando = false;
     // Ignora swipe se houver modal aberto
     if (document.querySelector('.modal.open')) return;
+    // Ignora swipe iniciado dentro de área com rolagem horizontal própria
+    // (ex.: tags de filtro da timeline), para não trocar de página ao arrastá-las
+    if (e.target.closest('.timeline-filters')) return;
     xInicio   = e.touches[0].clientX;
     yInicio   = e.touches[0].clientY;
     arrastando = true;
