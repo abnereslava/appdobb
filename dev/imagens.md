@@ -3,6 +3,19 @@
 Inventário das imagens do projeto, seu estado e onde são utilizadas no código.
 Atualizado após: troca do ícone de Doença (ursinhodoente → termômetro) e adição dos ícones de categoria vacina/alergia/outro.
 
+## Tratamento visual — silhueta branca
+
+As imagens PNG **continuam sendo a base**, mas são renderizadas como **silhueta branca sobre fundo de cor sólida** via CSS (`filter: brightness(0) invert(1)`), em vez de aparecerem coloridas. Locais com esse tratamento:
+
+- **Ícones de categoria** (`.category-icon-img`): dots da timeline, círculos de "Últimos eventos" (home) e detalhe do evento — fundo na cor sólida da categoria.
+- **Imagens ilustrativas** (`.img-icon-ilustracao`): boas-vindas (brinquedo) e estados vazios (ursinho/agenda) — fundo na cor primária do tema.
+
+Exceções (mantidas como imagem original, **sem** silhueta):
+- **logo.png** e variantes — identidade da marca (login, carregamento, favicon, ícones PWA).
+- **mamadeira.png** — avatar padrão do perfil (placeholder quando não há foto).
+
+As chips de filtro **deixaram de exibir ícone** (ficaram só com texto), pois uma silhueta branca seria invisível no fundo claro da chip.
+
 ## ✅ Em uso
 
 - **agenda.png** — `app.js` (`IMG_AGENDA`), estado vazio da Agenda; cache `sw.js`

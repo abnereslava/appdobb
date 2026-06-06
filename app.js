@@ -771,7 +771,7 @@ function renderizarTimeline() {
     { valor:'todos', label:`Todos (${todos.length}${!eventosEsgotado?'+':''})` },
     ...Object.entries(CATEGORIAS)
       .filter(([v]) => todos.some(e => e.categoria === v))
-      .map(([v,c]) => ({ valor:v, label:`${c.icone} ${c.label} (${todos.filter(e=>e.categoria===v).length})` }))
+      .map(([v,c]) => ({ valor:v, label:`${c.label} (${todos.filter(e=>e.categoria===v).length})` }))
   ];
 
   // Separador discreto de mês/ano (inserido quando o mês muda ao descer a timeline)
