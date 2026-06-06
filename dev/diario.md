@@ -10,8 +10,6 @@
 
 5. Implementar histórico de medicamentos/tipos de medicamentos, independente da data do evento
 
-6. Colocar, dentro da timeline, separadores discretos de ano/mês
+6. Animação de parabéns que aparece uma vez quando o aplicativo é aberto na data de aniversário de um dos usuários
 
-7. Verificar se está usando cachê de dados
-
-8. Animação de parabéns que aparece uma vez quando o aplicativo é aberto na data de aniversário de um dos usuários
+7. implementar: um cache em memória por bebê (profileId) para perfil/eventos/consultas, reaproveitado entre as abas, com invalidação apenas quando: (1) você cria/edita/exclui um evento/consulta/perfil, ou (2) troca de bebê. Assim, navegar entre abas não dispara novas leituras; só recarrega quando os dados realmente mudam.

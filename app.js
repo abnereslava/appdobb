@@ -718,6 +718,17 @@ async function renderizarTimeline() {
       .map(([v,c]) => ({ valor:v, label:`${c.icone} ${c.label} (${todos.filter(e=>e.categoria===v).length})` }))
   ];
 
+  // Separador discreto de mês/ano (inserido quando o mês muda ao descer a timeline)
+  const MESES_EXT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  let _mesAnoTL = null;
+  const sepMesAno = dataStr => {
+    const [ano, mes] = dataStr.split('-');
+    const chave = `${ano}-${mes}`;
+    if (chave === _mesAnoTL) return '';
+    _mesAnoTL = chave;
+    return `<div class="tl-mes-sep"><span>${MESES_EXT[parseInt(mes,10)-1]} ${ano}</span></div>`;
+  };
+
   const itensHTML = lista.map((evento, idx) => {
     const cat  = CATEGORIAS[evento.categoria] || CATEGORIAS.outro;
     const lado = idx % 2 === 0 ? 'tl-esquerda' : 'tl-direita';
@@ -733,7 +744,7 @@ async function renderizarTimeline() {
       <div class="tl-date-bubble tl-bubble-${evento.categoria}" onclick="abrirDetalheEvento('${evento.id}')">
         ${dataFmt}
       </div>`;
-    return `
+    return sepMesAno(evento.data) + `
       <div class="tl-item ${lado}" data-data="${evento.data}">
         <div class="tl-content">${cartao}</div>
         <div class="tl-center">
@@ -762,7 +773,7 @@ async function renderizarTimeline() {
   const nascCardHTML = !mostrarNascimento ? '' : (() => {
     const lado = lista.length % 2 === 0 ? 'tl-esquerda' : 'tl-direita';
     const dataFmt = formatarDataCurta(dataNasc);
-    return `
+    return sepMesAno(dataNasc) + `
       <div class="tl-item ${lado}" data-data="${dataNasc}">
         <div class="tl-content">
           <div class="tl-card tl-card-nascimento" onclick="showView('home')">
