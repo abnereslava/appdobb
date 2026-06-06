@@ -29,6 +29,8 @@ const IMG_ALERGIA  = `<img src="img/alergia.png"       class="category-icon-img"
 const IMG_VACINA   = `<img src="img/vacina.png"        class="category-icon-img" alt="" />`;
 const IMG_EXAMES   = `<img src="img/hospital.png"      class="category-icon-img" alt="" />`;
 const IMG_OUTRO    = `<img src="img/outro.png"         class="category-icon-img" alt="" />`;
+// Categoria "Dentes" ainda sem PNG: usa SVG inline (silhueta preenchida)
+const IMG_DENTES   = `<svg class="category-icon category-icon-fill" viewBox="0 0 24 24"><path d="M12 2c-2.5 0-3.5 1.2-5 1.2C5 3.2 3 4.5 3 8c0 2.4.8 4.2 1.5 6.5.5 1.7.9 4 1.4 5.7.3 1.1.7 1.8 1.4 1.8.8 0 1.1-1 1.4-2.3.4-1.8.7-3.4 1.9-3.4s1.5 1.6 1.9 3.4c.3 1.3.6 2.3 1.4 2.3.7 0 1.1-.7 1.4-1.8.5-1.7.9-4 1.4-5.7C20.2 12.2 21 10.4 21 8c0-3.5-2-4.8-4-4.8-1.5 0-2.5-1.2-5-1.2z"/></svg>`;
 
 // SVGs mantidos: ícones sem PNG correspondente e ícones inline funcionais
 const SEARCH_SVG  = `<svg class="category-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
@@ -44,6 +46,7 @@ const CATEGORIAS = {
   alergia:  { label: 'Alergia',  icone: IMG_ALERGIA  },
   cirurgia: { label: 'Cirurgia', icone: IMG_CIRURGIA },
   consulta: { label: 'Consulta', icone: IMG_CONSULTA },
+  dentes:   { label: 'Dentes',   icone: IMG_DENTES   },
   doenca:   { label: 'Doença',   icone: IMG_DOENCA   },
   exames:   { label: 'Exames',   icone: IMG_EXAMES   },
   vacina:   { label: 'Vacina',   icone: IMG_VACINA   },
@@ -88,7 +91,7 @@ const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov'
 // Estado da timeline
 let filtroAtivo  = 'todos';
 let buscaAtiva   = '';
-let _tlModoCards = false;
+let _tlModoCards = true;
 let _resetFiltrosScroll = false; // ao entrar na aba, volta as chips ao início; senão preserva a rolagem
 
 // Estado da agenda
@@ -878,12 +881,9 @@ function renderizarTimeline() {
     <div>
       <div class="tl-header" style="margin-bottom:12px;">
         <h1 class="page-title">Histórico de Saúde</h1>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <button class="btn-ghost btn-sm" onclick="toggleTlModo()" title="${_tlModoCards ? 'Ver linha do tempo' : 'Ver como cartões'}" style="padding:7px 10px;">
-            ${ICON_EYE}
-          </button>
-          <button class="btn-secondary btn-sm" onclick="abrirFormEvento(null)">+ Novo</button>
-        </div>
+        <button class="btn-ghost btn-sm" onclick="toggleTlModo()" title="${_tlModoCards ? 'Ver linha do tempo' : 'Ver como cartões'}" style="padding:7px 10px;">
+          ${ICON_EYE}
+        </button>
       </div>
 
       <div class="search-box">
@@ -970,7 +970,7 @@ function renderizarTimeline() {
 
 function filtrarPorCategoria(cat) { filtroAtivo = cat; renderizarTimeline(); }
 function buscarEventos(txt)        { buscaAtiva  = txt; renderizarTimeline(); }
-function toggleTlModo()            { _tlModoCards = !_tlModoCards; renderizarTimeline(); }
+function toggleTlModo()            { _tlModoCards = !_tlModoCards; renderizarTimeline(); mostrarToast(_tlModoCards ? 'Visualização em cartões' : 'Linha do tempo', 'success'); }
 function buscarAgenda(txt)         { buscaAgendaAtiva = txt; renderizarAgenda(); }
 function filtrarPorTipoConsulta(t) { filtroTipoConsulta = t; renderizarAgenda(); }
 function limparFiltroData()        { alterarFiltroData('', ''); }
@@ -1195,7 +1195,6 @@ function renderizarAgendaLista() {
     <div>
       <div class="tl-header" style="margin-bottom:12px;">
         <h1 class="page-title">Agenda de Consultas</h1>
-        <button class="btn-secondary btn-sm" onclick="abrirFormConsulta(null)">+ Nova</button>
       </div>
 
       <div class="search-box">
