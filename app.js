@@ -89,6 +89,7 @@ const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov'
 let filtroAtivo  = 'todos';
 let buscaAtiva   = '';
 let _tlModoCards = false;
+let _resetFiltrosScroll = false; // ao entrar na aba, volta as chips ao início; senão preserva a rolagem
 
 // Estado da agenda
 let buscaAgendaAtiva = '';
@@ -351,7 +352,7 @@ function showView(nome) {
   if (navBtn) navBtn.classList.add('active');
 
   if (nome === 'home')       renderizarHome();
-  if (nome === 'timeline')   { _scrollHojeTimeline = true; renderizarTimeline(); }
+  if (nome === 'timeline')   { _scrollHojeTimeline = true; _resetFiltrosScroll = true; renderizarTimeline(); }
   if (nome === 'agenda')     renderizarAgenda();
   if (nome === 'calendario') { diaCalendarioAberto = null; renderizarAbaCalendario(); }
 
@@ -861,6 +862,15 @@ function renderizarTimeline() {
       </div>`;
   })();
 
+  // Preserva a rolagem horizontal das chips de filtro entre re-renderizações
+  // (ao trocar de filtro/visualização). Só zera ao entrar na aba.
+  let _filtrosScroll = 0;
+  if (!_resetFiltrosScroll) {
+    const _prevFiltros = container.querySelector('.timeline-filters');
+    if (_prevFiltros) _filtrosScroll = _prevFiltros.scrollLeft;
+  }
+  _resetFiltrosScroll = false;
+
   const ICON_CARDS = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="3" y="16" width="18" height="4" rx="1"/></svg>`;
   const ICON_TIMELINE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="3" x2="12" y2="21"/><polyline points="8 7 12 3 16 7"/><line x1="12" y1="8" x2="7" y2="11"/><line x1="12" y1="13" x2="17" y2="16"/></svg>`;
 
@@ -924,6 +934,12 @@ function renderizarTimeline() {
 
       ${todos.length > 0 ? `<div class="paginacao-fim">Fim do histórico · ${todos.length} evento${todos.length!==1?'s':''}</div>` : ''}
     </div>`;
+
+  // Restaura a rolagem horizontal das chips de filtro após o re-render
+  if (_filtrosScroll) {
+    const _novoFiltros = container.querySelector('.timeline-filters');
+    if (_novoFiltros) _novoFiltros.scrollLeft = _filtrosScroll;
+  }
 
   // Ao abrir a aba, posiciona a timeline na entrada mais próxima da data atual
   if (_scrollHojeTimeline) {
