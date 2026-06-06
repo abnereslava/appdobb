@@ -547,17 +547,51 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
 }
 
 /* ===== Visualização em cartões do histórico (toggle) ===== */
-.tl-cards { display: flex; flex-direction: column; gap: 20px; }
+
+/* Linha vertical contínua à esquerda */
+.tl-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: relative;
+  padding-left: 28px;
+}
+.tl-cards::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  background: var(--border);
+  border-radius: 1px;
+}
+
 .tl-cards-group { display: flex; flex-direction: column; gap: 8px; }
 
-/* Cabeçalho de data com destaque */
+/* Cabeçalho de data com bolinha sobre a linha */
 .tl-cards-date {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 2px 2px 8px;
+  padding: 2px 0;
   margin-bottom: 2px;
-  border-bottom: 2px solid var(--primary);
+}
+/* Bolinha sobre a linha vertical */
+.tl-cards-date::before {
+  content: '';
+  position: absolute;
+  left: -26px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: 3px solid var(--bg);
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 .tlc-date-dia { font-size: 28px; font-weight: 700; color: var(--primary); line-height: 1; }
 .tlc-date-resto { display: flex; flex-direction: column; gap: 1px; }
