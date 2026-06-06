@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bebe-shell-v3';
+const CACHE_NAME = 'bebe-shell-v7';
 
 const SHELL_FILES = [
   './',
@@ -11,19 +11,22 @@ const SHELL_FILES = [
   './firebase-config.js',
   './firestore-api.js',
   './manifest.json',
+  './img/logo.png',
+  './img/logo-180.png',
+  './img/logo-192.png',
+  './img/logo-512.png',
   './img/mamadeira.png',
   './img/brinquedo.png',
   './img/ursinhobem.png',
-  './img/ursinhodoente.png',
+  './img/termometro.png',
   './img/curativo.png',
   './img/cirurgia.png',
-  './img/hospital.png',
   './img/calendario.png',
   './img/agenda.png',
-  './img/remedios.png',
-  './img/termometro.png',
-  './img/relogio.png',
-  './img/caderneta.png',
+  './img/alergia.png',
+  './img/vacina.png',
+  './img/outro.png',
+  './img/hospital.png',
 ];
 
 self.addEventListener('install', event => {

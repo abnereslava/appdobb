@@ -2,7 +2,7 @@
 
 ## 1. Status geral
 
-Aprovado com ajustes pendentes (tarefas de UX e seguranca restantes)
+Aprovado
 
 ## 2. Resumo da implementacao
 
@@ -40,6 +40,14 @@ Dados de localStorage nao sao mais usados como armazenamento principal.
 - [x] Tarefa 10 — Reforcar e testar regras de seguranca (regras aplicadas e validadas)
 - [x] Tarefa 11 — Atualizar documentacao e revisao
 - [x] Tarefa 12 — Bloquear navegacao sem perfil cadastrado
+- [x] Tarefa 13 — Substituir emojis e icones SVG por imagens da pasta img/
+- [x] Tarefa 14 — Ajustes de estilo, responsividade e PWA
+- [x] Tarefa 15 — Correcoes do menu de navegacao inferior
+- [x] Tarefa 16 — Barra superior persistente com melhorias
+- [x] Tarefa 17 — Suporte a multiplos bebes por usuario
+- [x] Tarefa 18 — Espacamento igual entre botoes do menu inferior
+- [x] Tarefa 19 — Navegacao por swipe horizontal entre vistas (mobile)
+- [x] Tarefa 20 — Animacao de salto no botao Perfil ao bloquear navegacao
 
 ## 5. Testes realizados
 
@@ -47,7 +55,7 @@ Todos os fluxos confirmados funcionando pelo usuario.
 
 ## 6. Problemas encontrados
 
-Nenhum problema critico. Melhorias de UX pendentes nas tarefas 13 e 14.
+Nenhum problema critico. Todas as tarefas de UX (13 a 20) foram concluidas.
 
 ## 7. Alteracoes fora do escopo
 
@@ -58,14 +66,13 @@ Nenhum problema critico. Melhorias de UX pendentes nas tarefas 13 e 14.
 
 ## 8. Pendencias
 
-- Tarefa 13 — Substituir icones SVG por imagens PNG.
-- Tarefa 14 — Ajustes de estilo, dark mode, modais customizados e PWA.
-- Confirmar se havera backup/exportacao dos dados.
+- Nenhuma pendencia de implementacao. Todas as 20 tarefas estao concluidas.
+- [Aberto] Confirmar se havera backup/exportacao dos dados (decisao de produto, fora do escopo desta spec).
 
 ## 9. Recomendacoes
 
-Executar Tarefa 12 antes das tarefas visuais (13 e 14) para garantir que o fluxo de onboarding esteja correto.
+Nenhuma acao pendente nesta funcionalidade.
 
 ## 10. Conclusao
 
-A funcionalidade principal esta completa e funcionando em producao. Restam apenas melhorias de UX e visual.
+Funcionalidade completa e em producao, incluindo todas as melhorias de UX e visual (tarefas 13 a 20).

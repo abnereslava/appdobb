@@ -1,15 +1,15 @@
-# Sistema Atual: Linha do Tempo do Bebê
+# Sistema Atual: Dos tais
 
 ## 1. Visão geral
 
-O aplicativo "Linha do Tempo do Bebê" é uma PWA mobile-first que permite registrar e acompanhar a saúde de um bebê: perfil, histórico de eventos médicos, agenda de consultas e calendário visual. Os dados são armazenados no Firebase Firestore; a autenticação usa Firebase Auth. O app funciona com múltiplos perfis de bebê por conta.
+O aplicativo **"Dos tais"** é uma PWA mobile-first que permite registrar e acompanhar a saúde de um bebê: perfil, histórico de eventos médicos, agenda de consultas e calendário visual. Os dados são armazenados no Firebase Firestore com listeners em tempo real (`onSnapshot`); a autenticação usa Firebase Auth. O app funciona com múltiplos perfis de bebê por conta e sincroniza automaticamente entre dispositivos logados na mesma conta.
 
 ## 2. Público e objetivo
 
 Pais, mães ou responsáveis pelo bebê que desejam manter um histórico organizado de saúde, incluindo:
 
-- perfil completo do bebê (nascimento, alergias, peso, altura);
-- eventos de saúde categorizados (doenças, vacinas, cirurgias, etc.);
+- perfil completo do bebê (nascimento, alergias, doenças crônicas, peso, altura);
+- eventos de saúde categorizados (acidentes, alergias, cirurgias, consultas, doenças, exames, vacinas, outros);
 - agenda de consultas com contagem regressiva;
 - calendário mensal unificado de eventos e consultas;
 - exportação de consultas para apps de calendário externos.
@@ -27,21 +27,22 @@ Exibe, quando o perfil existe:
 - peso e altura;
 - informações de nascimento (via de parto, local, semanas de gestação, tipos sanguíneos, amamentação);
 - alergias agrupadas por tipo;
-- total gasto em eventos;
+- doenças crônicas;
 - últimos 3 eventos registrados.
 
-Sem perfil: tela de boas-vindas "Bem-vindo(a)!" com botão para criar.
+Sem perfil: tela de boas-vindas com botão para criar.
 
 ### Histórico de Saúde
 
 Linha do tempo ilustrada com:
 
-- paginação incremental (20 itens/vez via Firestore `limit/startAfter`);
-- scroll infinito automático via `IntersectionObserver`;
-- filtro por categoria (doença, acidente, alergia, consulta, vacina, cirurgia, outro);
+- dados carregados em tempo real via `onSnapshot` (sem paginação por cursor);
+- separadores visuais de mês/ano entre grupos de eventos;
+- botão flutuante "Hoje" (aparece ao rolar) que centraliza o item mais próximo da data atual;
+- filtro por categoria (acidente, alergia, cirurgia, consulta, doença, exames, vacina, outro);
 - busca por título, médico, hospital e observações;
-- filtro por intervalo de datas (compartilhado com a Agenda);
-- data de nascimento clicável no cabeçalho (redireciona ao Perfil);
+- filtro por intervalo de datas — aplicado em memória;
+- data de nascimento clicável no rodapé da timeline (redireciona ao Perfil);
 - validação de data mínima: eventos não podem ser registrados antes de 45 semanas antes do nascimento;
 - criação, edição e exclusão de eventos com formulário completo.
 
@@ -49,9 +50,9 @@ Linha do tempo ilustrada com:
 
 Lista de consultas dividida em Próximas e Histórico:
 
-- paginação incremental com scroll infinito;
+- dados em tempo real via `onSnapshot`;
 - busca por médico, local e tipo;
-- filtro por intervalo de datas (compartilhado com o Histórico);
+- filtro por intervalo de datas — aplicado em memória;
 - destaque para a próxima consulta;
 - contagem regressiva ("Hoje!", "Amanhã", "em X dias");
 - marcação como Realizada ou Cancelada;
@@ -59,7 +60,7 @@ Lista de consultas dividida em Próximas e Histórico:
 
 ### Calendário
 
-Aba dedicada na nav bar (após Agenda):
+Aba dedicada na nav bar:
 
 - grid mensal com 7 colunas;
 - marcadores por tipo: ponto na cor primária = consulta, ponto âmbar = evento de saúde;
@@ -72,9 +73,9 @@ Aba dedicada na nav bar (após Agenda):
 
 ## 4. Navegação
 
-Barra inferior fixa com 5 itens: **Perfil · + · Histórico · Agenda · Calendário**
+Barra inferior fixa com 5 itens: **Perfil · Histórico · Agenda · Calendário · +**
 
-- O botão "+" abre menu rápido para criar evento ou consulta.
+- O botão "+" fica no canto direito e abre menu rápido para criar evento ou consulta.
 - Swipe horizontal entre abas com animação de slide (entrada da direita/esquerda conforme direção).
 - Abas Histórico, Agenda e Calendário ficam desabilitadas visualmente enquanto não há perfil criado.
 
@@ -117,14 +118,16 @@ Não há sincronização bidirecional com Google Calendar (escopo de feature fut
 | `profiles/{profileId}/consultations/{id}` | consulta | todos os campos da consulta |
 | `accessIndex/{email}` | acesso do usuário | `profileIds`, `role`, `permissions` |
 
-Queries de listagem usam `orderBy('data', 'desc')` com `limit(20)` e `startAfter` para paginação eficiente.
+**Estratégia de leitura:** listeners `onSnapshot` ficam ativos durante toda a sessão do perfil ativo. A troca de aba não dispara nenhuma leitura ao Firestore — os dados são servidos do cache em memória. Alterações feitas por outro dispositivo chegam automaticamente via listener.
+
+**Persistência entre sessões:** `persistentLocalCache` (IndexedDB) armazena os dados localmente; ao reabrir o app, o Firestore busca apenas os deltas desde o último acesso.
 
 ## 9. PWA e Service Worker
 
-- Manifest com ícones e `display: standalone`.
-- Service Worker em `sw.js` (cache `bebe-shell-v2`):
+- Manifest com ícones (`logo-192.png`, `logo-512.png`) e `display: standalone`. `start_url: "./"` garante compatibilidade com hospedagem em subdiretório (GitHub Pages).
+- Service Worker em `sw.js` (cache `bebe-shell-v7`):
   - **Estratégia: Network-first** — sempre tenta a rede; fallback para cache offline.
-  - Shell files (HTML, CSS, JS, imagens) são pré-cacheados no `install`.
+  - Shell files (HTML, CSS, JS, imagens) são pré-cacheados com caminhos **relativos** (`./`) no `install`.
   - Requisições externas (Firebase, CDN) não são interceptadas.
 
 ## 10. Arquivos principais
@@ -133,11 +136,11 @@ Queries de listagem usam `orderBy('data', 'desc')` com `limit(20)` e `startAfter
 |---|---|
 | `index.html` | Estrutura HTML, todas as views, modais, formulários, nav bar |
 | `style.css` | Temas (beige/menino/menina/dark+gênero), layout, componentes |
-| `app.js` | Toda a lógica: auth state, renderização, paginação, exportação, swipe, temas |
+| `app.js` | Toda a lógica: auth state, cache onSnapshot, renderização, exportação, swipe, temas |
 | `auth.js` | Firebase Auth, controle de acesso, inicialização de sessão |
-| `firestore-api.js` | Abstração do Firestore (`window._db`), queries paginadas |
-| `firebase-config.js` | Configuração do projeto Firebase |
-| `sw.js` | Service Worker PWA (network-first) |
+| `firestore-api.js` | Abstração do Firestore (`window._db`): operações de escrita e listeners onSnapshot |
+| `firebase-config.js` | Configuração do projeto Firebase (com `persistentLocalCache`) |
+| `sw.js` | Service Worker PWA (network-first, cache v7) |
 | `admin.html` / `admin.js` | Painel de gerenciamento de acessos (role: admin) |
 
 ## 11. Specs de funcionalidades implementadas
@@ -146,14 +149,14 @@ Queries de listagem usam `orderBy('data', 'desc')` com `limit(20)` e `startAfter
 |---|---|
 | Autenticação Firebase + admin | `specs/firebase-auth-admin/` |
 | Data de nascimento no Histórico + restrição de data | `specs/historico-restricao-nascimento/` |
-| Filtro por data + paginação incremental | `specs/filtro-por-data-paginacao/` |
+| Filtro por data | `specs/filtro-por-data-paginacao/` |
 | Exportação .ics e Google Agenda | `specs/exportar-calendario/` |
 | Aba dedicada de Calendário | `specs/aba-calendario/` |
+| Integração Google Calendar (planejado) | `specs/google-calendar-sync/` |
 
 ## 12. Limitações e riscos
 
 - Sem criptografia dos dados no Firestore além das regras de segurança.
-- Filtro por texto (busca) não é server-side: combina paginação Firestore com filtragem local, o que pode fazer o "Carregar mais" parecer vazio com buscas muito específicas.
-- Calendário carrega todos os eventos/consultas do mês sem paginação (aceitável pelo volume mensal esperado).
+- Filtro por texto (busca) é client-side: aplicado sobre os dados já em memória.
 - Sem testes automatizados; validação manual obrigatória.
 - Sem política de privacidade ou aviso sobre dados sensíveis de saúde.

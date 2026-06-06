@@ -20,38 +20,41 @@ const IMG_BRINQUEDO    = `<img src="img/brinquedo.png"    class="img-icon-ilustr
 const IMG_URSINHOBEM   = `<img src="img/ursinhobem.png"   class="img-icon-ilustracao" alt="" />`;
 const IMG_AGENDA       = `<img src="img/agenda.png"       class="img-icon-ilustracao" alt="" />`;
 
-// Ícones de categoria → PNG onde há correspondência, SVG nos demais
-const IMG_DOENCA   = `<img src="img/ursinhodoente.png" class="category-icon-img" alt="" />`;
+// Ícones de categoria → imagens PNG
+const IMG_DOENCA   = `<img src="img/termometro.png"    class="category-icon-img" alt="" />`;
 const IMG_ACIDENTE = `<img src="img/curativo.png"      class="category-icon-img" alt="" />`;
 const IMG_CONSULTA = `<img src="img/calendario.png"    class="category-icon-img" alt="" />`;
 const IMG_CIRURGIA = `<img src="img/cirurgia.png"      class="category-icon-img" alt="" />`;
-const IMG_REMEDIOS = `<img src="img/remedios.png"      class="category-icon-img" alt="" />`;
+const IMG_ALERGIA  = `<img src="img/alergia.png"       class="category-icon-img" alt="" />`;
+const IMG_VACINA   = `<img src="img/vacina.png"        class="category-icon-img" alt="" />`;
+const IMG_EXAMES   = `<img src="img/hospital.png"      class="category-icon-img" alt="" />`;
+const IMG_OUTRO    = `<img src="img/outro.png"         class="category-icon-img" alt="" />`;
 
 // SVGs mantidos: ícones sem PNG correspondente e ícones inline funcionais
 const SEARCH_SVG  = `<svg class="category-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
 const CLOCK_SVG   = `<svg class="inline-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
 const WARNING_SVG = `<svg class="inline-icon" viewBox="0 0 24 24" style="color: #c0392b; margin-right: 4px;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+const PULSE_SVG   = `<svg class="inline-icon" viewBox="0 0 24 24" style="color: #3a7fd4; margin-right: 4px;"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>`;
 const MALE_SVG    = `<svg class="inline-icon" viewBox="0 0 24 24" style="margin-right: 4px; color: #2a62a0;"><circle cx="10" cy="14" r="5"/><path d="M14 10L19 5"/><path d="M14 5h5v5"/></svg>`;
 const FEMALE_SVG  = `<svg class="inline-icon" viewBox="0 0 24 24" style="margin-right: 4px; color: #a03458;"><circle cx="12" cy="9" r="5"/><path d="M12 14v7"/><path d="M9 18h6"/></svg>`;
-const ALERGIA_SVG = `<svg class="category-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v7M12 15v7M2 12h7M15 12h7M5.6 5.6l4.9 4.9M13.5 13.5l4.9 4.9M18.4 5.6l-4.9 4.9M10.5 13.5l-4.9 4.9"/></svg>`;
-const VACINA_SVG  = `<svg class="category-icon" viewBox="0 0 24 24"><path d="m21 3-3 3M18 2l4 4M14 8l-8.5 8.5L3 19l2.5-2.5L14 8zM12 6l4 4M8.5 9.5l3 3M6 12l3 3M3 21l-1 1"/></svg>`;
-const OUTRO_SVG   = `<svg class="category-icon" viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>`;
+const NASCIMENTO_SVG = `<svg class="category-icon" viewBox="0 0 24 24"><path d="M12 2l2.39 4.84 5.34.78-3.86 3.77.91 5.32L12 14.98 7.22 16.5l.91-5.32L4.27 7.62l5.34-.78z"/></svg>`;
 
 const CATEGORIAS = {
-  doenca:   { label: 'Doença',   icone: IMG_DOENCA   },
   acidente: { label: 'Acidente', icone: IMG_ACIDENTE },
-  alergia:  { label: 'Alergia',  icone: ALERGIA_SVG  },
-  consulta: { label: 'Consulta', icone: IMG_CONSULTA },
-  vacina:   { label: 'Vacina',   icone: VACINA_SVG   },
+  alergia:  { label: 'Alergia',  icone: IMG_ALERGIA  },
   cirurgia: { label: 'Cirurgia', icone: IMG_CIRURGIA },
-  outro:    { label: 'Outro',    icone: OUTRO_SVG    },
+  consulta: { label: 'Consulta', icone: IMG_CONSULTA },
+  doenca:   { label: 'Doença',   icone: IMG_DOENCA   },
+  exames:   { label: 'Exames',   icone: IMG_EXAMES   },
+  vacina:   { label: 'Vacina',   icone: IMG_VACINA   },
+  outro:    { label: 'Outro',    icone: IMG_OUTRO    },
 };
 
 const TIPOS_CONSULTA = {
   rotina:      'Consulta de Rotina',
   especialista:'Especialista',
-  retorno:     'Retorno',
   exame:       'Exame',
+  retorno:     'Retorno',
   urgencia:    'Urgência',
   outro:       'Outro',
 };
@@ -88,6 +91,7 @@ let buscaAtiva   = '';
 
 // Estado da agenda
 let buscaAgendaAtiva = '';
+let filtroTipoConsulta = 'todos';
 let modoAgenda          = localStorage.getItem('modo-agenda') || 'lista';
 let mesCalendarioAtivo  = { ano: new Date().getFullYear(), mes: new Date().getMonth() };
 let diaCalendarioAberto = null;
@@ -121,24 +125,26 @@ let profileIds      = [];     // todos os profileIds do usuário
 // true após confirmar que o perfil do bebê ativo existe no Firestore
 let temPerfil = false;
 
+// Cache em memória alimentado pelos listeners onSnapshot
+let _perfilCache    = null;
+let _unsubPerfil    = null;
+let _unsubEventos   = null;
+let _unsubConsultas = null;
+let _cacheReady     = false;
+
 // Estado dos formulários
 let medicamentosTemp = [];
 let alergiasTemp     = [];
+let doencasCronicasTemp = [];
 
 
 /* ================================================
    2. DADOS
    ================================================ */
 
-// Perfil — Firestore (assíncrono)
-async function carregarPerfil() {
-  if (!profileIdAtivo || !window._db) return null;
-  try {
-    return await window._db.carregarPerfil(profileIdAtivo);
-  } catch (e) {
-    console.error('Erro ao carregar perfil:', e);
-    return null;
-  }
+// Perfil — lê do cache em memória (alimentado por onSnapshot)
+function carregarPerfil() {
+  return _perfilCache;
 }
 
 async function gravarPerfil(p) {
@@ -146,15 +152,9 @@ async function gravarPerfil(p) {
   await window._db.gravarPerfil(profileIdAtivo, p, usuarioAtual?.uid || null);
 }
 
-// Eventos — Firestore (assíncrono)
-async function carregarEventos() {
-  if (!profileIdAtivo || !window._db) return [];
-  try {
-    return await window._db.listarEventos(profileIdAtivo);
-  } catch (e) {
-    console.error('Erro ao carregar eventos:', e);
-    return [];
-  }
+// Eventos — lê do cache em memória
+function carregarEventos() {
+  return eventosCache;
 }
 
 async function gravarEvento(ev, ehNovo) {
@@ -167,15 +167,9 @@ async function excluirEvento(id) {
   await window._db.excluirEvento(profileIdAtivo, id);
 }
 
-// Consultas — Firestore (assíncrono)
-async function carregarConsultas() {
-  if (!profileIdAtivo || !window._db) return [];
-  try {
-    return await window._db.listarConsultas(profileIdAtivo);
-  } catch (e) {
-    console.error('Erro ao carregar consultas:', e);
-    return [];
-  }
+// Consultas — lê do cache em memória
+function carregarConsultas() {
+  return consultasCache;
 }
 
 async function gravarConsulta(c, ehNova) {
@@ -203,10 +197,8 @@ async function _carregarPaginaEventos() {
   eventosCarregando = false;
 }
 
-async function resetarERecarregarEventos() {
+function resetarERecarregarEventos() {
   if (_observerTimeline) { _observerTimeline.disconnect(); _observerTimeline = null; }
-  eventosCache = []; eventosCursor = null; eventosEsgotado = false;
-  await _carregarPaginaEventos();
   renderizarTimeline();
 }
 
@@ -230,10 +222,8 @@ async function _carregarPaginaConsultas() {
   consultasCarregando = false;
 }
 
-async function resetarERecarregarConsultas() {
+function resetarERecarregarConsultas() {
   if (_observerAgenda) { _observerAgenda.disconnect(); _observerAgenda = null; }
-  consultasCache = []; consultasCursor = null; consultasEsgotado = false;
-  await _carregarPaginaConsultas();
   renderizarAgenda();
 }
 
@@ -250,6 +240,68 @@ function alterarFiltroData(inicio, fim) {
 }
 
 function gerarId() { return Date.now().toString(36) + Math.random().toString(36).substr(2,5); }
+
+function _unsubscribeAll() {
+  if (_unsubPerfil)    { _unsubPerfil();    _unsubPerfil    = null; }
+  if (_unsubEventos)   { _unsubEventos();   _unsubEventos   = null; }
+  if (_unsubConsultas) { _unsubConsultas(); _unsubConsultas = null; }
+  _perfilCache    = null;
+  eventosCache    = [];
+  consultasCache  = [];
+  eventosCursor   = null; eventosEsgotado  = false;
+  consultasCursor = null; consultasEsgotado = false;
+  _cacheReady     = false;
+}
+
+function subscribeAoPerfilAtivo(profileId) {
+  if (!profileId || !window._db) return;
+  _unsubscribeAll();
+
+  let _perfilPronto = false, _eventosPronto = false, _consultasPronto = false;
+
+  function _aoCarregarTudo() {
+    if (!_perfilPronto || !_eventosPronto || !_consultasPronto) return;
+    _cacheReady = true;
+    eventosEsgotado   = true;
+    consultasEsgotado = true;
+    const v = document.querySelector('.view.active');
+    if      (v?.id === 'view-timeline')   renderizarTimeline();
+    else if (v?.id === 'view-agenda')     renderizarAgenda();
+    else if (v?.id === 'view-calendario') renderizarAbaCalendario();
+    else                                  renderizarHome();
+  }
+
+  _unsubPerfil = window._db.subscribePerfil(profileId, perfil => {
+    _perfilCache = perfil;
+    temPerfil = !!(perfil && perfil.nomeCompleto);
+    atualizarNavSemPerfil();
+    if (!_perfilPronto) { _perfilPronto = true; _aoCarregarTudo(); return; }
+    if (!_cacheReady) return;
+    const v = document.querySelector('.view.active');
+    if (v?.id === 'view-home') renderizarHome();
+  });
+
+  _unsubEventos = window._db.subscribeEventos(profileId, eventos => {
+    eventosCache = eventos.sort((a, b) => b.data.localeCompare(a.data));
+    eventosEsgotado = true;
+    if (!_eventosPronto) { _eventosPronto = true; _aoCarregarTudo(); return; }
+    if (!_cacheReady) return;
+    const v = document.querySelector('.view.active');
+    if (v?.id === 'view-timeline')   renderizarTimeline();
+    if (v?.id === 'view-calendario') renderizarAbaCalendario();
+    if (v?.id === 'view-home')       renderizarHome();
+  });
+
+  _unsubConsultas = window._db.subscribeConsultas(profileId, consultas => {
+    consultasCache = consultas;
+    consultasEsgotado = true;
+    if (!_consultasPronto) { _consultasPronto = true; _aoCarregarTudo(); return; }
+    if (!_cacheReady) return;
+    const v = document.querySelector('.view.active');
+    if (v?.id === 'view-agenda')     renderizarAgenda();
+    if (v?.id === 'view-calendario') renderizarAbaCalendario();
+  });
+}
 
 
 /* ================================================
@@ -298,12 +350,15 @@ function showView(nome) {
   if (navBtn) navBtn.classList.add('active');
 
   if (nome === 'home')       renderizarHome();
-  if (nome === 'timeline')   resetarERecarregarEventos();
-  if (nome === 'agenda')     resetarERecarregarConsultas();
+  if (nome === 'timeline')   { _scrollHojeTimeline = true; renderizarTimeline(); }
+  if (nome === 'agenda')     renderizarAgenda();
   if (nome === 'calendario') { diaCalendarioAberto = null; renderizarAbaCalendario(); }
+
+  window.scrollTo(0, 0);
+  atualizarBotaoTopo();
 }
 
-function abrirModal(id)  { const m = document.getElementById(id); if (m) m.classList.add('open');    document.body.style.overflow = 'hidden'; }
+function abrirModal(id)  { const m = document.getElementById(id); if (m) { m.classList.add('open'); const b = m.querySelector('.modal-body'); if (b) b.scrollTop = 0; } document.body.style.overflow = 'hidden'; }
 function fecharModal(id) { const m = document.getElementById(id); if (m) m.classList.remove('open'); document.body.style.overflow = ''; }
 
 // Modal de confirmação customizado — substitui confirm() nativo
@@ -368,15 +423,18 @@ document.addEventListener('keydown', e => {
    5. TELA DE PERFIL (HOME)
    ================================================ */
 
-async function renderizarHome() {
+function renderizarHome() {
   const container = document.getElementById('view-home');
-  container.innerHTML = `<div class="carregando-view"><div class="login-spinner"></div></div>`;
+  if (!_cacheReady) {
+    container.innerHTML = `<div class="carregando-view"><div class="login-spinner"></div></div>`;
+    return;
+  }
 
-  const perfil  = await carregarPerfil();
+  const perfil  = carregarPerfil();
   temPerfil = !!(perfil && perfil.nomeCompleto);
   atualizarNavSemPerfil();
 
-  const eventos = await carregarEventos();
+  const eventos = carregarEventos();
 
   if (!perfil || !perfil.nomeCompleto) {
     atualizarNomeBebe('');
@@ -392,16 +450,16 @@ async function renderizarHome() {
 
   aplicarTema(perfil.sexo);
 
-  const totalEventos = eventos.length;
-  const totalGasto   = eventos.reduce((s, e) => s + (parseFloat(e.custo) || 0), 0);
-  const contagens    = {};
-  eventos.forEach(e => { contagens[e.categoria] = (contagens[e.categoria] || 0) + 1; });
-
   const avatarHTML = perfil.fotoUrl
     ? `<img src="${esc(perfil.fotoUrl)}" alt="${esc(perfil.nomeCompleto)}" onerror="this.style.display='none'" />`
     : `<img src="img/mamadeira.png" alt="" style="width:56px;height:56px;object-fit:contain;" />`;
 
-  const generoBadge = perfil.sexo ? `<span class="profile-gender-badge">${perfil.sexo === 'menino' ? `${MALE_SVG} Menino` : `${FEMALE_SVG} Menina`}</span>` : '';
+  const idadeTxt  = calcularIdade(perfil.dataNascimento);
+  const sexoTxt   = perfil.sexo === 'menino' ? 'Masculino' : 'Feminino';
+  const sexoIcon  = perfil.sexo === 'menino' ? MALE_SVG : FEMALE_SVG;
+  const generoIdadeBadge = perfil.sexo
+    ? `<span class="profile-gender-badge">${sexoIcon}${sexoTxt} <span class="profile-badge-sep">|</span> ${idadeTxt}</span>`
+    : `<span class="profile-age">${idadeTxt}</span>`;
   const prematuro   = perfil.semanasGestacao && parseInt(perfil.semanasGestacao) < 37;
   const premHTML    = prematuro ? `<span class="badge-prematuro">Prematuro · ${perfil.semanasGestacao}sem</span>` : '';
 
@@ -435,8 +493,9 @@ async function renderizarHome() {
         </button>
         <div class="profile-avatar">${avatarHTML}</div>
         <div class="profile-name">${esc(perfil.nomeCompleto)}</div>
-        <div class="profile-age">${calcularIdade(perfil.dataNascimento)}</div>
-        ${generoBadge}${premHTML}
+        <div class="profile-age-genero">
+          ${generoIdadeBadge}${premHTML}
+        </div>
         <div class="profile-stats" style="margin-top:14px;">${statsHTML.join('')}</div>
       </div>
 
@@ -447,18 +506,28 @@ async function renderizarHome() {
       </div>` : ''}
 
       <!-- Alergias -->
-      <div class="alergias-section" style="margin-bottom:12px;">
-        <div class="section-title" style="font-size:14px;margin-bottom:8px;display:flex;align-items:center;gap:4px;">${WARNING_SVG} Alergias</div>
+      <div class="health-section health-section--alergias" style="margin-bottom:12px;">
+        <div class="health-section-head">
+          <span class="health-section-icon">${WARNING_SVG}</span>
+          <span class="health-section-title">Alergias</span>
+          ${(perfil.alergias||[]).length ? `<span class="health-section-count">${perfil.alergias.length}</span>` : ''}
+        </div>
         ${(perfil.alergias||[]).length === 0
-          ? '<p class="no-allergies">Nenhuma alergia registrada</p>'
-          : renderizarAlergiasAgrupadas(perfil.alergias)}
+          ? '<p class="health-empty">Nenhuma alergia registrada</p>'
+          : renderizarAlergiasLista(perfil.alergias)}
       </div>
 
-      ${totalEventos > 0 ? `
-      <div class="stats-grid" style="margin-bottom:12px;">
-        <div class="stat-card accent"><div class="stat-value">${totalEventos}</div><div class="stat-label">Eventos</div></div>
-        <div class="stat-card"><div class="stat-value" style="font-size:18px;">${formatarDinheiro(totalGasto)}</div><div class="stat-label">Total gasto</div></div>
-      </div>` : ''}
+      <!-- Doenças crônicas -->
+      <div class="health-section health-section--doencas" style="margin-bottom:12px;">
+        <div class="health-section-head">
+          <span class="health-section-icon">${PULSE_SVG}</span>
+          <span class="health-section-title">Doenças crônicas</span>
+          ${(perfil.doencasCronicas||[]).length ? `<span class="health-section-count">${perfil.doencasCronicas.length}</span>` : ''}
+        </div>
+        ${(perfil.doencasCronicas||[]).length === 0
+          ? '<p class="health-empty">Nenhuma doença crônica registrada</p>'
+          : renderizarDoencasLista(perfil.doencasCronicas)}
+      </div>
 
       ${recentes.length ? `
       <div style="margin-bottom:16px;">
@@ -482,14 +551,25 @@ async function renderizarHome() {
     </div>`;
 }
 
-function renderizarAlergiasAgrupadas(alergias) {
-  const grupos = {};
-  alergias.forEach(a => { if (!grupos[a.tipo]) grupos[a.tipo]=[]; grupos[a.tipo].push(a); });
-  return Object.entries(grupos).map(([tipo, lista]) => `
-    <div>
-      <div class="allergy-type-label">${TIPOS_ALERGIA[tipo] || tipo}</div>
-      <div>${lista.map(a => `<span class="allergy-tag">${esc(a.descricao)}${a.severidade ? `<span class="allergy-severity">(${SEVERIDADES[a.severidade]||a.severidade})</span>` : ''}</span>`).join('')}</div>
-    </div>`).join('');
+function renderizarAlergiasLista(alergias) {
+  return `<div class="health-list">${alergias.map(a => `
+    <div class="health-row">
+      <div class="health-row-main">
+        <span class="health-row-name">${esc(a.descricao)}</span>
+        ${a.tipo ? `<span class="health-row-sub">${TIPOS_ALERGIA[a.tipo] || a.tipo}</span>` : ''}
+      </div>
+      ${a.severidade ? `<span class="severity-chip severity-${a.severidade}">${SEVERIDADES[a.severidade]||a.severidade}</span>` : ''}
+    </div>`).join('')}</div>`;
+}
+
+function renderizarDoencasLista(doencas) {
+  return `<div class="health-list">${doencas.map(d => `
+    <div class="health-row">
+      <div class="health-row-main">
+        <span class="health-row-name">${esc(d.descricao)}</span>
+        ${d.observacao ? `<span class="health-row-sub">${esc(d.observacao)}</span>` : ''}
+      </div>
+    </div>`).join('')}</div>`;
 }
 
 
@@ -498,7 +578,7 @@ function renderizarAlergiasAgrupadas(alergias) {
    ================================================ */
 
 async function abrirFormPerfil() {
-  const p = (await carregarPerfil()) || {};
+  const p = carregarPerfil() || {};
   set('perfil-nome', p.nomeCompleto || '');
   set('perfil-nascimento', p.dataNascimento || '');
   set('perfil-semanas', p.semanasGestacao || '');
@@ -530,6 +610,8 @@ async function abrirFormPerfil() {
 
   alergiasTemp = JSON.parse(JSON.stringify(p.alergias || []));
   renderizarAlergiasForm();
+  doencasCronicasTemp = JSON.parse(JSON.stringify(p.doencasCronicas || []));
+  renderizarDoencasForm();
   abrirModal('modal-perfil');
 }
 
@@ -595,6 +677,32 @@ function adicionarAlergia() {
 function removerAlergia(i)           { alergiasTemp.splice(i, 1); renderizarAlergiasForm(); }
 function atualizarAlergia(i, k, v)   { if (alergiasTemp[i]) alergiasTemp[i][k] = v; }
 
+function renderizarDoencasForm() {
+  const c = document.getElementById('lista-doencas-form');
+  if (!c) return;
+  c.innerHTML = doencasCronicasTemp.length === 0
+    ? '<p style="font-size:13px;color:var(--text-muted);margin-bottom:10px;">Nenhuma doença crônica cadastrada.</p>'
+    : doencasCronicasTemp.map((d, i) => `
+      <div class="allergy-form-item">
+        <button type="button" class="remove-btn" onclick="removerDoenca(${i})">&times;</button>
+        <div class="form-group" style="margin-bottom:8px;">
+          <label class="form-label">Doença</label>
+          <input class="form-input" style="font-size:13px;" type="text" value="${esc(d.descricao||'')}" placeholder="Ex: Asma, Diabetes tipo 1..." oninput="atualizarDoenca(${i},'descricao',this.value)" />
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Observação (opcional)</label>
+          <input class="form-input" style="font-size:13px;" type="text" value="${esc(d.observacao||'')}" placeholder="Ex: Uso contínuo de bombinha..." oninput="atualizarDoenca(${i},'observacao',this.value)" />
+        </div>
+      </div>`).join('');
+}
+
+function adicionarDoenca() {
+  doencasCronicasTemp.push({ id: gerarId(), descricao: '', observacao: '' });
+  renderizarDoencasForm();
+}
+function removerDoenca(i)           { doencasCronicasTemp.splice(i, 1); renderizarDoencasForm(); }
+function atualizarDoenca(i, k, v)   { if (doencasCronicasTemp[i]) doencasCronicasTemp[i][k] = v; }
+
 async function salvarPerfil(event) {
   event.preventDefault();
   const nome  = document.getElementById('perfil-nome').value.trim();
@@ -618,6 +726,7 @@ async function salvarPerfil(event) {
     altura:           document.getElementById('perfil-altura').value || null,
     fotoUrl:          document.getElementById('perfil-foto').value.trim() || null,
     alergias:         alergiasTemp.filter(a => a.descricao.trim()),
+    doencasCronicas:  doencasCronicasTemp.filter(d => d.descricao.trim()),
   };
   try {
     await gravarPerfil(perfil);
@@ -639,14 +748,20 @@ async function salvarPerfil(event) {
    7. LINHA DO TEMPO ILUSTRADA
    ================================================ */
 
-async function renderizarTimeline() {
+function renderizarTimeline() {
   const container = document.getElementById('view-timeline');
   if (_observerTimeline) { _observerTimeline.disconnect(); _observerTimeline = null; }
+  if (!_cacheReady) {
+    container.innerHTML = `<div class="carregando-view"><div class="login-spinner"></div></div>`;
+    return;
+  }
 
   const todos  = eventosCache;
-  const perfil = await carregarPerfil();
+  const perfil = carregarPerfil();
 
   let lista = filtroAtivo === 'todos' ? todos : todos.filter(e => e.categoria === filtroAtivo);
+  if (filtroDataInicio) lista = lista.filter(e => e.data >= filtroDataInicio);
+  if (filtroDataFim)    lista = lista.filter(e => e.data <= filtroDataFim);
   if (buscaAtiva.trim()) {
     const b = buscaAtiva.toLowerCase();
     lista = lista.filter(e =>
@@ -660,53 +775,98 @@ async function renderizarTimeline() {
     { valor:'todos', label:`Todos (${todos.length}${!eventosEsgotado?'+':''})` },
     ...Object.entries(CATEGORIAS)
       .filter(([v]) => todos.some(e => e.categoria === v))
-      .map(([v,c]) => ({ valor:v, label:`${c.icone} ${c.label} (${todos.filter(e=>e.categoria===v).length})` }))
+      .map(([v,c]) => ({ valor:v, label:`${c.label} (${todos.filter(e=>e.categoria===v).length})` }))
   ];
 
-  const itensHTML = lista.map((evento, idx) => {
-    const cat  = CATEGORIAS[evento.categoria] || CATEGORIAS.outro;
-    const lado = idx % 2 === 0 ? 'tl-esquerda' : 'tl-direita';
-    const dataFmt = formatarDataCurta(evento.data);
-    const meta    = [evento.medico, evento.hospital].filter(Boolean).join(' · ');
-    const cartao  = `
-      <div class="tl-card" onclick="abrirDetalheEvento('${evento.id}')">
-        <span class="tl-card-category badge-${evento.categoria}">${cat.label}</span>
-        <div class="tl-card-title">${esc(evento.titulo)}</div>
-        ${meta ? `<div class="tl-card-meta">${esc(meta)}</div>` : ''}
-      </div>`;
-    const dataBolha = `
-      <div class="tl-date-bubble tl-bubble-${evento.categoria}" onclick="abrirDetalheEvento('${evento.id}')">
-        ${dataFmt}
-      </div>`;
-    return `
-      <div class="tl-item ${lado}">
-        <div class="tl-content">${cartao}</div>
-        <div class="tl-center">
-          <div class="tl-dot tl-dot-${evento.categoria}" onclick="abrirDetalheEvento('${evento.id}')" title="${esc(evento.titulo)}">
-            ${cat.icone}
-          </div>
-        </div>
-        <div class="tl-date-side">${dataBolha}</div>
+  // Separador discreto de mês/ano (inserido quando o mês muda ao descer a timeline)
+  const MESES_EXT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  let _mesAnoTL = null;
+  const sepMesAno = dataStr => {
+    const [ano, mes] = dataStr.split('-');
+    const chave = `${ano}-${mes}`;
+    if (chave === _mesAnoTL) return '';
+    _mesAnoTL = chave;
+    return `<div class="tl-mes-sep"><span>${MESES_EXT[parseInt(mes,10)-1]} ${ano}</span></div>`;
+  };
+
+  // Agrupa eventos por dia (lista já ordenada por data desc).
+  // Dias com vários lançamentos: data única de um lado, cartões empilhados do outro.
+  const grupos = [];
+  lista.forEach(ev => {
+    const ultimo = grupos[grupos.length - 1];
+    if (ultimo && ultimo.data === ev.data) ultimo.eventos.push(ev);
+    else grupos.push({ data: ev.data, eventos: [ev] });
+  });
+
+  const itensHTML = grupos.map((grupo, gIdx) => {
+    const lado    = gIdx % 2 === 0 ? 'tl-esquerda' : 'tl-direita';
+    const n       = grupo.eventos.length;
+    const dataFmt = formatarDataCurta(grupo.data);
+
+    const cards = grupo.eventos.map((evento, i) => {
+      const cat  = CATEGORIAS[evento.categoria] || CATEGORIAS.outro;
+      const meta = [evento.medico, evento.hospital].filter(Boolean).join(' · ');
+      return `
+        <div class="tl-card" style="grid-row:${i+1}" onclick="abrirDetalheEvento('${evento.id}')">
+          <span class="tl-card-category badge-${evento.categoria}">${cat.label}</span>
+          <div class="tl-card-title">${esc(evento.titulo)}</div>
+          ${meta ? `<div class="tl-card-meta">${esc(meta)}</div>` : ''}
+        </div>`;
+    }).join('');
+
+    const dots = grupo.eventos.map((evento, i) => {
+      const cat = CATEGORIAS[evento.categoria] || CATEGORIAS.outro;
+      return `<div class="tl-dot tl-dot-${evento.categoria}" style="grid-row:${i+1}" onclick="abrirDetalheEvento('${evento.id}')" title="${esc(evento.titulo)}">${cat.icone}</div>`;
+    }).join('');
+
+    // Cor da bolha: cor da categoria quando o dia é de um único tipo; neutra quando misto.
+    const cats     = [...new Set(grupo.eventos.map(e => e.categoria))];
+    const bolhaCls = cats.length === 1 ? `tl-bubble-${cats[0]}` : 'tl-bubble-multi';
+    const dataBolha = `<div class="tl-date-bubble ${bolhaCls}" style="grid-row:1 / span ${n}">${dataFmt}</div>`;
+
+    return sepMesAno(grupo.data) + `
+      <div class="tl-item tl-group ${lado}" data-data="${grupo.data}">
+        ${cards}
+        ${dots}
+        ${dataBolha}
       </div>`;
   }).join('');
-
-  const nascLabel = perfil?.dataNascimento
-    ? (perfil.sexo === 'menino' ? 'Nascido em' : perfil.sexo === 'menina' ? 'Nascida em' : 'Nascido(a) em')
-    : null;
-  const nascFmt = nascLabel
-    ? (() => { const [a,m,d] = perfil.dataNascimento.split('-'); return `${d}/${m}/${a}`; })()
-    : null;
 
   const filtroDataAtivo = filtroDataInicio || filtroDataFim;
   const fmtD = s => s ? s.split('-').reverse().join('/') : '';
 
+  // Card de nascimento — marca, na própria timeline, quando o paciente nasceu.
+  // Como nenhum evento pode ser anterior ao nascimento, ele entra no fim da lista
+  // (e só quando todos os eventos já foram carregados, garantindo a posição correta).
+  const dataNasc = perfil?.dataNascimento || null;
+  const mostrarNascimento = !!dataNasc
+    && filtroAtivo === 'todos'
+    && !buscaAtiva.trim()
+    && eventosEsgotado
+    && (!filtroDataInicio || dataNasc >= filtroDataInicio)
+    && (!filtroDataFim    || dataNasc <= filtroDataFim);
+
+  const nascCardHTML = !mostrarNascimento ? '' : (() => {
+    const lado = grupos.length % 2 === 0 ? 'tl-esquerda' : 'tl-direita';
+    const dataFmt = formatarDataCurta(dataNasc);
+    return sepMesAno(dataNasc) + `
+      <div class="tl-item tl-group ${lado}" data-data="${dataNasc}">
+        <div class="tl-card tl-card-nascimento" style="grid-row:1" onclick="showView('home')">
+          <span class="tl-card-category badge-nascimento">Nascimento</span>
+          <div class="tl-card-title">${esc(perfil.nomeCompleto || 'Nascimento')}</div>
+          <div class="tl-card-meta">Início da linha do tempo</div>
+        </div>
+        <div class="tl-dot tl-dot-nascimento" style="grid-row:1" onclick="showView('home')" title="Nascimento">${NASCIMENTO_SVG}</div>
+        <div class="tl-date-bubble tl-bubble-nascimento" style="grid-row:1" onclick="showView('home')">${dataFmt}</div>
+      </div>`;
+  })();
+
   container.innerHTML = `
     <div>
-      <div class="tl-header" style="margin-bottom:${nascFmt ? '4px' : '12px'};">
+      <div class="tl-header" style="margin-bottom:12px;">
         <h1 class="page-title">Histórico de Saúde</h1>
         <button class="btn-secondary btn-sm" onclick="abrirFormEvento(null)">+ Novo</button>
       </div>
-      ${nascFmt ? `<div class="historico-nascimento" onclick="showView('home')" title="Ver perfil">${nascLabel} ${nascFmt}</div>` : ''}
 
       <div class="search-box">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -728,7 +888,7 @@ async function renderizarTimeline() {
 
       ${filtroDataAtivo ? `<div class="paginacao-info">Período: ${fmtD(filtroDataInicio)||'início'} → ${fmtD(filtroDataFim)||'hoje'}</div>` : ''}
 
-      ${lista.length === 0
+      ${lista.length === 0 && !mostrarNascimento
         ? `<div class="empty-state">
             <div class="empty-icon">${filtroAtivo==='todos'&&!buscaAtiva&&!filtroDataAtivo ? IMG_URSINHOBEM : SEARCH_SVG}</div>
             <div class="empty-title">${filtroAtivo==='todos'&&!buscaAtiva&&!filtroDataAtivo?'Nenhum evento ainda':'Nenhum resultado'}</div>
@@ -738,33 +898,24 @@ async function renderizarTimeline() {
         : `<div class="tl-wrapper">
             <div class="tl-axis"></div>
             ${itensHTML}
+            ${nascCardHTML}
           </div>`
       }
 
-      ${!eventosEsgotado
-        ? `<div id="sentinela-timeline" class="sentinela-paginacao">
-            ${eventosCarregando ? '<div class="sentinela-spinner"><div class="login-spinner"></div></div>' : ''}
-           </div>`
-        : (todos.length > 0 ? `<div class="paginacao-fim">Fim do histórico · ${todos.length} evento${todos.length!==1?'s':''}</div>` : '')
-      }
+      ${todos.length > 0 ? `<div class="paginacao-fim">Fim do histórico · ${todos.length} evento${todos.length!==1?'s':''}</div>` : ''}
     </div>`;
 
-  if (!eventosEsgotado) {
-    const sentinela = document.getElementById('sentinela-timeline');
-    if (sentinela) {
-      _observerTimeline = new IntersectionObserver(entries => {
-        if (entries[0].isIntersecting && !eventosCarregando && !eventosEsgotado) {
-          carregarMaisEventos();
-        }
-      }, { rootMargin: '200px' });
-      _observerTimeline.observe(sentinela);
-    }
+  // Ao abrir a aba, posiciona a timeline na entrada mais próxima da data atual
+  if (_scrollHojeTimeline) {
+    _scrollHojeTimeline = false;
+    requestAnimationFrame(() => scrollParaHoje());
   }
 }
 
 function filtrarPorCategoria(cat) { filtroAtivo = cat; renderizarTimeline(); }
 function buscarEventos(txt)        { buscaAtiva  = txt; renderizarTimeline(); }
 function buscarAgenda(txt)         { buscaAgendaAtiva = txt; renderizarAgenda(); }
+function filtrarPorTipoConsulta(t) { filtroTipoConsulta = t; renderizarAgenda(); }
 function limparFiltroData()        { alterarFiltroData('', ''); }
 
 
@@ -780,7 +931,7 @@ async function abrirFormEvento(id) {
   document.getElementById('titulo-modal-evento').textContent = id ? 'Editar Evento' : 'Novo Evento';
 
   // Carrega a data mínima permitida com base na data de nascimento do perfil
-  const _perfil = await carregarPerfil();
+  const _perfil = carregarPerfil();
   const _dataMinEl = document.getElementById('evento-data-min');
   const _dataInputEl = document.getElementById('evento-data');
   if (_perfil?.dataNascimento) {
@@ -936,19 +1087,29 @@ async function confirmarExclusaoEvento(id) {
    10. AGENDA DE CONSULTAS
    ================================================ */
 
-async function renderizarAgenda() {
-  await renderizarAgendaLista();
+function renderizarAgenda() {
+  renderizarAgendaLista();
 }
 
-async function renderizarAgendaLista() {
+function renderizarAgendaLista() {
   const container = document.getElementById('view-agenda');
   if (_observerAgenda) { _observerAgenda.disconnect(); _observerAgenda = null; }
+  if (!_cacheReady) {
+    container.innerHTML = `<div class="carregando-view"><div class="login-spinner"></div></div>`;
+    return;
+  }
 
   const consultas = consultasCache;
   const hoje      = new Date(); hoje.setHours(0,0,0,0);
 
-  let proximas = consultas.filter(c => c.status !== 'cancelada' && new Date(c.data + 'T00:00:00') >= hoje).sort((a,b)=>new Date(a.data)-new Date(b.data));
-  let passadas = consultas.filter(c => c.status === 'cancelada' || new Date(c.data + 'T00:00:00') < hoje).sort((a,b)=>new Date(b.data)-new Date(a.data));
+  let consultasFiltradas = filtroTipoConsulta === 'todos'
+    ? consultas
+    : consultas.filter(c => (c.tipo || 'outro') === filtroTipoConsulta);
+  if (filtroDataInicio) consultasFiltradas = consultasFiltradas.filter(c => c.data >= filtroDataInicio);
+  if (filtroDataFim)    consultasFiltradas = consultasFiltradas.filter(c => c.data <= filtroDataFim);
+
+  let proximas = consultasFiltradas.filter(c => c.status !== 'cancelada' && new Date(c.data + 'T00:00:00') >= hoje).sort((a,b)=>new Date(a.data)-new Date(b.data));
+  let passadas = consultasFiltradas.filter(c => c.status === 'cancelada' || new Date(c.data + 'T00:00:00') < hoje).sort((a,b)=>new Date(b.data)-new Date(a.data));
 
   if (buscaAgendaAtiva.trim()) {
     const b = buscaAgendaAtiva.toLowerCase();
@@ -963,7 +1124,15 @@ async function renderizarAgendaLista() {
 
   const filtroDataAtivo = filtroDataInicio || filtroDataFim;
   const fmtD = s => s ? s.split('-').reverse().join('/') : '';
-  const semFiltros = !buscaAgendaAtiva && !filtroDataAtivo;
+  const semFiltros = !buscaAgendaAtiva && !filtroDataAtivo && filtroTipoConsulta === 'todos';
+
+  // Chips de filtro por tipo de consulta (só mostra os tipos presentes nas consultas)
+  const filtrosTipo = [
+    { valor:'todos', label:`Todas (${consultas.length}${!consultasEsgotado?'+':''})` },
+    ...Object.entries(TIPOS_CONSULTA)
+      .filter(([v]) => consultas.some(c => (c.tipo || 'outro') === v))
+      .map(([v,label]) => ({ valor:v, label:`${label} (${consultas.filter(c => (c.tipo || 'outro') === v).length})` }))
+  ];
 
   container.innerHTML = `
     <div>
@@ -984,6 +1153,10 @@ async function renderizarAgendaLista() {
         <input class="filtro-data-input" type="date" title="Data fim" value="${filtroDataFim}"
           onchange="alterarFiltroData(filtroDataInicio, this.value)" />
         ${filtroDataAtivo ? `<button class="filtro-datas-limpar" onclick="limparFiltroData()" title="Limpar filtro de datas">×</button>` : ''}
+      </div>
+
+      <div class="timeline-filters">
+        ${filtrosTipo.map(f => `<button class="filter-btn ${filtroTipoConsulta===f.valor?'active':''}" onclick="filtrarPorTipoConsulta('${f.valor}')">${f.label}</button>`).join('')}
       </div>
 
       ${filtroDataAtivo ? `<div class="paginacao-info">Período: ${fmtD(filtroDataInicio)||'início'} → ${fmtD(filtroDataFim)||'hoje'}</div>` : ''}
@@ -1007,34 +1180,26 @@ async function renderizarAgendaLista() {
         ${passadas.map(c => renderizarCardConsulta(c, false)).join('')}
       </div>` : ''}
 
-      ${!consultasEsgotado
-        ? `<div id="sentinela-agenda" class="sentinela-paginacao">
-            ${consultasCarregando ? '<div class="sentinela-spinner"><div class="login-spinner"></div></div>' : ''}
-           </div>`
-        : (consultas.length > 0 ? `<div class="paginacao-fim">Fim da agenda · ${consultas.length} consulta${consultas.length!==1?'s':''}</div>` : '')
-      }
+      ${consultas.length > 0 ? `<div class="paginacao-fim">Fim da agenda · ${consultas.length} consulta${consultas.length!==1?'s':''}</div>` : ''}
     </div>`;
-
-  if (!consultasEsgotado) {
-    const sentinela = document.getElementById('sentinela-agenda');
-    if (sentinela) {
-      _observerAgenda = new IntersectionObserver(entries => {
-        if (entries[0].isIntersecting && !consultasCarregando && !consultasEsgotado) {
-          carregarMaisConsultas();
-        }
-      }, { rootMargin: '200px' });
-      _observerAgenda.observe(sentinela);
-    }
-  }
 }
 
 let seletorMesAberto = false;
+let verMesInteiro    = false;
 
-async function renderizarAbaCalendario() {
-  // Redireciona para a view correta e chama o calendário
+function setVerMesInteiro(v) {
+  verMesInteiro = v;
+  if (v) diaCalendarioAberto = null;
+  renderizarAbaCalendario();
+}
+
+function renderizarAbaCalendario() {
   const container = document.getElementById('view-calendario');
-  container.innerHTML = `<div class="carregando-view"><div class="login-spinner"></div></div>`;
-  await renderizarCalendarioNaView(container);
+  if (!_cacheReady) {
+    container.innerHTML = `<div class="carregando-view"><div class="login-spinner"></div></div>`;
+    return;
+  }
+  container.innerHTML = _buildCalendarioHTML(container);
 }
 
 function toggleSeletorMes() {
@@ -1073,9 +1238,10 @@ function _renderizarSeletorMes() {
     </div>`;
 }
 
-async function _buildCalendarioHTML(container) {
+function _buildCalendarioHTML(container) {
   const { ano, mes } = mesCalendarioAtivo;
-  const [todosEventos, todasConsultas] = await Promise.all([carregarEventos(), carregarConsultas()]);
+  const todosEventos   = carregarEventos();
+  const todasConsultas = carregarConsultas();
 
   const primeiroDia = new Date(ano, mes, 1).getDay();
   const diasNoMes   = new Date(ano, mes + 1, 0).getDate();
@@ -1115,29 +1281,48 @@ async function _buildCalendarioHTML(container) {
       </div>`;
   }
 
+  // Renderizadores de item (com o dia antes do badge)
+  const _dia = dStr => parseInt(dStr.split('-')[2], 10);
+  const cardConsulta = (c, dStr) => {
+    const tipo = TIPOS_CONSULTA[c.tipo] || c.tipo;
+    return `<div class="cal-item-card cal-item-consulta" onclick="abrirDetalheConsulta('${c.id}')">
+      <span class="cal-item-dia">${_dia(dStr)}</span>
+      <span class="cal-item-badge">Consulta</span>
+      <span class="cal-item-titulo">${esc(c.medico || tipo)}</span>
+      ${c.hora ? `<span class="cal-item-hora">${c.hora}</span>` : ''}
+    </div>`;
+  };
+  const cardEvento = (e, dStr) => {
+    const cat = CATEGORIAS[e.categoria] || CATEGORIAS.outro;
+    return `<div class="cal-item-card cal-item-evento" onclick="abrirDetalheEvento('${e.id}')">
+      <span class="cal-item-dia">${_dia(dStr)}</span>
+      <span class="cal-item-badge">${cat.label}</span>
+      <span class="cal-item-titulo">${esc(e.titulo)}</span>
+    </div>`;
+  };
+
   let itensDiaHTML = '';
-  if (diaCalendarioAberto) {
+  if (verMesInteiro) {
+    // Lista todos os itens do mês, ordenados por dia
+    const prefixoMes = `${ano}-${String(mes+1).padStart(2,'0')}`;
+    const datas = [...new Set([...Object.keys(consultasPorDia), ...Object.keys(eventosPorDia)])]
+      .filter(d => d.startsWith(prefixoMes))
+      .sort();
+    let cards = '';
+    datas.forEach(dStr => {
+      (consultasPorDia[dStr] || []).forEach(c => { cards += cardConsulta(c, dStr); });
+      (eventosPorDia[dStr]   || []).forEach(e => { cards += cardEvento(e, dStr); });
+    });
+    if (cards) itensDiaHTML = `<div class="cal-itens-dia">${cards}</div>`;
+  } else if (diaCalendarioAberto) {
     const dStr = `${ano}-${String(mes+1).padStart(2,'0')}-${String(diaCalendarioAberto).padStart(2,'0')}`;
     const cs   = consultasPorDia[dStr] || [];
     const es   = eventosPorDia[dStr]   || [];
     if (cs.length || es.length) {
       itensDiaHTML = `
         <div class="cal-itens-dia">
-          ${cs.map(c => {
-            const tipo = TIPOS_CONSULTA[c.tipo] || c.tipo;
-            return `<div class="cal-item-card cal-item-consulta" onclick="abrirDetalheConsulta('${c.id}')">
-              <span class="cal-item-badge">Consulta</span>
-              <span class="cal-item-titulo">${esc(c.medico || tipo)}</span>
-              ${c.hora ? `<span class="cal-item-hora">${c.hora}</span>` : ''}
-            </div>`;
-          }).join('')}
-          ${es.map(e => {
-            const cat = CATEGORIAS[e.categoria] || CATEGORIAS.outro;
-            return `<div class="cal-item-card cal-item-evento" onclick="abrirDetalheEvento('${e.id}')">
-              <span class="cal-item-badge">${cat.label}</span>
-              <span class="cal-item-titulo">${esc(e.titulo)}</span>
-            </div>`;
-          }).join('')}
+          ${cs.map(c => cardConsulta(c, dStr)).join('')}
+          ${es.map(e => cardEvento(e, dStr)).join('')}
         </div>`;
     }
   }
@@ -1164,11 +1349,22 @@ async function _buildCalendarioHTML(container) {
         <button class="cal-nav-btn" onclick="navegarMesCalendario(1)">&#8594;</button>
       </div>
 
+      ${(ano === hoje.getFullYear() && mes === hoje.getMonth()) ? '' : `
+      <button class="cal-mes-atual-btn" onclick="irParaMesAtual()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
+        Voltar ao mês atual
+      </button>`}
+
       ${seletorMesAberto ? _renderizarSeletorMes() : ''}
 
       <div class="cal-grid">
         ${diasSemana.map(d => `<div class="cal-dia-semana">${d}</div>`).join('')}
         ${celulas}
+      </div>
+
+      <div class="cal-modo-toggle">
+        <button class="cal-modo-btn ${!verMesInteiro?'ativo':''}" onclick="setVerMesInteiro(false)">Dia específico</button>
+        <button class="cal-modo-btn ${verMesInteiro?'ativo':''}" onclick="setVerMesInteiro(true)">Mês inteiro</button>
       </div>
 
       ${itensDiaHTML}
@@ -1179,12 +1375,20 @@ async function _buildCalendarioHTML(container) {
     </div>`;
 }
 
-async function renderizarCalendarioNaView(container) {
-  container.innerHTML = await _buildCalendarioHTML(container);
+function renderizarCalendarioNaView(container) {
+  container.innerHTML = _buildCalendarioHTML(container);
 }
 
 function abrirDiaCalendario(dia) {
   diaCalendarioAberto = diaCalendarioAberto === dia ? null : dia;
+  renderizarAbaCalendario();
+}
+
+function irParaMesAtual() {
+  const h = new Date();
+  mesCalendarioAtivo = { ano: h.getFullYear(), mes: h.getMonth() };
+  diaCalendarioAberto = null;
+  seletorMesAberto = false;
   renderizarAbaCalendario();
 }
 
@@ -1406,8 +1610,8 @@ function linkGoogleCalendar(consulta) {
   return `https://calendar.google.com/calendar/render?${p}`;
 }
 
-async function exportarTodasConsultas() {
-  const todas = await carregarConsultas();
+function exportarTodasConsultas() {
+  const todas = carregarConsultas();
   const validas = todas.filter(c => c.status !== 'cancelada');
   if (!validas.length) { mostrarToast('Nenhuma consulta para exportar.', 'error'); return; }
   const ics = gerarICS(validas);
@@ -1545,10 +1749,10 @@ function mostrarToast(msg, tipo='') {
 function atualizarVistaAtiva() {
   const v = document.querySelector('.view.active');
   if (!v) return;
-  if (v.id === 'view-timeline')   resetarERecarregarEventos();
-  else if (v.id === 'view-agenda') resetarERecarregarConsultas();
+  if      (v.id === 'view-timeline')   renderizarTimeline();
+  else if (v.id === 'view-agenda')     renderizarAgenda();
   else if (v.id === 'view-calendario') renderizarAbaCalendario();
-  else renderizarHome();
+  else                                 renderizarHome();
 }
 
 
@@ -1584,11 +1788,12 @@ async function abrirSeletorBebe() {
     </button>`;
 }
 
-async function selecionarPerfil(novoProfileId) {
+function selecionarPerfil(novoProfileId) {
   if (novoProfileId === profileIdAtivo) { fecharModal('modal-seletor-bebe'); return; }
   profileIdAtivo = novoProfileId;
   fecharModal('modal-seletor-bebe');
-  temPerfil      = false;
+  temPerfil = false;
+  subscribeAoPerfilAtivo(novoProfileId);
   showView('home');
 }
 
@@ -1615,6 +1820,7 @@ async function salvarNovoBebe(event) {
     profileIdAtivo = novoId;
     temPerfil      = true;
 
+    subscribeAoPerfilAtivo(novoId);
     fecharModal('modal-novo-bebe');
     atualizarNomeBebe(nome);
     atualizarNavSemPerfil();
@@ -1648,6 +1854,44 @@ function animarTransicaoVista(viewAtual, proximoNome, direcao) {
   }
 }
 
+let _scrollHojeTimeline = false;
+
+// Localiza, na timeline, o item cuja data é a mais próxima da data atual
+function _itemTimelineMaisProximoDeHoje() {
+  const itens = document.querySelectorAll('#view-timeline .tl-item[data-data]');
+  if (!itens.length) return null;
+  const hoje = Date.now();
+  let melhor = null, melhorDiff = Infinity;
+  itens.forEach(el => {
+    const t = new Date(el.dataset.data + 'T00:00:00').getTime();
+    if (isNaN(t)) return;
+    const diff = Math.abs(t - hoje);
+    if (diff < melhorDiff) { melhorDiff = diff; melhor = el; }
+  });
+  return melhor;
+}
+
+// Usa sempre a data atual como referência: rola até a entrada mais próxima de hoje
+function scrollParaHoje() {
+  const el = _itemTimelineMaisProximoDeHoje();
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  else window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function atualizarBotaoTopo() {
+  const btn = document.getElementById('btn-topo');
+  if (!btn) return;
+  const vista = document.querySelector('.view.active');
+  const naTimeline = vista && vista.id === 'view-timeline';
+  if (naTimeline && window.scrollY > 300) btn.classList.add('visivel');
+  else btn.classList.remove('visivel');
+}
+
+function iniciarBotaoTopo() {
+  window.addEventListener('scroll', atualizarBotaoTopo, { passive: true });
+  atualizarBotaoTopo();
+}
+
 function iniciarSwipe() {
   const app = document.getElementById('app');
   if (!app) return;
@@ -1657,8 +1901,12 @@ function iniciarSwipe() {
   let arrastando = false;
 
   app.addEventListener('touchstart', e => {
+    arrastando = false;
     // Ignora swipe se houver modal aberto
     if (document.querySelector('.modal.open')) return;
+    // Ignora swipe iniciado dentro de área com rolagem horizontal própria
+    // (ex.: tags de filtro da timeline), para não trocar de página ao arrastá-las
+    if (e.target.closest('.timeline-filters')) return;
     xInicio   = e.touches[0].clientX;
     yInicio   = e.touches[0].clientY;
     arrastando = true;
@@ -1711,6 +1959,7 @@ window._onAuthStateChange = async function ({ user, acesso }) {
   });
 
   if (!user) {
+    _unsubscribeAll();
     if (telaLogin) telaLogin.style.display = 'flex';
     return;
   }
@@ -1745,6 +1994,8 @@ window._onAuthStateChange = async function ({ user, acesso }) {
   if (appEl) appEl.style.display = '';
   renderizarBarraTopo();
   iniciarSwipe();
+  iniciarBotaoTopo();
+  subscribeAoPerfilAtivo(profileIdAtivo);
   renderizarHome();
 };
 
@@ -1771,7 +2022,6 @@ function renderizarBarraTopo() {
     </div>
     <div class="barra-topo-centro">
       <button class="bebe-chip" id="bebe-chip" onclick="abrirSeletorBebe()" title="Trocar bebê">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5V2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5V5"/><path d="M8 9.5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-10z"/></svg>
         <span id="bebe-chip-nome">…</span>
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5"><polyline points="6 9 12 15 18 9"/></svg>
       </button>

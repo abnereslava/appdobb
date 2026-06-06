@@ -19,6 +19,7 @@ import {
   limit,
   startAfter,
   where,
+  onSnapshot,
 } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js';
 
 import { db } from './firebase-config.js';
@@ -233,5 +234,25 @@ window._db = {
 
   async removerAcesso(email) {
     await deleteDoc(doc(db, 'accessIndex', email));
+  },
+
+  /* ---------- Listeners em tempo real ---------- */
+
+  subscribePerfil(profileId, onChange) {
+    return onSnapshot(doc(db, 'profiles', profileId), snap => {
+      onChange(snap.exists() ? (snap.data().babyProfile || null) : null);
+    });
+  },
+
+  subscribeEventos(profileId, onChange) {
+    return onSnapshot(collection(db, 'profiles', profileId, 'events'), snap => {
+      onChange(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+  },
+
+  subscribeConsultas(profileId, onChange) {
+    return onSnapshot(collection(db, 'profiles', profileId, 'consultations'), snap => {
+      onChange(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
   },
 };
