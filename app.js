@@ -125,6 +125,13 @@ let profileIds      = [];     // todos os profileIds do usuário
 // true após confirmar que o perfil do bebê ativo existe no Firestore
 let temPerfil = false;
 
+// Cache em memória alimentado pelos listeners onSnapshot
+let _perfilCache    = null;
+let _unsubPerfil    = null;
+let _unsubEventos   = null;
+let _unsubConsultas = null;
+let _cacheReady     = false;
+
 // Estado dos formulários
 let medicamentosTemp = [];
 let alergiasTemp     = [];
@@ -135,15 +142,9 @@ let doencasCronicasTemp = [];
    2. DADOS
    ================================================ */
 
-// Perfil — Firestore (assíncrono)
-async function carregarPerfil() {
-  if (!profileIdAtivo || !window._db) return null;
-  try {
-    return await window._db.carregarPerfil(profileIdAtivo);
-  } catch (e) {
-    console.error('Erro ao carregar perfil:', e);
-    return null;
-  }
+// Perfil — lê do cache em memória (alimentado por onSnapshot)
+function carregarPerfil() {
+  return _perfilCache;
 }
 
 async function gravarPerfil(p) {
@@ -151,15 +152,9 @@ async function gravarPerfil(p) {
   await window._db.gravarPerfil(profileIdAtivo, p, usuarioAtual?.uid || null);
 }
 
-// Eventos — Firestore (assíncrono)
-async function carregarEventos() {
-  if (!profileIdAtivo || !window._db) return [];
-  try {
-    return await window._db.listarEventos(profileIdAtivo);
-  } catch (e) {
-    console.error('Erro ao carregar eventos:', e);
-    return [];
-  }
+// Eventos — lê do cache em memória
+function carregarEventos() {
+  return eventosCache;
 }
 
 async function gravarEvento(ev, ehNovo) {
@@ -172,15 +167,9 @@ async function excluirEvento(id) {
   await window._db.excluirEvento(profileIdAtivo, id);
 }
 
-// Consultas — Firestore (assíncrono)
-async function carregarConsultas() {
-  if (!profileIdAtivo || !window._db) return [];
-  try {
-    return await window._db.listarConsultas(profileIdAtivo);
-  } catch (e) {
-    console.error('Erro ao carregar consultas:', e);
-    return [];
-  }
+// Consultas — lê do cache em memória
+function carregarConsultas() {
+  return consultasCache;
 }
 
 async function gravarConsulta(c, ehNova) {
@@ -208,10 +197,8 @@ async function _carregarPaginaEventos() {
   eventosCarregando = false;
 }
 
-async function resetarERecarregarEventos() {
+function resetarERecarregarEventos() {
   if (_observerTimeline) { _observerTimeline.disconnect(); _observerTimeline = null; }
-  eventosCache = []; eventosCursor = null; eventosEsgotado = false;
-  await _carregarPaginaEventos();
   renderizarTimeline();
 }
 
@@ -235,10 +222,8 @@ async function _carregarPaginaConsultas() {
   consultasCarregando = false;
 }
 
-async function resetarERecarregarConsultas() {
+function resetarERecarregarConsultas() {
   if (_observerAgenda) { _observerAgenda.disconnect(); _observerAgenda = null; }
-  consultasCache = []; consultasCursor = null; consultasEsgotado = false;
-  await _carregarPaginaConsultas();
   renderizarAgenda();
 }
 
@@ -255,6 +240,68 @@ function alterarFiltroData(inicio, fim) {
 }
 
 function gerarId() { return Date.now().toString(36) + Math.random().toString(36).substr(2,5); }
+
+function _unsubscribeAll() {
+  if (_unsubPerfil)    { _unsubPerfil();    _unsubPerfil    = null; }
+  if (_unsubEventos)   { _unsubEventos();   _unsubEventos   = null; }
+  if (_unsubConsultas) { _unsubConsultas(); _unsubConsultas = null; }
+  _perfilCache    = null;
+  eventosCache    = [];
+  consultasCache  = [];
+  eventosCursor   = null; eventosEsgotado  = false;
+  consultasCursor = null; consultasEsgotado = false;
+  _cacheReady     = false;
+}
+
+function subscribeAoPerfilAtivo(profileId) {
+  if (!profileId || !window._db) return;
+  _unsubscribeAll();
+
+  let _perfilPronto = false, _eventosPronto = false, _consultasPronto = false;
+
+  function _aoCarregarTudo() {
+    if (!_perfilPronto || !_eventosPronto || !_consultasPronto) return;
+    _cacheReady = true;
+    eventosEsgotado   = true;
+    consultasEsgotado = true;
+    const v = document.querySelector('.view.active');
+    if      (v?.id === 'view-timeline')   renderizarTimeline();
+    else if (v?.id === 'view-agenda')     renderizarAgenda();
+    else if (v?.id === 'view-calendario') renderizarAbaCalendario();
+    else                                  renderizarHome();
+  }
+
+  _unsubPerfil = window._db.subscribePerfil(profileId, perfil => {
+    _perfilCache = perfil;
+    temPerfil = !!(perfil && perfil.nomeCompleto);
+    atualizarNavSemPerfil();
+    if (!_perfilPronto) { _perfilPronto = true; _aoCarregarTudo(); return; }
+    if (!_cacheReady) return;
+    const v = document.querySelector('.view.active');
+    if (v?.id === 'view-home') renderizarHome();
+  });
+
+  _unsubEventos = window._db.subscribeEventos(profileId, eventos => {
+    eventosCache = eventos.sort((a, b) => b.data.localeCompare(a.data));
+    eventosEsgotado = true;
+    if (!_eventosPronto) { _eventosPronto = true; _aoCarregarTudo(); return; }
+    if (!_cacheReady) return;
+    const v = document.querySelector('.view.active');
+    if (v?.id === 'view-timeline')   renderizarTimeline();
+    if (v?.id === 'view-calendario') renderizarAbaCalendario();
+    if (v?.id === 'view-home')       renderizarHome();
+  });
+
+  _unsubConsultas = window._db.subscribeConsultas(profileId, consultas => {
+    consultasCache = consultas;
+    consultasEsgotado = true;
+    if (!_consultasPronto) { _consultasPronto = true; _aoCarregarTudo(); return; }
+    if (!_cacheReady) return;
+    const v = document.querySelector('.view.active');
+    if (v?.id === 'view-agenda')     renderizarAgenda();
+    if (v?.id === 'view-calendario') renderizarAbaCalendario();
+  });
+}
 
 
 /* ================================================
@@ -303,8 +350,8 @@ function showView(nome) {
   if (navBtn) navBtn.classList.add('active');
 
   if (nome === 'home')       renderizarHome();
-  if (nome === 'timeline')   { _scrollHojeTimeline = true; resetarERecarregarEventos(); }
-  if (nome === 'agenda')     resetarERecarregarConsultas();
+  if (nome === 'timeline')   { _scrollHojeTimeline = true; renderizarTimeline(); }
+  if (nome === 'agenda')     renderizarAgenda();
   if (nome === 'calendario') { diaCalendarioAberto = null; renderizarAbaCalendario(); }
 
   window.scrollTo(0, 0);
@@ -376,15 +423,18 @@ document.addEventListener('keydown', e => {
    5. TELA DE PERFIL (HOME)
    ================================================ */
 
-async function renderizarHome() {
+function renderizarHome() {
   const container = document.getElementById('view-home');
-  container.innerHTML = `<div class="carregando-view"><div class="login-spinner"></div></div>`;
+  if (!_cacheReady) {
+    container.innerHTML = `<div class="carregando-view"><div class="login-spinner"></div></div>`;
+    return;
+  }
 
-  const perfil  = await carregarPerfil();
+  const perfil  = carregarPerfil();
   temPerfil = !!(perfil && perfil.nomeCompleto);
   atualizarNavSemPerfil();
 
-  const eventos = await carregarEventos();
+  const eventos = carregarEventos();
 
   if (!perfil || !perfil.nomeCompleto) {
     atualizarNomeBebe('');
@@ -524,7 +574,7 @@ function renderizarDoencasLista(doencas) {
    ================================================ */
 
 async function abrirFormPerfil() {
-  const p = (await carregarPerfil()) || {};
+  const p = carregarPerfil() || {};
   set('perfil-nome', p.nomeCompleto || '');
   set('perfil-nascimento', p.dataNascimento || '');
   set('perfil-semanas', p.semanasGestacao || '');
@@ -694,14 +744,20 @@ async function salvarPerfil(event) {
    7. LINHA DO TEMPO ILUSTRADA
    ================================================ */
 
-async function renderizarTimeline() {
+function renderizarTimeline() {
   const container = document.getElementById('view-timeline');
   if (_observerTimeline) { _observerTimeline.disconnect(); _observerTimeline = null; }
+  if (!_cacheReady) {
+    container.innerHTML = `<div class="carregando-view"><div class="login-spinner"></div></div>`;
+    return;
+  }
 
   const todos  = eventosCache;
-  const perfil = await carregarPerfil();
+  const perfil = carregarPerfil();
 
   let lista = filtroAtivo === 'todos' ? todos : todos.filter(e => e.categoria === filtroAtivo);
+  if (filtroDataInicio) lista = lista.filter(e => e.data >= filtroDataInicio);
+  if (filtroDataFim)    lista = lista.filter(e => e.data <= filtroDataFim);
   if (buscaAtiva.trim()) {
     const b = buscaAtiva.toLowerCase();
     lista = lista.filter(e =>
@@ -832,25 +888,8 @@ async function renderizarTimeline() {
           </div>`
       }
 
-      ${!eventosEsgotado
-        ? `<div id="sentinela-timeline" class="sentinela-paginacao">
-            ${eventosCarregando ? '<div class="sentinela-spinner"><div class="login-spinner"></div></div>' : ''}
-           </div>`
-        : (todos.length > 0 ? `<div class="paginacao-fim">Fim do histórico · ${todos.length} evento${todos.length!==1?'s':''}</div>` : '')
-      }
+      ${todos.length > 0 ? `<div class="paginacao-fim">Fim do histórico · ${todos.length} evento${todos.length!==1?'s':''}</div>` : ''}
     </div>`;
-
-  if (!eventosEsgotado) {
-    const sentinela = document.getElementById('sentinela-timeline');
-    if (sentinela) {
-      _observerTimeline = new IntersectionObserver(entries => {
-        if (entries[0].isIntersecting && !eventosCarregando && !eventosEsgotado) {
-          carregarMaisEventos();
-        }
-      }, { rootMargin: '200px' });
-      _observerTimeline.observe(sentinela);
-    }
-  }
 
   // Ao abrir a aba, posiciona a timeline na entrada mais próxima da data atual
   if (_scrollHojeTimeline) {
@@ -878,7 +917,7 @@ async function abrirFormEvento(id) {
   document.getElementById('titulo-modal-evento').textContent = id ? 'Editar Evento' : 'Novo Evento';
 
   // Carrega a data mínima permitida com base na data de nascimento do perfil
-  const _perfil = await carregarPerfil();
+  const _perfil = carregarPerfil();
   const _dataMinEl = document.getElementById('evento-data-min');
   const _dataInputEl = document.getElementById('evento-data');
   if (_perfil?.dataNascimento) {
@@ -1034,20 +1073,26 @@ async function confirmarExclusaoEvento(id) {
    10. AGENDA DE CONSULTAS
    ================================================ */
 
-async function renderizarAgenda() {
-  await renderizarAgendaLista();
+function renderizarAgenda() {
+  renderizarAgendaLista();
 }
 
-async function renderizarAgendaLista() {
+function renderizarAgendaLista() {
   const container = document.getElementById('view-agenda');
   if (_observerAgenda) { _observerAgenda.disconnect(); _observerAgenda = null; }
+  if (!_cacheReady) {
+    container.innerHTML = `<div class="carregando-view"><div class="login-spinner"></div></div>`;
+    return;
+  }
 
   const consultas = consultasCache;
   const hoje      = new Date(); hoje.setHours(0,0,0,0);
 
-  const consultasFiltradas = filtroTipoConsulta === 'todos'
+  let consultasFiltradas = filtroTipoConsulta === 'todos'
     ? consultas
     : consultas.filter(c => (c.tipo || 'outro') === filtroTipoConsulta);
+  if (filtroDataInicio) consultasFiltradas = consultasFiltradas.filter(c => c.data >= filtroDataInicio);
+  if (filtroDataFim)    consultasFiltradas = consultasFiltradas.filter(c => c.data <= filtroDataFim);
 
   let proximas = consultasFiltradas.filter(c => c.status !== 'cancelada' && new Date(c.data + 'T00:00:00') >= hoje).sort((a,b)=>new Date(a.data)-new Date(b.data));
   let passadas = consultasFiltradas.filter(c => c.status === 'cancelada' || new Date(c.data + 'T00:00:00') < hoje).sort((a,b)=>new Date(b.data)-new Date(a.data));
@@ -1121,25 +1166,8 @@ async function renderizarAgendaLista() {
         ${passadas.map(c => renderizarCardConsulta(c, false)).join('')}
       </div>` : ''}
 
-      ${!consultasEsgotado
-        ? `<div id="sentinela-agenda" class="sentinela-paginacao">
-            ${consultasCarregando ? '<div class="sentinela-spinner"><div class="login-spinner"></div></div>' : ''}
-           </div>`
-        : (consultas.length > 0 ? `<div class="paginacao-fim">Fim da agenda · ${consultas.length} consulta${consultas.length!==1?'s':''}</div>` : '')
-      }
+      ${consultas.length > 0 ? `<div class="paginacao-fim">Fim da agenda · ${consultas.length} consulta${consultas.length!==1?'s':''}</div>` : ''}
     </div>`;
-
-  if (!consultasEsgotado) {
-    const sentinela = document.getElementById('sentinela-agenda');
-    if (sentinela) {
-      _observerAgenda = new IntersectionObserver(entries => {
-        if (entries[0].isIntersecting && !consultasCarregando && !consultasEsgotado) {
-          carregarMaisConsultas();
-        }
-      }, { rootMargin: '200px' });
-      _observerAgenda.observe(sentinela);
-    }
-  }
 }
 
 let seletorMesAberto = false;
@@ -1151,11 +1179,13 @@ function setVerMesInteiro(v) {
   renderizarAbaCalendario();
 }
 
-async function renderizarAbaCalendario() {
-  // Redireciona para a view correta e chama o calendário
+function renderizarAbaCalendario() {
   const container = document.getElementById('view-calendario');
-  container.innerHTML = `<div class="carregando-view"><div class="login-spinner"></div></div>`;
-  await renderizarCalendarioNaView(container);
+  if (!_cacheReady) {
+    container.innerHTML = `<div class="carregando-view"><div class="login-spinner"></div></div>`;
+    return;
+  }
+  container.innerHTML = _buildCalendarioHTML(container);
 }
 
 function toggleSeletorMes() {
@@ -1194,9 +1224,10 @@ function _renderizarSeletorMes() {
     </div>`;
 }
 
-async function _buildCalendarioHTML(container) {
+function _buildCalendarioHTML(container) {
   const { ano, mes } = mesCalendarioAtivo;
-  const [todosEventos, todasConsultas] = await Promise.all([carregarEventos(), carregarConsultas()]);
+  const todosEventos   = carregarEventos();
+  const todasConsultas = carregarConsultas();
 
   const primeiroDia = new Date(ano, mes, 1).getDay();
   const diasNoMes   = new Date(ano, mes + 1, 0).getDate();
@@ -1330,8 +1361,8 @@ async function _buildCalendarioHTML(container) {
     </div>`;
 }
 
-async function renderizarCalendarioNaView(container) {
-  container.innerHTML = await _buildCalendarioHTML(container);
+function renderizarCalendarioNaView(container) {
+  container.innerHTML = _buildCalendarioHTML(container);
 }
 
 function abrirDiaCalendario(dia) {
@@ -1565,8 +1596,8 @@ function linkGoogleCalendar(consulta) {
   return `https://calendar.google.com/calendar/render?${p}`;
 }
 
-async function exportarTodasConsultas() {
-  const todas = await carregarConsultas();
+function exportarTodasConsultas() {
+  const todas = carregarConsultas();
   const validas = todas.filter(c => c.status !== 'cancelada');
   if (!validas.length) { mostrarToast('Nenhuma consulta para exportar.', 'error'); return; }
   const ics = gerarICS(validas);
@@ -1704,10 +1735,10 @@ function mostrarToast(msg, tipo='') {
 function atualizarVistaAtiva() {
   const v = document.querySelector('.view.active');
   if (!v) return;
-  if (v.id === 'view-timeline')   resetarERecarregarEventos();
-  else if (v.id === 'view-agenda') resetarERecarregarConsultas();
+  if      (v.id === 'view-timeline')   renderizarTimeline();
+  else if (v.id === 'view-agenda')     renderizarAgenda();
   else if (v.id === 'view-calendario') renderizarAbaCalendario();
-  else renderizarHome();
+  else                                 renderizarHome();
 }
 
 
@@ -1743,11 +1774,12 @@ async function abrirSeletorBebe() {
     </button>`;
 }
 
-async function selecionarPerfil(novoProfileId) {
+function selecionarPerfil(novoProfileId) {
   if (novoProfileId === profileIdAtivo) { fecharModal('modal-seletor-bebe'); return; }
   profileIdAtivo = novoProfileId;
   fecharModal('modal-seletor-bebe');
-  temPerfil      = false;
+  temPerfil = false;
+  subscribeAoPerfilAtivo(novoProfileId);
   showView('home');
 }
 
@@ -1774,6 +1806,7 @@ async function salvarNovoBebe(event) {
     profileIdAtivo = novoId;
     temPerfil      = true;
 
+    subscribeAoPerfilAtivo(novoId);
     fecharModal('modal-novo-bebe');
     atualizarNomeBebe(nome);
     atualizarNavSemPerfil();
@@ -1912,6 +1945,7 @@ window._onAuthStateChange = async function ({ user, acesso }) {
   });
 
   if (!user) {
+    _unsubscribeAll();
     if (telaLogin) telaLogin.style.display = 'flex';
     return;
   }
@@ -1947,6 +1981,7 @@ window._onAuthStateChange = async function ({ user, acesso }) {
   renderizarBarraTopo();
   iniciarSwipe();
   iniciarBotaoTopo();
+  subscribeAoPerfilAtivo(profileIdAtivo);
   renderizarHome();
 };
 
