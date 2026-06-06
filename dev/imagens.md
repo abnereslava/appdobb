@@ -49,6 +49,10 @@ Para acelerar o carregamento do app, as imagens são salvas **no tamanho realmen
 - **logo-192.png** — `manifest.json`, ícone PWA 192×192; cache `sw.js`
 - **logo-512.png** — `manifest.json`, ícone PWA 512×512; cache `sw.js`
 
+## ⏳ Pendentes (categoria sem PNG)
+
+- **dentes** — categoria "Dentes" (eventos). Ainda **sem imagem**; usa um SVG inline preenchido (`IMG_DENTES`, classe `category-icon category-icon-fill`) como silhueta branca provisória. Quando houver o PNG (fundo transparente, 96×96), substituir o SVG por `<img class="category-icon-img">` como as demais categorias.
+
 ## 🗑️ Não utilizadas (candidatas a descarte)
 
 - **ursinhodoente.png** — era a categoria Doença, substituída por `termometro.png`. Sem uso.
