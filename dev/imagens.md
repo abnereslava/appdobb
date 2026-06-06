@@ -18,6 +18,18 @@ Exceções (mantidas como imagem original, **sem** silhueta):
 
 As chips de filtro **deixaram de exibir ícone** (ficaram só com texto), pois uma silhueta branca seria invisível no fundo claro da chip.
 
+## Compressão / dimensões
+
+Para acelerar o carregamento do app, as imagens são salvas **no tamanho realmente usado** (com folga para telas retina), não em alta resolução. Total de `img/` caiu de ~4,6 MB para ~0,7 MB.
+
+- **Ícones de categoria** (`alergia`, `calendario`, `cirurgia`, `curativo`, `hospital`, `outro`, `termometro`, `vacina`): **96×96** (exibidos ≤22 px).
+- **Ilustrações** (`agenda`, `brinquedo`, `ursinhobem`): **256×256** (exibidas ≤72 px).
+- **mamadeira** (avatar): **256×256** (exibido ≤88 px).
+- **logo.png** (marca/favicon): **256×256** (exibido ≤88 px) — era 1079×1105 / 2,5 MB.
+- **logo-180 / logo-192 / logo-512** (ícones PWA/Apple): **mantêm as dimensões nominais**; reduzidos via quantização de paleta (256 cores) preservando o alfa.
+
+> Reprocessar com Pillow (`Image.LANCZOS` para redimensionar; `optimize=True`; `quantize(method=FASTOCTREE)` quando precisar preservar transparência). Os PNGs originais em alta resolução ficam preservados no histórico do git e em `dev/icones-originais/`.
+
 ## ✅ Em uso
 
 - **agenda.png** — `app.js` (`IMG_AGENDA`), estado vazio da Agenda; cache `sw.js`
