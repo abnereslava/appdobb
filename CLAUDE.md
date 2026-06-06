@@ -11,8 +11,9 @@ Nunca faça push direto para `master` sem permissão explícita.
 1. `git add` nos arquivos alterados
 2. `git commit` com mensagem descritiva em português
 3. `git push -u origin claude/repo-copy-rename-appdocarro-PQGhA`
+4. Fazer merge para `master` via `mcp__github__merge_pull_request` (PR #1 já existe; se estiver fechado, criar novo PR e mergear em seguida) — método `squash`.
 
-Não espere o usuário pedir — o push faz parte de cada tarefa concluída.
+Não espere o usuário pedir — push + merge para master fazem parte de cada tarefa concluída.
 Se o push falhar por rede, tente até 4 vezes com espera exponencial (2s, 4s, 8s, 16s).
 
 ## Stack
