@@ -20,6 +20,7 @@ import {
   startAfter,
   where,
   onSnapshot,
+  waitForPendingWrites,
 } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js';
 
 import { db } from './firebase-config.js';
@@ -254,5 +255,9 @@ window._db = {
     return onSnapshot(collection(db, 'profiles', profileId, 'consultations'), snap => {
       onChange(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
+  },
+
+  aguardarSync() {
+    return waitForPendingWrites(db);
   },
 };
