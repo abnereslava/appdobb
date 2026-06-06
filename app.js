@@ -454,7 +454,12 @@ function renderizarHome() {
     ? `<img src="${esc(perfil.fotoUrl)}" alt="${esc(perfil.nomeCompleto)}" onerror="this.style.display='none'" />`
     : `<img src="img/mamadeira.png" alt="" style="width:56px;height:56px;object-fit:contain;" />`;
 
-  const generoBadge = perfil.sexo ? `<span class="profile-gender-badge">${perfil.sexo === 'menino' ? `${MALE_SVG} Menino` : `${FEMALE_SVG} Menina`}</span>` : '';
+  const idadeTxt  = calcularIdade(perfil.dataNascimento);
+  const sexoTxt   = perfil.sexo === 'menino' ? 'Masculino' : 'Feminino';
+  const sexoIcon  = perfil.sexo === 'menino' ? MALE_SVG : FEMALE_SVG;
+  const generoIdadeBadge = perfil.sexo
+    ? `<span class="profile-gender-badge">${sexoIcon}${sexoTxt} <span class="profile-badge-sep">|</span> ${idadeTxt}</span>`
+    : `<span class="profile-age">${idadeTxt}</span>`;
   const prematuro   = perfil.semanasGestacao && parseInt(perfil.semanasGestacao) < 37;
   const premHTML    = prematuro ? `<span class="badge-prematuro">Prematuro · ${perfil.semanasGestacao}sem</span>` : '';
 
@@ -489,8 +494,7 @@ function renderizarHome() {
         <div class="profile-avatar">${avatarHTML}</div>
         <div class="profile-name">${esc(perfil.nomeCompleto)}</div>
         <div class="profile-age-genero">
-          <span class="profile-age">${calcularIdade(perfil.dataNascimento)}</span>
-          ${generoBadge}${premHTML}
+          ${generoIdadeBadge}${premHTML}
         </div>
         <div class="profile-stats" style="margin-top:14px;">${statsHTML.join('')}</div>
       </div>

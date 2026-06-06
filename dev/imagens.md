@@ -5,6 +5,8 @@ Atualizado após: troca do ícone de Doença (ursinhodoente → termômetro) e a
 
 ## Tratamento visual — silhueta branca
 
+> **Convenção do projeto:** as imagens enviadas pelo desenvolvedor **sempre têm fundo transparente** quando necessário (alpha nos cantos/área externa à forma). Isso é pré-requisito para o tratamento de silhueta funcionar — o `filter` pinta de branco apenas a forma, deixando o entorno transparente.
+
 As imagens PNG **continuam sendo a base**, mas são renderizadas como **silhueta branca sobre fundo de cor sólida** via CSS (`filter: brightness(0) invert(1)`), em vez de aparecerem coloridas. Locais com esse tratamento:
 
 - **Ícones de categoria** (`.category-icon-img`): dots da timeline, círculos de "Últimos eventos" (home) e detalhe do evento — fundo na cor sólida da categoria.
