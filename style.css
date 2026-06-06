@@ -427,6 +427,23 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
 .tl-item.tl-direita .tl-center   { order: 2; }
 .tl-item.tl-direita .tl-content  { order: 3; padding-left: 10px; }
 
+/* Agrupamento por dia: data única de um lado, lançamentos empilhados do outro.
+   Grid de 3 colunas (conteúdo | dot central | data); cada cartão e seu dot
+   compartilham a mesma linha do grid (alinhados); a data abrange todas as linhas. */
+.tl-item.tl-group {
+  display: grid;
+  grid-template-columns: 1fr 44px 1fr;
+  column-gap: 10px;
+  row-gap: 16px;
+  align-items: center;
+}
+.tl-group > .tl-dot { grid-column: 2; position: relative; z-index: 2; }
+.tl-group > .tl-date-bubble { align-self: center; }
+.tl-group.tl-esquerda > .tl-card        { grid-column: 1; }
+.tl-group.tl-esquerda > .tl-date-bubble { grid-column: 3; justify-self: start; }
+.tl-group.tl-direita  > .tl-card        { grid-column: 3; }
+.tl-group.tl-direita  > .tl-date-bubble { grid-column: 1; justify-self: end; }
+
 /* Círculo com ícone na linha central */
 .tl-dot {
   width: 44px;
@@ -480,6 +497,7 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
 .tl-bubble-cirurgia { background: #8b54c8; }
 .tl-bubble-exames   { background: #1499a8; }
 .tl-bubble-outro    { background: #8a8a9a; }
+.tl-bubble-multi    { background: #8a8a9a; }
 .tl-bubble-nascimento { background: var(--primary); }
 
 /* Cartão do evento na linha do tempo */

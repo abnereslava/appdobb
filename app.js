@@ -789,30 +789,46 @@ function renderizarTimeline() {
     return `<div class="tl-mes-sep"><span>${MESES_EXT[parseInt(mes,10)-1]} ${ano}</span></div>`;
   };
 
-  const itensHTML = lista.map((evento, idx) => {
-    const cat  = CATEGORIAS[evento.categoria] || CATEGORIAS.outro;
-    const lado = idx % 2 === 0 ? 'tl-esquerda' : 'tl-direita';
-    const dataFmt = formatarDataCurta(evento.data);
-    const meta    = [evento.medico, evento.hospital].filter(Boolean).join(' · ');
-    const cartao  = `
-      <div class="tl-card" onclick="abrirDetalheEvento('${evento.id}')">
-        <span class="tl-card-category badge-${evento.categoria}">${cat.label}</span>
-        <div class="tl-card-title">${esc(evento.titulo)}</div>
-        ${meta ? `<div class="tl-card-meta">${esc(meta)}</div>` : ''}
-      </div>`;
-    const dataBolha = `
-      <div class="tl-date-bubble tl-bubble-${evento.categoria}" onclick="abrirDetalheEvento('${evento.id}')">
-        ${dataFmt}
-      </div>`;
-    return sepMesAno(evento.data) + `
-      <div class="tl-item ${lado}" data-data="${evento.data}">
-        <div class="tl-content">${cartao}</div>
-        <div class="tl-center">
-          <div class="tl-dot tl-dot-${evento.categoria}" onclick="abrirDetalheEvento('${evento.id}')" title="${esc(evento.titulo)}">
-            ${cat.icone}
-          </div>
-        </div>
-        <div class="tl-date-side">${dataBolha}</div>
+  // Agrupa eventos por dia (lista já ordenada por data desc).
+  // Dias com vários lançamentos: data única de um lado, cartões empilhados do outro.
+  const grupos = [];
+  lista.forEach(ev => {
+    const ultimo = grupos[grupos.length - 1];
+    if (ultimo && ultimo.data === ev.data) ultimo.eventos.push(ev);
+    else grupos.push({ data: ev.data, eventos: [ev] });
+  });
+
+  const itensHTML = grupos.map((grupo, gIdx) => {
+    const lado    = gIdx % 2 === 0 ? 'tl-esquerda' : 'tl-direita';
+    const n       = grupo.eventos.length;
+    const dataFmt = formatarDataCurta(grupo.data);
+
+    const cards = grupo.eventos.map((evento, i) => {
+      const cat  = CATEGORIAS[evento.categoria] || CATEGORIAS.outro;
+      const meta = [evento.medico, evento.hospital].filter(Boolean).join(' · ');
+      return `
+        <div class="tl-card" style="grid-row:${i+1}" onclick="abrirDetalheEvento('${evento.id}')">
+          <span class="tl-card-category badge-${evento.categoria}">${cat.label}</span>
+          <div class="tl-card-title">${esc(evento.titulo)}</div>
+          ${meta ? `<div class="tl-card-meta">${esc(meta)}</div>` : ''}
+        </div>`;
+    }).join('');
+
+    const dots = grupo.eventos.map((evento, i) => {
+      const cat = CATEGORIAS[evento.categoria] || CATEGORIAS.outro;
+      return `<div class="tl-dot tl-dot-${evento.categoria}" style="grid-row:${i+1}" onclick="abrirDetalheEvento('${evento.id}')" title="${esc(evento.titulo)}">${cat.icone}</div>`;
+    }).join('');
+
+    // Cor da bolha: cor da categoria quando o dia é de um único tipo; neutra quando misto.
+    const cats     = [...new Set(grupo.eventos.map(e => e.categoria))];
+    const bolhaCls = cats.length === 1 ? `tl-bubble-${cats[0]}` : 'tl-bubble-multi';
+    const dataBolha = `<div class="tl-date-bubble ${bolhaCls}" style="grid-row:1 / span ${n}">${dataFmt}</div>`;
+
+    return sepMesAno(grupo.data) + `
+      <div class="tl-item tl-group ${lado}" data-data="${grupo.data}">
+        ${cards}
+        ${dots}
+        ${dataBolha}
       </div>`;
   }).join('');
 
@@ -831,23 +847,17 @@ function renderizarTimeline() {
     && (!filtroDataFim    || dataNasc <= filtroDataFim);
 
   const nascCardHTML = !mostrarNascimento ? '' : (() => {
-    const lado = lista.length % 2 === 0 ? 'tl-esquerda' : 'tl-direita';
+    const lado = grupos.length % 2 === 0 ? 'tl-esquerda' : 'tl-direita';
     const dataFmt = formatarDataCurta(dataNasc);
     return sepMesAno(dataNasc) + `
-      <div class="tl-item ${lado}" data-data="${dataNasc}">
-        <div class="tl-content">
-          <div class="tl-card tl-card-nascimento" onclick="showView('home')">
-            <span class="tl-card-category badge-nascimento">Nascimento</span>
-            <div class="tl-card-title">${esc(perfil.nomeCompleto || 'Nascimento')}</div>
-            <div class="tl-card-meta">Início da linha do tempo</div>
-          </div>
+      <div class="tl-item tl-group ${lado}" data-data="${dataNasc}">
+        <div class="tl-card tl-card-nascimento" style="grid-row:1" onclick="showView('home')">
+          <span class="tl-card-category badge-nascimento">Nascimento</span>
+          <div class="tl-card-title">${esc(perfil.nomeCompleto || 'Nascimento')}</div>
+          <div class="tl-card-meta">Início da linha do tempo</div>
         </div>
-        <div class="tl-center">
-          <div class="tl-dot tl-dot-nascimento" onclick="showView('home')" title="Nascimento">${NASCIMENTO_SVG}</div>
-        </div>
-        <div class="tl-date-side">
-          <div class="tl-date-bubble tl-bubble-nascimento" onclick="showView('home')">${dataFmt}</div>
-        </div>
+        <div class="tl-dot tl-dot-nascimento" style="grid-row:1" onclick="showView('home')" title="Nascimento">${NASCIMENTO_SVG}</div>
+        <div class="tl-date-bubble tl-bubble-nascimento" style="grid-row:1" onclick="showView('home')">${dataFmt}</div>
       </div>`;
   })();
 
