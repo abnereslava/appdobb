@@ -27,30 +27,34 @@ const IMG_CONSULTA = `<img src="img/calendario.png"    class="category-icon-img"
 const IMG_CIRURGIA = `<img src="img/cirurgia.png"      class="category-icon-img" alt="" />`;
 const IMG_ALERGIA  = `<img src="img/alergia.png"       class="category-icon-img" alt="" />`;
 const IMG_VACINA   = `<img src="img/vacina.png"        class="category-icon-img" alt="" />`;
+const IMG_EXAMES   = `<img src="img/hospital.png"      class="category-icon-img" alt="" />`;
 const IMG_OUTRO    = `<img src="img/outro.png"         class="category-icon-img" alt="" />`;
 
 // SVGs mantidos: ícones sem PNG correspondente e ícones inline funcionais
 const SEARCH_SVG  = `<svg class="category-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
 const CLOCK_SVG   = `<svg class="inline-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
 const WARNING_SVG = `<svg class="inline-icon" viewBox="0 0 24 24" style="color: #c0392b; margin-right: 4px;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+const PULSE_SVG   = `<svg class="inline-icon" viewBox="0 0 24 24" style="color: #3a7fd4; margin-right: 4px;"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>`;
 const MALE_SVG    = `<svg class="inline-icon" viewBox="0 0 24 24" style="margin-right: 4px; color: #2a62a0;"><circle cx="10" cy="14" r="5"/><path d="M14 10L19 5"/><path d="M14 5h5v5"/></svg>`;
 const FEMALE_SVG  = `<svg class="inline-icon" viewBox="0 0 24 24" style="margin-right: 4px; color: #a03458;"><circle cx="12" cy="9" r="5"/><path d="M12 14v7"/><path d="M9 18h6"/></svg>`;
+const NASCIMENTO_SVG = `<svg class="category-icon" viewBox="0 0 24 24"><path d="M12 2l2.39 4.84 5.34.78-3.86 3.77.91 5.32L12 14.98 7.22 16.5l.91-5.32L4.27 7.62l5.34-.78z"/></svg>`;
 
 const CATEGORIAS = {
-  doenca:   { label: 'Doença',   icone: IMG_DOENCA   },
   acidente: { label: 'Acidente', icone: IMG_ACIDENTE },
   alergia:  { label: 'Alergia',  icone: IMG_ALERGIA  },
-  consulta: { label: 'Consulta', icone: IMG_CONSULTA },
-  vacina:   { label: 'Vacina',   icone: IMG_VACINA   },
   cirurgia: { label: 'Cirurgia', icone: IMG_CIRURGIA },
+  consulta: { label: 'Consulta', icone: IMG_CONSULTA },
+  doenca:   { label: 'Doença',   icone: IMG_DOENCA   },
+  exames:   { label: 'Exames',   icone: IMG_EXAMES   },
+  vacina:   { label: 'Vacina',   icone: IMG_VACINA   },
   outro:    { label: 'Outro',    icone: IMG_OUTRO    },
 };
 
 const TIPOS_CONSULTA = {
   rotina:      'Consulta de Rotina',
   especialista:'Especialista',
-  retorno:     'Retorno',
   exame:       'Exame',
+  retorno:     'Retorno',
   urgencia:    'Urgência',
   outro:       'Outro',
 };
@@ -87,6 +91,7 @@ let buscaAtiva   = '';
 
 // Estado da agenda
 let buscaAgendaAtiva = '';
+let filtroTipoConsulta = 'todos';
 let modoAgenda          = localStorage.getItem('modo-agenda') || 'lista';
 let mesCalendarioAtivo  = { ano: new Date().getFullYear(), mes: new Date().getMonth() };
 let diaCalendarioAberto = null;
@@ -123,6 +128,7 @@ let temPerfil = false;
 // Estado dos formulários
 let medicamentosTemp = [];
 let alergiasTemp     = [];
+let doencasCronicasTemp = [];
 
 
 /* ================================================
@@ -297,12 +303,15 @@ function showView(nome) {
   if (navBtn) navBtn.classList.add('active');
 
   if (nome === 'home')       renderizarHome();
-  if (nome === 'timeline')   resetarERecarregarEventos();
+  if (nome === 'timeline')   { _scrollHojeTimeline = true; resetarERecarregarEventos(); }
   if (nome === 'agenda')     resetarERecarregarConsultas();
   if (nome === 'calendario') { diaCalendarioAberto = null; renderizarAbaCalendario(); }
+
+  window.scrollTo(0, 0);
+  atualizarBotaoTopo();
 }
 
-function abrirModal(id)  { const m = document.getElementById(id); if (m) m.classList.add('open');    document.body.style.overflow = 'hidden'; }
+function abrirModal(id)  { const m = document.getElementById(id); if (m) { m.classList.add('open'); const b = m.querySelector('.modal-body'); if (b) b.scrollTop = 0; } document.body.style.overflow = 'hidden'; }
 function fecharModal(id) { const m = document.getElementById(id); if (m) m.classList.remove('open'); document.body.style.overflow = ''; }
 
 // Modal de confirmação customizado — substitui confirm() nativo
@@ -391,11 +400,6 @@ async function renderizarHome() {
 
   aplicarTema(perfil.sexo);
 
-  const totalEventos = eventos.length;
-  const totalGasto   = eventos.reduce((s, e) => s + (parseFloat(e.custo) || 0), 0);
-  const contagens    = {};
-  eventos.forEach(e => { contagens[e.categoria] = (contagens[e.categoria] || 0) + 1; });
-
   const avatarHTML = perfil.fotoUrl
     ? `<img src="${esc(perfil.fotoUrl)}" alt="${esc(perfil.nomeCompleto)}" onerror="this.style.display='none'" />`
     : `<img src="img/mamadeira.png" alt="" style="width:56px;height:56px;object-fit:contain;" />`;
@@ -434,8 +438,10 @@ async function renderizarHome() {
         </button>
         <div class="profile-avatar">${avatarHTML}</div>
         <div class="profile-name">${esc(perfil.nomeCompleto)}</div>
-        <div class="profile-age">${calcularIdade(perfil.dataNascimento)}</div>
-        ${generoBadge}${premHTML}
+        <div class="profile-age-genero">
+          <span class="profile-age">${calcularIdade(perfil.dataNascimento)}</span>
+          ${generoBadge}${premHTML}
+        </div>
         <div class="profile-stats" style="margin-top:14px;">${statsHTML.join('')}</div>
       </div>
 
@@ -446,18 +452,28 @@ async function renderizarHome() {
       </div>` : ''}
 
       <!-- Alergias -->
-      <div class="alergias-section" style="margin-bottom:12px;">
-        <div class="section-title" style="font-size:14px;margin-bottom:8px;display:flex;align-items:center;gap:4px;">${WARNING_SVG} Alergias</div>
+      <div class="health-section health-section--alergias" style="margin-bottom:12px;">
+        <div class="health-section-head">
+          <span class="health-section-icon">${WARNING_SVG}</span>
+          <span class="health-section-title">Alergias</span>
+          ${(perfil.alergias||[]).length ? `<span class="health-section-count">${perfil.alergias.length}</span>` : ''}
+        </div>
         ${(perfil.alergias||[]).length === 0
-          ? '<p class="no-allergies">Nenhuma alergia registrada</p>'
-          : renderizarAlergiasAgrupadas(perfil.alergias)}
+          ? '<p class="health-empty">Nenhuma alergia registrada</p>'
+          : renderizarAlergiasLista(perfil.alergias)}
       </div>
 
-      ${totalEventos > 0 ? `
-      <div class="stats-grid" style="margin-bottom:12px;">
-        <div class="stat-card accent"><div class="stat-value">${totalEventos}</div><div class="stat-label">Eventos</div></div>
-        <div class="stat-card"><div class="stat-value" style="font-size:18px;">${formatarDinheiro(totalGasto)}</div><div class="stat-label">Total gasto</div></div>
-      </div>` : ''}
+      <!-- Doenças crônicas -->
+      <div class="health-section health-section--doencas" style="margin-bottom:12px;">
+        <div class="health-section-head">
+          <span class="health-section-icon">${PULSE_SVG}</span>
+          <span class="health-section-title">Doenças crônicas</span>
+          ${(perfil.doencasCronicas||[]).length ? `<span class="health-section-count">${perfil.doencasCronicas.length}</span>` : ''}
+        </div>
+        ${(perfil.doencasCronicas||[]).length === 0
+          ? '<p class="health-empty">Nenhuma doença crônica registrada</p>'
+          : renderizarDoencasLista(perfil.doencasCronicas)}
+      </div>
 
       ${recentes.length ? `
       <div style="margin-bottom:16px;">
@@ -481,14 +497,25 @@ async function renderizarHome() {
     </div>`;
 }
 
-function renderizarAlergiasAgrupadas(alergias) {
-  const grupos = {};
-  alergias.forEach(a => { if (!grupos[a.tipo]) grupos[a.tipo]=[]; grupos[a.tipo].push(a); });
-  return Object.entries(grupos).map(([tipo, lista]) => `
-    <div>
-      <div class="allergy-type-label">${TIPOS_ALERGIA[tipo] || tipo}</div>
-      <div>${lista.map(a => `<span class="allergy-tag">${esc(a.descricao)}${a.severidade ? `<span class="allergy-severity">(${SEVERIDADES[a.severidade]||a.severidade})</span>` : ''}</span>`).join('')}</div>
-    </div>`).join('');
+function renderizarAlergiasLista(alergias) {
+  return `<div class="health-list">${alergias.map(a => `
+    <div class="health-row">
+      <div class="health-row-main">
+        <span class="health-row-name">${esc(a.descricao)}</span>
+        ${a.tipo ? `<span class="health-row-sub">${TIPOS_ALERGIA[a.tipo] || a.tipo}</span>` : ''}
+      </div>
+      ${a.severidade ? `<span class="severity-chip severity-${a.severidade}">${SEVERIDADES[a.severidade]||a.severidade}</span>` : ''}
+    </div>`).join('')}</div>`;
+}
+
+function renderizarDoencasLista(doencas) {
+  return `<div class="health-list">${doencas.map(d => `
+    <div class="health-row">
+      <div class="health-row-main">
+        <span class="health-row-name">${esc(d.descricao)}</span>
+        ${d.observacao ? `<span class="health-row-sub">${esc(d.observacao)}</span>` : ''}
+      </div>
+    </div>`).join('')}</div>`;
 }
 
 
@@ -529,6 +556,8 @@ async function abrirFormPerfil() {
 
   alergiasTemp = JSON.parse(JSON.stringify(p.alergias || []));
   renderizarAlergiasForm();
+  doencasCronicasTemp = JSON.parse(JSON.stringify(p.doencasCronicas || []));
+  renderizarDoencasForm();
   abrirModal('modal-perfil');
 }
 
@@ -594,6 +623,32 @@ function adicionarAlergia() {
 function removerAlergia(i)           { alergiasTemp.splice(i, 1); renderizarAlergiasForm(); }
 function atualizarAlergia(i, k, v)   { if (alergiasTemp[i]) alergiasTemp[i][k] = v; }
 
+function renderizarDoencasForm() {
+  const c = document.getElementById('lista-doencas-form');
+  if (!c) return;
+  c.innerHTML = doencasCronicasTemp.length === 0
+    ? '<p style="font-size:13px;color:var(--text-muted);margin-bottom:10px;">Nenhuma doença crônica cadastrada.</p>'
+    : doencasCronicasTemp.map((d, i) => `
+      <div class="allergy-form-item">
+        <button type="button" class="remove-btn" onclick="removerDoenca(${i})">&times;</button>
+        <div class="form-group" style="margin-bottom:8px;">
+          <label class="form-label">Doença</label>
+          <input class="form-input" style="font-size:13px;" type="text" value="${esc(d.descricao||'')}" placeholder="Ex: Asma, Diabetes tipo 1..." oninput="atualizarDoenca(${i},'descricao',this.value)" />
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Observação (opcional)</label>
+          <input class="form-input" style="font-size:13px;" type="text" value="${esc(d.observacao||'')}" placeholder="Ex: Uso contínuo de bombinha..." oninput="atualizarDoenca(${i},'observacao',this.value)" />
+        </div>
+      </div>`).join('');
+}
+
+function adicionarDoenca() {
+  doencasCronicasTemp.push({ id: gerarId(), descricao: '', observacao: '' });
+  renderizarDoencasForm();
+}
+function removerDoenca(i)           { doencasCronicasTemp.splice(i, 1); renderizarDoencasForm(); }
+function atualizarDoenca(i, k, v)   { if (doencasCronicasTemp[i]) doencasCronicasTemp[i][k] = v; }
+
 async function salvarPerfil(event) {
   event.preventDefault();
   const nome  = document.getElementById('perfil-nome').value.trim();
@@ -617,6 +672,7 @@ async function salvarPerfil(event) {
     altura:           document.getElementById('perfil-altura').value || null,
     fotoUrl:          document.getElementById('perfil-foto').value.trim() || null,
     alergias:         alergiasTemp.filter(a => a.descricao.trim()),
+    doencasCronicas:  doencasCronicasTemp.filter(d => d.descricao.trim()),
   };
   try {
     await gravarPerfil(perfil);
@@ -678,7 +734,7 @@ async function renderizarTimeline() {
         ${dataFmt}
       </div>`;
     return `
-      <div class="tl-item ${lado}">
+      <div class="tl-item ${lado}" data-data="${evento.data}">
         <div class="tl-content">${cartao}</div>
         <div class="tl-center">
           <div class="tl-dot tl-dot-${evento.categoria}" onclick="abrirDetalheEvento('${evento.id}')" title="${esc(evento.titulo)}">
@@ -689,23 +745,47 @@ async function renderizarTimeline() {
       </div>`;
   }).join('');
 
-  const nascLabel = perfil?.dataNascimento
-    ? (perfil.sexo === 'menino' ? 'Nascido em' : perfil.sexo === 'menina' ? 'Nascida em' : 'Nascido(a) em')
-    : null;
-  const nascFmt = nascLabel
-    ? (() => { const [a,m,d] = perfil.dataNascimento.split('-'); return `${d}/${m}/${a}`; })()
-    : null;
-
   const filtroDataAtivo = filtroDataInicio || filtroDataFim;
   const fmtD = s => s ? s.split('-').reverse().join('/') : '';
 
+  // Card de nascimento — marca, na própria timeline, quando o paciente nasceu.
+  // Como nenhum evento pode ser anterior ao nascimento, ele entra no fim da lista
+  // (e só quando todos os eventos já foram carregados, garantindo a posição correta).
+  const dataNasc = perfil?.dataNascimento || null;
+  const mostrarNascimento = !!dataNasc
+    && filtroAtivo === 'todos'
+    && !buscaAtiva.trim()
+    && eventosEsgotado
+    && (!filtroDataInicio || dataNasc >= filtroDataInicio)
+    && (!filtroDataFim    || dataNasc <= filtroDataFim);
+
+  const nascCardHTML = !mostrarNascimento ? '' : (() => {
+    const lado = lista.length % 2 === 0 ? 'tl-esquerda' : 'tl-direita';
+    const dataFmt = formatarDataCurta(dataNasc);
+    return `
+      <div class="tl-item ${lado}" data-data="${dataNasc}">
+        <div class="tl-content">
+          <div class="tl-card tl-card-nascimento" onclick="showView('home')">
+            <span class="tl-card-category badge-nascimento">Nascimento</span>
+            <div class="tl-card-title">${esc(perfil.nomeCompleto || 'Nascimento')}</div>
+            <div class="tl-card-meta">Início da linha do tempo</div>
+          </div>
+        </div>
+        <div class="tl-center">
+          <div class="tl-dot tl-dot-nascimento" onclick="showView('home')" title="Nascimento">${NASCIMENTO_SVG}</div>
+        </div>
+        <div class="tl-date-side">
+          <div class="tl-date-bubble tl-bubble-nascimento" onclick="showView('home')">${dataFmt}</div>
+        </div>
+      </div>`;
+  })();
+
   container.innerHTML = `
     <div>
-      <div class="tl-header" style="margin-bottom:${nascFmt ? '4px' : '12px'};">
+      <div class="tl-header" style="margin-bottom:12px;">
         <h1 class="page-title">Histórico de Saúde</h1>
         <button class="btn-secondary btn-sm" onclick="abrirFormEvento(null)">+ Novo</button>
       </div>
-      ${nascFmt ? `<div class="historico-nascimento" onclick="showView('home')" title="Ver perfil">${nascLabel} ${nascFmt}</div>` : ''}
 
       <div class="search-box">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -727,7 +807,7 @@ async function renderizarTimeline() {
 
       ${filtroDataAtivo ? `<div class="paginacao-info">Período: ${fmtD(filtroDataInicio)||'início'} → ${fmtD(filtroDataFim)||'hoje'}</div>` : ''}
 
-      ${lista.length === 0
+      ${lista.length === 0 && !mostrarNascimento
         ? `<div class="empty-state">
             <div class="empty-icon">${filtroAtivo==='todos'&&!buscaAtiva&&!filtroDataAtivo ? IMG_URSINHOBEM : SEARCH_SVG}</div>
             <div class="empty-title">${filtroAtivo==='todos'&&!buscaAtiva&&!filtroDataAtivo?'Nenhum evento ainda':'Nenhum resultado'}</div>
@@ -737,6 +817,7 @@ async function renderizarTimeline() {
         : `<div class="tl-wrapper">
             <div class="tl-axis"></div>
             ${itensHTML}
+            ${nascCardHTML}
           </div>`
       }
 
@@ -759,11 +840,18 @@ async function renderizarTimeline() {
       _observerTimeline.observe(sentinela);
     }
   }
+
+  // Ao abrir a aba, posiciona a timeline na entrada mais próxima da data atual
+  if (_scrollHojeTimeline) {
+    _scrollHojeTimeline = false;
+    requestAnimationFrame(() => scrollParaHoje());
+  }
 }
 
 function filtrarPorCategoria(cat) { filtroAtivo = cat; renderizarTimeline(); }
 function buscarEventos(txt)        { buscaAtiva  = txt; renderizarTimeline(); }
 function buscarAgenda(txt)         { buscaAgendaAtiva = txt; renderizarAgenda(); }
+function filtrarPorTipoConsulta(t) { filtroTipoConsulta = t; renderizarAgenda(); }
 function limparFiltroData()        { alterarFiltroData('', ''); }
 
 
@@ -946,8 +1034,12 @@ async function renderizarAgendaLista() {
   const consultas = consultasCache;
   const hoje      = new Date(); hoje.setHours(0,0,0,0);
 
-  let proximas = consultas.filter(c => c.status !== 'cancelada' && new Date(c.data + 'T00:00:00') >= hoje).sort((a,b)=>new Date(a.data)-new Date(b.data));
-  let passadas = consultas.filter(c => c.status === 'cancelada' || new Date(c.data + 'T00:00:00') < hoje).sort((a,b)=>new Date(b.data)-new Date(a.data));
+  const consultasFiltradas = filtroTipoConsulta === 'todos'
+    ? consultas
+    : consultas.filter(c => (c.tipo || 'outro') === filtroTipoConsulta);
+
+  let proximas = consultasFiltradas.filter(c => c.status !== 'cancelada' && new Date(c.data + 'T00:00:00') >= hoje).sort((a,b)=>new Date(a.data)-new Date(b.data));
+  let passadas = consultasFiltradas.filter(c => c.status === 'cancelada' || new Date(c.data + 'T00:00:00') < hoje).sort((a,b)=>new Date(b.data)-new Date(a.data));
 
   if (buscaAgendaAtiva.trim()) {
     const b = buscaAgendaAtiva.toLowerCase();
@@ -962,7 +1054,15 @@ async function renderizarAgendaLista() {
 
   const filtroDataAtivo = filtroDataInicio || filtroDataFim;
   const fmtD = s => s ? s.split('-').reverse().join('/') : '';
-  const semFiltros = !buscaAgendaAtiva && !filtroDataAtivo;
+  const semFiltros = !buscaAgendaAtiva && !filtroDataAtivo && filtroTipoConsulta === 'todos';
+
+  // Chips de filtro por tipo de consulta (só mostra os tipos presentes nas consultas)
+  const filtrosTipo = [
+    { valor:'todos', label:`Todas (${consultas.length}${!consultasEsgotado?'+':''})` },
+    ...Object.entries(TIPOS_CONSULTA)
+      .filter(([v]) => consultas.some(c => (c.tipo || 'outro') === v))
+      .map(([v,label]) => ({ valor:v, label:`${label} (${consultas.filter(c => (c.tipo || 'outro') === v).length})` }))
+  ];
 
   container.innerHTML = `
     <div>
@@ -983,6 +1083,10 @@ async function renderizarAgendaLista() {
         <input class="filtro-data-input" type="date" title="Data fim" value="${filtroDataFim}"
           onchange="alterarFiltroData(filtroDataInicio, this.value)" />
         ${filtroDataAtivo ? `<button class="filtro-datas-limpar" onclick="limparFiltroData()" title="Limpar filtro de datas">×</button>` : ''}
+      </div>
+
+      <div class="timeline-filters">
+        ${filtrosTipo.map(f => `<button class="filter-btn ${filtroTipoConsulta===f.valor?'active':''}" onclick="filtrarPorTipoConsulta('${f.valor}')">${f.label}</button>`).join('')}
       </div>
 
       ${filtroDataAtivo ? `<div class="paginacao-info">Período: ${fmtD(filtroDataInicio)||'início'} → ${fmtD(filtroDataFim)||'hoje'}</div>` : ''}
@@ -1028,6 +1132,13 @@ async function renderizarAgendaLista() {
 }
 
 let seletorMesAberto = false;
+let verMesInteiro    = false;
+
+function setVerMesInteiro(v) {
+  verMesInteiro = v;
+  if (v) diaCalendarioAberto = null;
+  renderizarAbaCalendario();
+}
 
 async function renderizarAbaCalendario() {
   // Redireciona para a view correta e chama o calendário
@@ -1114,29 +1225,48 @@ async function _buildCalendarioHTML(container) {
       </div>`;
   }
 
+  // Renderizadores de item (com o dia antes do badge)
+  const _dia = dStr => parseInt(dStr.split('-')[2], 10);
+  const cardConsulta = (c, dStr) => {
+    const tipo = TIPOS_CONSULTA[c.tipo] || c.tipo;
+    return `<div class="cal-item-card cal-item-consulta" onclick="abrirDetalheConsulta('${c.id}')">
+      <span class="cal-item-dia">${_dia(dStr)}</span>
+      <span class="cal-item-badge">Consulta</span>
+      <span class="cal-item-titulo">${esc(c.medico || tipo)}</span>
+      ${c.hora ? `<span class="cal-item-hora">${c.hora}</span>` : ''}
+    </div>`;
+  };
+  const cardEvento = (e, dStr) => {
+    const cat = CATEGORIAS[e.categoria] || CATEGORIAS.outro;
+    return `<div class="cal-item-card cal-item-evento" onclick="abrirDetalheEvento('${e.id}')">
+      <span class="cal-item-dia">${_dia(dStr)}</span>
+      <span class="cal-item-badge">${cat.label}</span>
+      <span class="cal-item-titulo">${esc(e.titulo)}</span>
+    </div>`;
+  };
+
   let itensDiaHTML = '';
-  if (diaCalendarioAberto) {
+  if (verMesInteiro) {
+    // Lista todos os itens do mês, ordenados por dia
+    const prefixoMes = `${ano}-${String(mes+1).padStart(2,'0')}`;
+    const datas = [...new Set([...Object.keys(consultasPorDia), ...Object.keys(eventosPorDia)])]
+      .filter(d => d.startsWith(prefixoMes))
+      .sort();
+    let cards = '';
+    datas.forEach(dStr => {
+      (consultasPorDia[dStr] || []).forEach(c => { cards += cardConsulta(c, dStr); });
+      (eventosPorDia[dStr]   || []).forEach(e => { cards += cardEvento(e, dStr); });
+    });
+    if (cards) itensDiaHTML = `<div class="cal-itens-dia">${cards}</div>`;
+  } else if (diaCalendarioAberto) {
     const dStr = `${ano}-${String(mes+1).padStart(2,'0')}-${String(diaCalendarioAberto).padStart(2,'0')}`;
     const cs   = consultasPorDia[dStr] || [];
     const es   = eventosPorDia[dStr]   || [];
     if (cs.length || es.length) {
       itensDiaHTML = `
         <div class="cal-itens-dia">
-          ${cs.map(c => {
-            const tipo = TIPOS_CONSULTA[c.tipo] || c.tipo;
-            return `<div class="cal-item-card cal-item-consulta" onclick="abrirDetalheConsulta('${c.id}')">
-              <span class="cal-item-badge">Consulta</span>
-              <span class="cal-item-titulo">${esc(c.medico || tipo)}</span>
-              ${c.hora ? `<span class="cal-item-hora">${c.hora}</span>` : ''}
-            </div>`;
-          }).join('')}
-          ${es.map(e => {
-            const cat = CATEGORIAS[e.categoria] || CATEGORIAS.outro;
-            return `<div class="cal-item-card cal-item-evento" onclick="abrirDetalheEvento('${e.id}')">
-              <span class="cal-item-badge">${cat.label}</span>
-              <span class="cal-item-titulo">${esc(e.titulo)}</span>
-            </div>`;
-          }).join('')}
+          ${cs.map(c => cardConsulta(c, dStr)).join('')}
+          ${es.map(e => cardEvento(e, dStr)).join('')}
         </div>`;
     }
   }
@@ -1163,11 +1293,22 @@ async function _buildCalendarioHTML(container) {
         <button class="cal-nav-btn" onclick="navegarMesCalendario(1)">&#8594;</button>
       </div>
 
+      ${(ano === hoje.getFullYear() && mes === hoje.getMonth()) ? '' : `
+      <button class="cal-mes-atual-btn" onclick="irParaMesAtual()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
+        Voltar ao mês atual
+      </button>`}
+
       ${seletorMesAberto ? _renderizarSeletorMes() : ''}
 
       <div class="cal-grid">
         ${diasSemana.map(d => `<div class="cal-dia-semana">${d}</div>`).join('')}
         ${celulas}
+      </div>
+
+      <div class="cal-modo-toggle">
+        <button class="cal-modo-btn ${!verMesInteiro?'ativo':''}" onclick="setVerMesInteiro(false)">Dia específico</button>
+        <button class="cal-modo-btn ${verMesInteiro?'ativo':''}" onclick="setVerMesInteiro(true)">Mês inteiro</button>
       </div>
 
       ${itensDiaHTML}
@@ -1184,6 +1325,14 @@ async function renderizarCalendarioNaView(container) {
 
 function abrirDiaCalendario(dia) {
   diaCalendarioAberto = diaCalendarioAberto === dia ? null : dia;
+  renderizarAbaCalendario();
+}
+
+function irParaMesAtual() {
+  const h = new Date();
+  mesCalendarioAtivo = { ano: h.getFullYear(), mes: h.getMonth() };
+  diaCalendarioAberto = null;
+  seletorMesAberto = false;
   renderizarAbaCalendario();
 }
 
@@ -1647,6 +1796,44 @@ function animarTransicaoVista(viewAtual, proximoNome, direcao) {
   }
 }
 
+let _scrollHojeTimeline = false;
+
+// Localiza, na timeline, o item cuja data é a mais próxima da data atual
+function _itemTimelineMaisProximoDeHoje() {
+  const itens = document.querySelectorAll('#view-timeline .tl-item[data-data]');
+  if (!itens.length) return null;
+  const hoje = Date.now();
+  let melhor = null, melhorDiff = Infinity;
+  itens.forEach(el => {
+    const t = new Date(el.dataset.data + 'T00:00:00').getTime();
+    if (isNaN(t)) return;
+    const diff = Math.abs(t - hoje);
+    if (diff < melhorDiff) { melhorDiff = diff; melhor = el; }
+  });
+  return melhor;
+}
+
+// Usa sempre a data atual como referência: rola até a entrada mais próxima de hoje
+function scrollParaHoje() {
+  const el = _itemTimelineMaisProximoDeHoje();
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  else window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function atualizarBotaoTopo() {
+  const btn = document.getElementById('btn-topo');
+  if (!btn) return;
+  const vista = document.querySelector('.view.active');
+  const naTimeline = vista && vista.id === 'view-timeline';
+  if (naTimeline && window.scrollY > 300) btn.classList.add('visivel');
+  else btn.classList.remove('visivel');
+}
+
+function iniciarBotaoTopo() {
+  window.addEventListener('scroll', atualizarBotaoTopo, { passive: true });
+  atualizarBotaoTopo();
+}
+
 function iniciarSwipe() {
   const app = document.getElementById('app');
   if (!app) return;
@@ -1748,6 +1935,7 @@ window._onAuthStateChange = async function ({ user, acesso }) {
   if (appEl) appEl.style.display = '';
   renderizarBarraTopo();
   iniciarSwipe();
+  iniciarBotaoTopo();
   renderizarHome();
 };
 
@@ -1774,7 +1962,6 @@ function renderizarBarraTopo() {
     </div>
     <div class="barra-topo-centro">
       <button class="bebe-chip" id="bebe-chip" onclick="abrirSeletorBebe()" title="Trocar bebê">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5V2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5V5"/><path d="M8 9.5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-10z"/></svg>
         <span id="bebe-chip-nome">…</span>
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5"><polyline points="6 9 12 15 18 9"/></svg>
       </button>

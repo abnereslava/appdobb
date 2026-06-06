@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bebe-shell-v4';
+const CACHE_NAME = 'bebe-shell-v5';
 
 const SHELL_FILES = [
   '/',
@@ -26,6 +26,7 @@ const SHELL_FILES = [
   '/img/alergia.png',
   '/img/vacina.png',
   '/img/outro.png',
+  '/img/hospital.png',
 ];
 
 self.addEventListener('install', event => {

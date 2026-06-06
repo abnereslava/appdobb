@@ -136,6 +136,14 @@ img { max-width: 100%; height: auto; display: block; }
 input, select, textarea, button { font-family: inherit; font-size: inherit; }
 button { cursor: pointer; border: none; background: none; }
 select { appearance: none; -webkit-appearance: none; }
+
+/* Evita seleção de texto / menu de contexto ao pressionar elementos clicáveis (mobile) */
+button, .chip, .bebe-chip, .filter-btn, .allergy-tag,
+.cal-dia, .cal-item-card, .cal-seletor-mes-btn, .cal-modo-btn, [onclick] {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
 a { color: var(--primary); text-decoration: none; }
 
 
@@ -240,6 +248,30 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
 }
 .nav-fab:hover { transform: scale(1.08); box-shadow: var(--shadow-lg); }
 
+/* Botão flutuante: voltar ao topo */
+.btn-topo {
+  position: fixed;
+  bottom: 84px;
+  right: max(16px, calc(50% - 240px + 16px));
+  z-index: 150;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px) scale(0.9);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
+.btn-topo.visivel { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
+.btn-topo:hover { background: var(--primary); color: var(--primary-text); }
+
 
 /* ================================================
    CARTÕES E PERFIL
@@ -268,9 +300,10 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
 }
 .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .profile-name { font-size: 22px; font-weight: 600; margin-bottom: 2px; }
-.profile-age { font-size: 14px; color: var(--primary); font-weight: 500; margin-bottom: 10px; }
-.profile-gender-badge { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 12px; background: var(--primary-light); color: var(--primary-dark); }
-.badge-prematuro { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; background: #fff3cd; color: #856404; border: 1px solid #ffd357; margin-left: 6px; }
+.profile-age-genero { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.profile-age { font-size: 14px; color: var(--primary); font-weight: 500; }
+.profile-gender-badge { display: inline-flex; align-items: center; padding: 3px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; background: var(--primary-light); color: var(--primary-dark); }
+.badge-prematuro { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; background: #fff3cd; color: #856404; border: 1px solid #ffd357; }
 .profile-stats { display: flex; justify-content: center; gap: 20px; padding-top: 14px; border-top: 1px solid var(--border); }
 .profile-stat { text-align: center; }
 .profile-stat-value { font-size: 18px; font-weight: 600; line-height: 1.2; }
@@ -291,11 +324,25 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
 .stat-value { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1; margin-bottom: 4px; }
 .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
 
-.alergias-section { background: var(--alergia-bg); border: 1px solid var(--alergia-border); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 12px; }
-.allergy-tag { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 13px; font-weight: 500; background: var(--alergia-border); color: var(--alergia-text); margin: 3px 3px 3px 0; }
-.allergy-severity { font-size: 10px; opacity: 0.7; font-style: italic; }
-.allergy-type-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--alergia-text); opacity: 0.7; margin: 8px 0 4px; }
-.no-allergies { color: var(--text-muted); font-size: 14px; font-style: italic; }
+/* Seções de saúde (Alergias / Doenças crônicas) — cada item em sua própria linha */
+.health-section { background: var(--bg-card); border: 1px solid var(--border); border-left-width: 3px; border-radius: var(--radius-lg); padding: 14px 16px; }
+.health-section--alergias { border-left-color: #e0a800; }
+.health-section--doencas  { border-left-color: #3a7fd4; }
+.health-section-head { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+.health-section-icon { display: inline-flex; }
+.health-section-title { font-size: 15px; font-weight: 600; font-family: 'Playfair Display', Georgia, serif; flex: 1; }
+.health-section-count { font-size: 11px; font-weight: 700; color: var(--text-muted); background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 1px 9px; }
+.health-list { display: flex; flex-direction: column; gap: 8px; }
+.health-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.health-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.health-row-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.health-row-sub { font-size: 12px; color: var(--text-muted); }
+.health-empty { color: var(--text-muted); font-size: 13px; font-style: italic; padding: 2px; }
+
+.severity-chip { flex-shrink: 0; display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: capitalize; }
+.severity-leve     { background: #e0f5ec; color: #1f8a63; }
+.severity-moderada { background: #fdf0e0; color: #c8651f; }
+.severity-grave    { background: #fde8e8; color: #c0392b; }
 
 
 /* ================================================
@@ -368,22 +415,26 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
   align-items: center;
   justify-content: center;
   font-size: 18px;
-  border: 3px solid var(--bg);
+  background: var(--bg-card);
+  border: 2.5px solid var(--border);
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   flex-shrink: 0;
   cursor: pointer;
   transition: transform 0.15s ease;
+  overflow: hidden;
 }
 .tl-dot:hover { transform: scale(1.12); }
 
-/* Cores do dot por categoria */
-.tl-dot-doenca   { background: #e05c5c; }
-.tl-dot-acidente { background: #e07a3a; }
-.tl-dot-alergia  { background: #c9960a; }
-.tl-dot-consulta { background: #3a7fd4; }
-.tl-dot-vacina   { background: #2ea87a; }
-.tl-dot-cirurgia { background: #8b54c8; }
-.tl-dot-outro    { background: #8a8a9a; }
+/* Cor do anel do dot por categoria (a ilustração colorida aparece sobre fundo claro) */
+.tl-dot-doenca   { border-color: #e05c5c; }
+.tl-dot-acidente { border-color: #e07a3a; }
+.tl-dot-alergia  { border-color: #c9960a; }
+.tl-dot-consulta { border-color: #3a7fd4; }
+.tl-dot-vacina   { border-color: #2ea87a; }
+.tl-dot-cirurgia { border-color: #8b54c8; }
+.tl-dot-exames   { border-color: #1499a8; }
+.tl-dot-outro    { border-color: #8a8a9a; }
+.tl-dot-nascimento { border-color: var(--primary); }
 
 /* Bolha de data */
 .tl-date-bubble {
@@ -408,7 +459,9 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
 .tl-bubble-consulta { background: #3a7fd4; }
 .tl-bubble-vacina   { background: #2ea87a; }
 .tl-bubble-cirurgia { background: #8b54c8; }
+.tl-bubble-exames   { background: #1499a8; }
 .tl-bubble-outro    { background: #8a8a9a; }
+.tl-bubble-nascimento { background: var(--primary); }
 
 /* Cartão do evento na linha do tempo */
 .tl-card {
@@ -422,6 +475,13 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
 }
 .tl-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
 .tl-card:active { transform: scale(0.97); }
+
+/* Card especial: marco de nascimento */
+.tl-card-nascimento {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  border-style: dashed;
+}
 
 .tl-card-category {
   font-size: 9px;
@@ -462,17 +522,6 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
   margin-bottom: 4px;
 }
 
-.historico-nascimento {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-bottom: 12px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.historico-nascimento:hover { color: var(--primary); text-decoration: underline; }
-
 /* Filtros */
 .timeline-filters {
   display: flex;
@@ -484,7 +533,11 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
 }
 .timeline-filters::-webkit-scrollbar { display: none; }
 .filter-btn {
-  padding: 5px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 0 12px;
   border-radius: 20px;
   font-size: 11px;
   font-weight: 500;
@@ -496,6 +549,8 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
   flex-shrink: 0;
 }
 .filter-btn.active, .filter-btn:hover { background: var(--primary); color: var(--primary-text); border-color: var(--primary); }
+/* Ícone da categoria dentro do chip — tamanho reduzido para não aumentar a altura */
+.filter-btn .category-icon-img { width: 15px; height: 15px; }
 
 /* Busca */
 .search-box { position: relative; margin-bottom: 12px; }
@@ -663,6 +718,25 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
 }
 .cal-mes-titulo-btn:hover { background: var(--primary-light); color: var(--primary); }
 
+/* Botão "voltar ao mês atual" — aparece quando o mês exibido não é o atual */
+.cal-mes-atual-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--primary-light);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+}
+.cal-mes-atual-btn:hover { background: var(--primary); color: var(--primary-text); }
+
 /* Seletor rápido de mês/ano */
 .cal-seletor-mes {
   background: var(--bg-card);
@@ -810,6 +884,45 @@ body[data-theme="dark"] .cal-item-evento { background: #2a1f00; }
 }
 .cal-item-titulo { font-size: 13px; font-weight: 500; flex: 1; }
 .cal-item-hora   { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.cal-item-dia {
+  flex-shrink: 0;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+/* Alternância entre ver itens de um dia específico ou do mês inteiro */
+.cal-modo-toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 3px;
+  margin-bottom: 16px;
+}
+.cal-modo-btn {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: calc(var(--radius-md) - 3px);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: var(--transition);
+}
+.cal-modo-btn.ativo {
+  background: var(--primary);
+  color: var(--primary-text);
+}
 
 .agenda-secao { margin-bottom: 24px; }
 .agenda-secao-titulo {
@@ -1083,7 +1196,9 @@ body[data-theme="dark"] .cal-item-evento { background: #2a1f00; }
 .badge-consulta{ background: #e0ecfa; color: #3a7fd4; }
 .badge-vacina  { background: #e0f5ec; color: #2ea87a; }
 .badge-cirurgia{ background: #f0e8fa; color: #8b54c8; }
+.badge-exames  { background: #def3f5; color: #1499a8; }
 .badge-outro   { background: #f0f0f0; color: #6b6b7a; }
+.badge-nascimento { background: var(--primary-light); color: var(--primary-dark); }
 
 .event-category-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
 .event-date { font-size: 12px; color: var(--text-muted); }
@@ -1735,11 +1850,10 @@ body[data-theme="dark"] .cal-item-evento { background: #2a1f00; }
   vertical-align: middle;
 }
 
-/* Dentro dos dots da timeline, a imagem precisa de mais espaço */
+/* Dentro dos dots da timeline, a ilustração colorida ocupa quase todo o círculo */
 .tl-dot .category-icon-img {
-  width: 22px;
-  height: 22px;
-  filter: brightness(0) invert(1); /* torna branca em cima do fundo colorido */
+  width: 34px;
+  height: 34px;
 }
 
 /* Dentro dos event-recent-icon, ajuste de tamanho */
@@ -1804,6 +1918,7 @@ body[data-theme="dark"] .cal-item-evento { background: #2a1f00; }
 .event-recent-icon.icon-consulta { background: #e0ecfa; color: #3a7fd4; }
 .event-recent-icon.icon-vacina   { background: #e0f5ec; color: #2ea87a; }
 .event-recent-icon.icon-cirurgia { background: #f0e8fa; color: #8b54c8; }
+.event-recent-icon.icon-exames   { background: #def3f5; color: #1499a8; }
 .event-recent-icon.icon-outro    { background: #f0f0f0; color: #6b6b7a; }
 
 .event-recent-icon .category-icon {
@@ -1813,9 +1928,10 @@ body[data-theme="dark"] .cal-item-evento { background: #2a1f00; }
 
 /* Ajustes finos de ícones em containers */
 .tl-dot .category-icon {
-  width: 20px;
-  height: 20px;
-  stroke: #ffffff;
+  width: 22px;
+  height: 22px;
+  fill: var(--primary);
+  stroke: var(--primary);
 }
 
 .filter-btn .category-icon {

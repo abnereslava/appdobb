@@ -110,6 +110,11 @@
         <span>Calendário</span>
       </button>
     </nav>
+
+    <!-- Botão flutuante: ir para a data atual — visível ao rolar a Timeline -->
+    <button id="btn-topo" class="btn-topo" onclick="scrollParaHoje()" aria-label="Ir para a data atual" title="Ir para hoje">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="12" x2="12" y2="8"/><line x1="12" y1="12" x2="15" y2="13.5"/></svg>
+    </button>
   </div>
 
   <!-- Menu rápido para adicionar (evento ou consulta) -->
@@ -195,8 +200,8 @@
                 <label class="form-label" for="perfil-local-nasc">Local de nascimento</label>
                 <select class="form-select" id="perfil-local-nasc">
                   <option value="">Selecionar...</option>
-                  <option value="hospital">Hospital / Maternidade</option>
                   <option value="casa">Em casa</option>
+                  <option value="hospital">Hospital / Maternidade</option>
                   <option value="percurso">No percurso / Ambulância</option>
                 </select>
               </div>
@@ -268,6 +273,12 @@
             <button type="button" class="btn-secondary btn-sm" onclick="adicionarAlergia()">+ Adicionar Alergia</button>
           </div>
 
+          <div class="form-section">
+            <h3 class="form-section-title">Doenças crônicas</h3>
+            <div id="lista-doencas-form"></div>
+            <button type="button" class="btn-secondary btn-sm" onclick="adicionarDoenca()">+ Adicionar Doença</button>
+          </div>
+
           <div class="form-actions">
             <button type="button" class="btn-ghost" onclick="fecharModal('modal-perfil')">Cancelar</button>
             <button type="submit" class="btn-primary">Salvar Perfil</button>
@@ -304,12 +315,13 @@
                 <label class="form-label" for="evento-categoria">Categoria <span class="required">*</span></label>
                 <select class="form-select" id="evento-categoria" required>
                   <option value="">Selecionar...</option>
-                  <option value="doenca">Doença</option>
                   <option value="acidente">Acidente</option>
                   <option value="alergia">Alergia</option>
-                  <option value="consulta">Consulta</option>
-                  <option value="vacina">Vacina</option>
                   <option value="cirurgia">Cirurgia</option>
+                  <option value="consulta">Consulta</option>
+                  <option value="doenca">Doença</option>
+                  <option value="exames">Exames</option>
+                  <option value="vacina">Vacina</option>
                   <option value="outro">Outro</option>
                 </select>
               </div>
@@ -335,7 +347,7 @@
                 <input class="form-input" type="text" id="evento-medico" placeholder="Nome do médico" />
               </div>
               <div class="form-group">
-                <label class="form-label" for="evento-hospital">Hospital / Postinho</label>
+                <label class="form-label" for="evento-hospital">Hospital / Unidade</label>
                 <input class="form-input" type="text" id="evento-hospital" placeholder="Nome do local" />
               </div>
             </div>
@@ -414,8 +426,8 @@
                 <option value="">Selecionar...</option>
                 <option value="rotina">Consulta de Rotina (Pediatra)</option>
                 <option value="especialista">Especialista</option>
-                <option value="retorno">Retorno</option>
                 <option value="exame">Exame / Laboratório</option>
+                <option value="retorno">Retorno</option>
                 <option value="urgencia">Urgência / Emergência</option>
                 <option value="outro">Outro</option>
               </select>

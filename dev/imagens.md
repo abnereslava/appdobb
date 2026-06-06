@@ -11,6 +11,7 @@ Atualizado após: troca do ícone de Doença (ursinhodoente → termômetro) e a
 - **cirurgia.png** — `app.js` (`IMG_CIRURGIA`), categoria Cirurgia; cache `sw.js`
 - **curativo.png** — `app.js` (`IMG_ACIDENTE`), categoria Acidente; cache `sw.js`
 - **termometro.png** — `app.js` (`IMG_DOENCA`), categoria Doença (substituiu `ursinhodoente.png`); cache `sw.js`
+- **hospital.png** — `app.js` (`IMG_EXAMES`), categoria Exames; cache `sw.js`
 - **alergia.png** — `app.js` (`IMG_ALERGIA`), categoria Alergia; cache `sw.js`
 - **vacina.png** — `app.js` (`IMG_VACINA`), categoria Vacina; cache `sw.js`
 - **outro.png** — `app.js` (`IMG_OUTRO`), categoria Outro (renomeado a partir de `caderneta.png`); cache `sw.js`
@@ -24,6 +25,5 @@ Atualizado após: troca do ícone de Doença (ursinhodoente → termômetro) e a
 ## 🗑️ Não utilizadas (candidatas a descarte)
 
 - **ursinhodoente.png** — era a categoria Doença, substituída por `termometro.png`. Sem uso.
-- **hospital.png** — não referenciada em nenhum lugar.
 - **relogio.png** — o relógio é desenhado via SVG inline (`CLOCK_SVG`).
 - **remedios.png** — não há categoria "remédios"; a constante `IMG_REMEDIOS` foi removida do código.
