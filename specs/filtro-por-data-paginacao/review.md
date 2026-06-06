@@ -2,7 +2,16 @@
 
 ## 1. Status geral
 
-Aprovado
+Aprovado — parcialmente substituído (ver nota de atualização)
+
+> **Nota de atualização (feature `cache-tempo-real`):** a paginação incremental
+> por cursor (`listarEventosPaginados` / `listarConsultasPaginadas`, `eventosCursor`,
+> `IntersectionObserver`, scroll infinito) foi **removida** quando a camada de dados
+> migrou de `getDocs` para `onSnapshot` + `persistentLocalCache`. Os eventos e consultas
+> agora chegam completos via listener em tempo real, e a filtragem (data, categoria,
+> busca) passou a ser **inteiramente em memória**. O **seletor de intervalo de datas**
+> permanece funcionando — apenas a paginação por trás dele mudou. Ver
+> `specs/cache-tempo-real/`.
 
 ## 2. Resumo da implementação
 
@@ -14,13 +23,15 @@ Aprovado
 
 ## 3. Critérios de aceite
 
+> Critérios marcados com 🔄 foram alterados pela feature `cache-tempo-real`.
+
 - [x] Seletor de intervalo de datas disponível no Histórico e na Agenda.
-- [x] A lista respeita o filtro de data (via Firestore where).
-- [x] Por padrão, apenas 20 itens são carregados.
-- [x] Scroll infinito automático via IntersectionObserver.
+- [x] 🔄 A lista respeita o filtro de data (~~via Firestore where~~ → agora filtrado em memória).
+- [ ] 🔄 ~~Por padrão, apenas 20 itens são carregados.~~ (Substituído: todos os itens chegam via `onSnapshot`.)
+- [ ] 🔄 ~~Scroll infinito automático via IntersectionObserver.~~ (Removido — não há mais paginação.)
 - [x] Filtros de data, categoria e busca combinados.
-- [x] Ao mudar filtro, cache reseta e recarrega do início.
-- [x] Indicador de progresso e "Fim do histórico".
+- [ ] 🔄 ~~Ao mudar filtro, cache reseta e recarrega do início.~~ (Substituído: re-render direto do cache, sem releitura.)
+- [x] 🔄 Indicador de "Fim do histórico" (o spinner de paginação foi removido).
 
 ## 4. Pendências / Riscos
 
