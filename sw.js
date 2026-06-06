@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bebe-shell-v5';
+const CACHE_NAME = 'bebe-shell-v6';
 
 const SHELL_FILES = [
   '/',
