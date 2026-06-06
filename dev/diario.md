@@ -13,3 +13,5 @@
 6. Animação de parabéns que aparece uma vez quando o aplicativo é aberto na data de aniversário de um dos usuários
 
 7. implementar: um cache em memória por bebê (profileId) para perfil/eventos/consultas, reaproveitado entre as abas, com invalidação apenas quando: (1) você cria/edita/exclui um evento/consulta/perfil, ou (2) troca de bebê. Assim, navegar entre abas não dispara novas leituras; só recarrega quando os dados realmente mudam.
+
+8. Criar histórico de medicamentos.

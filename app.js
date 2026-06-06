@@ -352,7 +352,7 @@ function showView(nome) {
   if (navBtn) navBtn.classList.add('active');
 
   if (nome === 'home')       renderizarHome();
-  if (nome === 'timeline')   { _scrollHojeTimeline = true; _resetFiltrosScroll = true; renderizarTimeline(); }
+  if (nome === 'timeline')   { _resetFiltrosScroll = true; renderizarTimeline(); }
   if (nome === 'agenda')     renderizarAgenda();
   if (nome === 'calendario') { diaCalendarioAberto = null; renderizarAbaCalendario(); }
 
@@ -872,8 +872,7 @@ function renderizarTimeline() {
   }
   _resetFiltrosScroll = false;
 
-  const ICON_CARDS = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="3" y="16" width="18" height="4" rx="1"/></svg>`;
-  const ICON_TIMELINE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`;
+  const ICON_EYE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
 
   container.innerHTML = `
     <div>
@@ -881,7 +880,7 @@ function renderizarTimeline() {
         <h1 class="page-title">Histórico de Saúde</h1>
         <div style="display:flex;gap:8px;align-items:center;">
           <button class="btn-ghost btn-sm" onclick="toggleTlModo()" title="${_tlModoCards ? 'Ver linha do tempo' : 'Ver como cartões'}" style="padding:7px 10px;">
-            ${_tlModoCards ? ICON_TIMELINE : ICON_CARDS}
+            ${ICON_EYE}
           </button>
           <button class="btn-secondary btn-sm" onclick="abrirFormEvento(null)">+ Novo</button>
         </div>
@@ -966,11 +965,7 @@ function renderizarTimeline() {
     if (_novoFiltros) _novoFiltros.scrollLeft = _filtrosScroll;
   }
 
-  // Ao abrir a aba, posiciona a timeline na entrada mais próxima da data atual
-  if (_scrollHojeTimeline) {
-    _scrollHojeTimeline = false;
-    requestAnimationFrame(() => scrollParaHoje());
-  }
+  // scrollParaHoje() é chamado apenas pelo btn-topo (botão flutuante)
 }
 
 function filtrarPorCategoria(cat) { filtroAtivo = cat; renderizarTimeline(); }
