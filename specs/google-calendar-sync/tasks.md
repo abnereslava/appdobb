@@ -4,6 +4,30 @@
 
 Implementação client-side (Google Identity Services + Calendar API v3), em etapas pequenas: primeiro a configuração OAuth e o módulo de token, depois as operações de calendário, em seguida a persistência (preferência + ids), e por fim o acoplamento ao fluxo de salvar/excluir consulta, histórico, pendências e desvinculação.
 
+## Tarefa 0 — (Pré-requisito do usuário) Migração de projeto Firebase para o email definitivo
+
+Status: Pendente — bloqueante para a Tarefa 1
+
+### Objetivo
+Antes de criar o OAuth Client ID, o usuário pretende **migrar o projeto Firebase do email atual para outro email** (conta Google definitiva que será dona do projeto). O OAuth Client ID deve ser criado já no projeto/conta de destino, para não precisar refazer depois.
+
+### Decisão necessária
+Há dois caminhos possíveis para "migrar":
+- **(A) Transferir a posse do projeto `app-do-bb` existente** — adicionar o novo email como Owner no Google Cloud IAM e remover o antigo. Mantém os dados (Firestore, Auth) no mesmo projeto; não exige script de migração. **Mais simples e recomendado.**
+- **(B) Criar um projeto Firebase novo no outro email e migrar os dados** — exige um **script de migração** (a ser planejado no hub admin) para copiar `profiles`, subcoleções `events`/`consultations`, `accessIndex` e usuários do projeto antigo para o novo. Mais trabalhoso e arriscado.
+
+### Arquivos afetados (se caminho B)
+- `admin.html` / `admin.js` (ferramenta/script de migração de dados)
+- `firebase-config.js` (novo projeto)
+- `firestore.rules` (reaplicar no novo projeto)
+
+### Critério de conclusão
+O projeto Firebase definitivo está sob o email/conta correta, com os dados atuais disponíveis, e o `firebase-config.js` aponta para ele.
+
+### Observações
+- **[Pendente]** Confirmar com o usuário qual caminho seguir (A ou B). Se for B, esta tarefa ganha um plano próprio para o script de migração no hub admin.
+- Só criar o OAuth Client ID (Tarefa 1) **depois** de definida a conta/projeto definitivo, para evitar retrabalho.
+
 ## Tarefa 1 — Configurar OAuth Client ID e carregar o GIS
 
 Status: Pendente
@@ -16,7 +40,7 @@ Criar o OAuth Client ID (tipo Web) no Google Cloud, registrar o `client_id` no a
 - `google-calendar.js` (constante `CLIENT_ID`)
 
 ### Dependências
-Usuário cria o OAuth Client ID no Google Cloud Console e fornece o `client_id`; origens JS autorizadas configuradas (URL do GitHub Pages + localhost).
+**Tarefa 0 concluída** (projeto/conta definitivos). Usuário cria o OAuth Client ID **no projeto de destino** e fornece o `client_id`; origens JS autorizadas configuradas (URL do GitHub Pages + localhost).
 
 ### Critério de conclusão
 A biblioteca GIS carrega sem erro e `google.accounts.oauth2` está disponível no console.
@@ -25,7 +49,7 @@ A biblioteca GIS carrega sem erro e `google.accounts.oauth2` está disponível n
 Abrir o app, verificar no console que `window.google?.accounts?.oauth2` existe.
 
 ### Observações
-O `client_id` é público (vai no front-end); a segurança vem das origens autorizadas e do escopo mínimo.
+O `client_id` é público (vai no front-end); a segurança vem das origens autorizadas e do escopo mínimo. O OAuth Client ID deve pertencer ao mesmo projeto Firebase definido na Tarefa 0.
 
 ## Tarefa 2 — Obtenção de token (consentimento e silencioso)
 
