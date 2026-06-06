@@ -15,3 +15,5 @@
 7. implementar: um cache em memória por bebê (profileId) para perfil/eventos/consultas, reaproveitado entre as abas, com invalidação apenas quando: (1) você cria/edita/exclui um evento/consulta/perfil, ou (2) troca de bebê. Assim, navegar entre abas não dispara novas leituras; só recarrega quando os dados realmente mudam.
 
 8. Criar histórico de medicamentos.
+
+9. Criar imagem PNG para a categoria **Dentes** (96×96 px, fundo transparente). Enquanto isso, a categoria usa um SVG inline provisório. Ao criar o PNG, substituir `IMG_DENTES` em `app.js` por `<img src="img/dentes.png" class="category-icon-img">` e adicionar `dentes.png` ao cache do `sw.js`.

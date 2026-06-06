@@ -2126,8 +2126,29 @@ function aplicarTemaInicial() {
    14. INICIALIZAÇÃO
    ================================================ */
 
+/* ================================================
+   15. INDICADOR OFFLINE
+   ================================================ */
+
+function _atualizarBannerOffline() {
+  const banner = document.getElementById('banner-offline');
+  if (!banner) return;
+  clearTimeout(banner._t);
+  if (!navigator.onLine) {
+    banner.textContent = 'Sem conexão — exibindo dados em cache';
+    banner.className = 'banner-offline visible';
+  } else {
+    banner.textContent = 'Conexão restaurada';
+    banner.className = 'banner-offline online visible';
+    banner._t = setTimeout(() => { banner.className = 'banner-offline'; }, 2500);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW:', e));
   }
+  window.addEventListener('offline', _atualizarBannerOffline);
+  window.addEventListener('online',  _atualizarBannerOffline);
+  if (!navigator.onLine) _atualizarBannerOffline();
 });
