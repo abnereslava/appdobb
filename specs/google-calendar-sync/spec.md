@@ -16,23 +16,32 @@ Ambas as opções exigem ação manual do usuário a cada mudança. Esta feature
 
 - Responsável pelo bebê (usuário autenticado no app com conta Google via Firebase Auth).
 
+### Nota sobre as duas telas de consentimento
+
+Há duas telas distintas:
+- **Tela de opt-in do app** (criada por nós, *antes* do Google): explica que a sincronização é **unidirecional (app → Google Agenda)** com um apoio visual/ilustração, e permite ao usuário **escolher o que sincronizar** (só consultas, só eventos do histórico, ou ambos).
+- **Tela oficial do Google** (controlada pelo Google): pede a autorização do escopo `calendar.events`. Não é customizável além de nome/logo do app; aparece **depois** do opt-in do app.
+
 ## 4. Funcionamento esperado
 
-### Vinculação (setup)
+### Vinculação (setup, acoplada ao salvar)
 
-1. Na aba Calendário (ou nas configurações do perfil), o usuário encontra o botão "Vincular Google Agenda".
-2. Ao clicar, o app solicita autorização OAuth para o escopo `https://www.googleapis.com/auth/calendar.events`.
-3. O Google exibe a tela de consentimento; o usuário aprova.
-4. O app recebe o access token (e refresh token) e salva de forma segura.
-5. Uma confirmação visual indica que o Google Agenda está vinculado.
+1. Ao salvar a primeira consulta/evento com a sincronização ainda inativa, o app exibe a **tela de opt-in**:
+   - Ilustração indicando o sentido **app → Google Agenda** (e deixando claro que o inverso não ocorre).
+   - Seleção do que sincronizar: **só consultas**, **só eventos**, ou **ambos**.
+   - Opção de sincronizar também os itens já cadastrados (histórico).
+2. Se o usuário confirma, o app solicita a autorização OAuth (`calendar.events`) na tela do Google.
+3. O usuário aprova; o app obtém um token de acesso (de curta duração, em memória).
+4. O app cria/localiza um calendário dedicado e grava a preferência (`enabled` + tipos escolhidos).
+5. Uma confirmação visual (badge) indica que o Google Agenda está vinculado.
 
-### Sincronização de consultas
+### Sincronização de itens
 
-Após vincular:
-- **Criar consulta** → evento criado no Google Agenda com título, data, hora, local e descrição.
-- **Editar consulta** → evento existente atualizado via `PATCH`.
-- **Cancelar/excluir consulta** → evento removido do Google Agenda (ou marcado como cancelado).
-- O app armazena o `googleEventId` retornado pela API junto com a consulta no Firestore, para identificar o evento nas operações futuras.
+Conforme os tipos escolhidos pelo usuário (consultas e/ou eventos):
+- **Criar item** → evento criado no Google Agenda com título, data, hora (quando houver), local e descrição.
+- **Editar item** → evento existente atualizado via `PATCH`.
+- **Cancelar/excluir item** → evento removido do Google Agenda.
+- O app armazena o `googleEventId` retornado pela API junto com o item (consulta ou evento) no Firestore, para identificar o evento nas operações futuras.
 
 ### Desvinculação
 
@@ -59,8 +68,9 @@ Após vincular:
 
 ## 7. Regras de negócio
 
-- Apenas **consultas** são sincronizadas (não eventos do Histórico de Saúde).
-- Consultas canceladas disparam remoção do evento no Google Agenda.
+- O usuário escolhe **o que** sincronizar: **só consultas**, **só eventos** do Histórico de Saúde, ou **ambos**. A escolha é feita na tela de opt-in e pode ser alterada depois nas configurações.
+- Apenas os tipos habilitados são sincronizados; itens do tipo desabilitado são ignorados.
+- Consultas canceladas disparam remoção do evento no Google Agenda. Eventos/consultas excluídos no app também removem o evento correspondente.
 - A sincronização é **unidirecional neste MVP**: app → Google Agenda. Eventos criados direto no Google Agenda não aparecem no app.
 - O Google Calendar vinculado é sempre o `primary` do usuário (sem seleção de calendário personalizado neste MVP).
 - O token OAuth é armazenado no Firestore vinculado ao `uid` do usuário (não ao perfil do bebê), pois um usuário pode ter múltiplos bebês mas uma única conta Google.
@@ -128,15 +138,18 @@ Consultas sem hora: usar `"date": "YYYY-MM-DD"` (evento de dia inteiro).
 
 ## 12. Critérios de aceite
 
-- [ ] Botão "Vincular Google Agenda" visível na aba Calendário (ou configurações).
-- [ ] Fluxo OAuth completo funciona (consentimento → token salvo → badge confirmado).
-- [ ] Consulta criada no app aparece automaticamente no Google Agenda do usuário.
-- [ ] Consulta editada no app atualiza o evento correspondente no Google Agenda.
-- [ ] Consulta cancelada ou excluída remove o evento do Google Agenda.
-- [ ] `googleEventId` é salvo no Firestore junto com a consulta.
+- [ ] A tela de opt-in do app aparece antes da autorização, com apoio visual indicando o sentido **app → Google Agenda** (e que o inverso não ocorre).
+- [ ] Na tela de opt-in o usuário escolhe o que sincronizar: só consultas, só eventos, ou ambos.
+- [ ] A escolha de tipos pode ser revista depois nas configurações.
+- [ ] Fluxo OAuth completo funciona (opt-in → consentimento Google → badge confirmado).
+- [ ] Item de um tipo habilitado, ao ser criado no app, aparece automaticamente no Google Agenda.
+- [ ] Item editado no app atualiza o evento correspondente no Google Agenda.
+- [ ] Item cancelado ou excluído remove o evento do Google Agenda.
+- [ ] Item de um tipo **não** habilitado não é sincronizado.
+- [ ] `googleEventId` é salvo no Firestore junto com o item (consulta ou evento).
 - [ ] Erro de sync exibe toast não-bloqueante sem impedir o salvamento local.
-- [ ] Botão "Desvincular" remove o token e para a sincronização.
-- [ ] Token expirado dispara aviso e opção de reconectar.
+- [ ] Botão "Desvincular" para a sincronização (eventos já criados permanecem).
+- [ ] Token expirado/revogado dispara aviso e opção de reconectar.
 - [ ] A exportação `.ics` e o link Google Agenda permanecem disponíveis como fallback.
 
 ## 13. Dúvidas respondidas

@@ -46,7 +46,7 @@ O `googleEventId` retornado é salvo no documento da consulta para permitir atua
 | `index.html` | Incluir o `<script>` do GIS; pequenos elementos de UI (pergunta de consentimento, badge de status). |
 | `google-calendar.js` (novo) | Módulo isolado: init do GIS, obtenção de token (com/sem prompt), criar/achar calendário dedicado, criar/atualizar/excluir evento. Expõe uma API em `window._gcal`. |
 | `firestore-api.js` | Métodos para ler/gravar a preferência de sync (`calendarSync/{uid}`) e atualizar `googleEventId`/`syncPendente` na consulta. |
-| `app.js` | Acoplar a sincronização ao `salvarConsulta` e `excluirConsulta`; fluxo de consentimento na 1ª vez; badge de status; opção "Desvincular"; processamento de pendências ao abrir o app. |
+| `app.js` | Acoplar a sincronização ao `salvarConsulta`/`excluirConsulta` **e** `salvarEvento`/`excluirEvento` (conforme tipos habilitados); tela de opt-in na 1ª vez (com apoio visual e seleção de tipos); badge de status; configurações (alterar tipos / desvincular); processamento de pendências ao abrir o app. |
 | `firestore.rules` | Regra para a nova coleção `calendarSync/{uid}` (somente o próprio usuário lê/escreve). |
 
 ## 4. Estrutura de dados
@@ -56,12 +56,14 @@ O `googleEventId` retornado é salvo no documento da consulta para permitir atua
 {
   "enabled": true,
   "calendarId": "string (id do calendário dedicado no Google)",
+  "syncTipos": { "consultas": true, "eventos": false },
   "updatedAt": "timestamp"
 }
 ```
 > Nenhum token é armazenado. O token de acesso vive apenas em memória durante a sessão.
+> `syncTipos` reflete a escolha do usuário (só consultas, só eventos, ou ambos) e pode ser alterada nas configurações.
 
-**`profiles/{profileId}/consultations/{id}`** (campos adicionais):
+**`profiles/{profileId}/consultations/{id}`** e **`profiles/{profileId}/events/{id}`** (campos adicionais em ambos):
 ```json
 {
   "googleEventId": "string | null",
@@ -79,20 +81,22 @@ O `googleEventId` retornado é salvo no documento da consulta para permitir atua
 
 ## 6. Fluxos técnicos
 
-### 6.1 Primeira ativação (no salvar)
-1. Usuário salva uma consulta; `enabled` ainda é `false`/inexistente.
-2. App pergunta: "Enviar suas consultas para o Google Agenda?" + "Sincronizar também as consultas já cadastradas?" (sim/não).
-3. Se sim → `initTokenClient` + `requestAccessToken({ prompt: 'consent' })`.
-4. Com o token: cria (ou localiza) o calendário dedicado "Saúde do Bebê"; salva `{ enabled:true, calendarId }` em `calendarSync/{uid}`.
-5. Cria o evento da consulta atual; se o usuário escolheu, percorre o histórico e cria os eventos faltantes.
+### 6.1 Primeira ativação (tela de opt-in, no salvar)
+1. Usuário salva uma consulta ou evento; `enabled` ainda é `false`/inexistente.
+2. App exibe a **tela de opt-in** (criada por nós): apoio visual do sentido **app → Google Agenda** + seleção do que sincronizar (**só consultas / só eventos / ambos**) + opção de incluir o histórico já cadastrado.
+3. Se confirma → `initTokenClient` + `requestAccessToken({ prompt: 'consent' })` (tela oficial do Google).
+4. Com o token: cria (ou localiza) o calendário dedicado "Saúde do Bebê"; salva `{ enabled:true, calendarId, syncTipos }` em `calendarSync/{uid}`.
+5. Sincroniza o item atual (se o tipo dele estiver habilitado); se o usuário pediu, percorre o histórico dos tipos habilitados e cria os eventos faltantes.
 
-### 6.2 Salvar consulta (sync já ativa)
+### 6.2 Salvar item (sync já ativa)
 1. Salva no Firestore (comportamento atual, inalterado).
-2. Obtém token silencioso (`prompt: ''`).
-3. Se a consulta tem `googleEventId` → `PATCH` o evento; senão → `POST` cria e salva o `googleEventId`.
-4. Falha de rede/token → marca `syncPendente: true` e mostra toast não-bloqueante.
+2. Se o **tipo do item** (consulta/evento) estiver habilitado em `syncTipos`:
+   - Obtém token silencioso (`prompt: ''`).
+   - Se o item tem `googleEventId` → `PATCH` o evento; senão → `POST` cria e salva o `googleEventId`.
+   - Falha de rede/token → marca `syncPendente: true` e mostra toast não-bloqueante.
+3. Se o tipo não estiver habilitado, nenhuma sincronização ocorre.
 
-### 6.3 Excluir/cancelar consulta
+### 6.3 Excluir/cancelar item
 1. Exclui/atualiza no Firestore.
 2. Se houver `googleEventId` → `DELETE` o evento no Google Agenda (404 é tratado como já removido).
 
