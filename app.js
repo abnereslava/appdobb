@@ -94,6 +94,9 @@ let buscaAtiva   = '';
 let _tlModoCards = true;
 let _resetFiltrosScroll = false; // ao entrar na aba, volta as chips ao início; senão preserva a rolagem
 
+// Escritas pendentes de confirmação pelo servidor
+let _escritasPendentes = 0;
+
 // Estado da agenda
 let buscaAgendaAtiva = '';
 let filtroTipoConsulta = 'todos';
@@ -147,6 +150,24 @@ let doencasCronicasTemp = [];
    2. DADOS
    ================================================ */
 
+// Helper: registra escrita pendente e aguarda confirmação do servidor
+async function _escrita(promessa) {
+  _escritasPendentes++;
+  _atualizarBannerOffline();
+  try {
+    await promessa;
+  } finally {
+    if (window._db?.aguardarSync) {
+      window._db.aguardarSync()
+        .then(() => { _escritasPendentes = 0; _atualizarBannerOffline(); })
+        .catch(() => {});
+    } else {
+      _escritasPendentes = Math.max(0, _escritasPendentes - 1);
+      _atualizarBannerOffline();
+    }
+  }
+}
+
 // Perfil — lê do cache em memória (alimentado por onSnapshot)
 function carregarPerfil() {
   return _perfilCache;
@@ -154,7 +175,7 @@ function carregarPerfil() {
 
 async function gravarPerfil(p) {
   if (!profileIdAtivo || !window._db) return;
-  await window._db.gravarPerfil(profileIdAtivo, p, usuarioAtual?.uid || null);
+  await _escrita(window._db.gravarPerfil(profileIdAtivo, p, usuarioAtual?.uid || null));
 }
 
 // Eventos — lê do cache em memória
@@ -164,12 +185,12 @@ function carregarEventos() {
 
 async function gravarEvento(ev, ehNovo) {
   if (!profileIdAtivo || !window._db) return;
-  await window._db.salvarEvento(profileIdAtivo, ev, ehNovo);
+  await _escrita(window._db.salvarEvento(profileIdAtivo, ev, ehNovo));
 }
 
 async function excluirEvento(id) {
   if (!profileIdAtivo || !window._db) return;
-  await window._db.excluirEvento(profileIdAtivo, id);
+  await _escrita(window._db.excluirEvento(profileIdAtivo, id));
 }
 
 // Consultas — lê do cache em memória
@@ -179,12 +200,12 @@ function carregarConsultas() {
 
 async function gravarConsulta(c, ehNova) {
   if (!profileIdAtivo || !window._db) return;
-  await window._db.salvarConsulta(profileIdAtivo, c, ehNova);
+  await _escrita(window._db.salvarConsulta(profileIdAtivo, c, ehNova));
 }
 
 async function excluirConsulta(id) {
   if (!profileIdAtivo || !window._db) return;
-  await window._db.excluirConsulta(profileIdAtivo, id);
+  await _escrita(window._db.excluirConsulta(profileIdAtivo, id));
 }
 
 // Paginação de eventos
@@ -2134,10 +2155,19 @@ function _atualizarBannerOffline() {
   const banner = document.getElementById('banner-offline');
   if (!banner) return;
   clearTimeout(banner._t);
+
+  const n = _escritasPendentes;
+
   if (!navigator.onLine) {
-    banner.textContent = 'Sem conexão — exibindo dados em cache';
+    const sufixo = n > 0
+      ? ` — ${n} ${n === 1 ? 'alteração não sincronizada' : 'alterações não sincronizadas'}`
+      : ' — exibindo dados em cache';
+    banner.textContent = 'Sem conexão' + sufixo;
     banner.className = 'banner-offline visible';
-  } else {
+  } else if (n > 0) {
+    banner.textContent = `Sincronizando ${n} ${n === 1 ? 'alteração' : 'alterações'}…`;
+    banner.className = 'banner-offline online visible';
+  } else if (banner.classList.contains('visible')) {
     banner.textContent = 'Conexão restaurada';
     banner.className = 'banner-offline online visible';
     banner._t = setTimeout(() => { banner.className = 'banner-offline'; }, 2500);
