@@ -2,7 +2,7 @@
   "name": "Dos tais",
   "short_name": "Dos tais",
   "description": "Acompanhe a saúde do seu bebê com carinho e organização.",
-  "start_url": "/index.html",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#faf6f0",
   "theme_color": "#b08d70",
