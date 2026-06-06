@@ -781,6 +781,7 @@ function renderizarTimeline() {
 
   // Separador discreto de mês/ano (inserido quando o mês muda ao descer a timeline)
   const MESES_EXT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const DIAS_SEM  = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
   let _mesAnoTL = null;
   const sepMesAno = dataStr => {
     const [ano, mes] = dataStr.split('-');
@@ -914,16 +915,40 @@ function renderizarTimeline() {
             ${filtroAtivo==='todos'&&!buscaAtiva&&!filtroDataAtivo?`<button class="btn-primary" style="max-width:220px;margin-top:8px;" onclick="abrirFormEvento(null)">+ Adicionar Evento</button>`:''}
           </div>`
         : _tlModoCards
-          ? `<div>${lista.map(e => {
-              const cat = CATEGORIAS[e.categoria] || CATEGORIAS.outro;
-              const metaParts = [e.medico, e.hospital].filter(Boolean);
-              return `<div onclick="abrirDetalheEvento('${e.id}')" style="display:flex;align-items:center;gap:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:8px;cursor:pointer;box-shadow:var(--shadow-sm);">
-                <span class="event-recent-icon icon-${e.categoria}">${cat.icone}</span>
-                <div style="flex:1;min-width:0;">
-                  <div style="font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(e.titulo)}</div>
-                  <div style="font-size:12px;color:var(--text-muted);">${formatarData(e.data)}${metaParts.length ? ' · ' + esc(metaParts[0]) : ''}</div>
-                </div>
-              </div>`;
+          ? `<div class="tl-cards">${grupos.map(grupo => {
+              const [gAno, gMes, gDia] = grupo.data.split('-');
+              const dSem = DIAS_SEM[new Date(grupo.data + 'T00:00:00').getDay()];
+              const n = grupo.eventos.length;
+              const cards = grupo.eventos.map(e => {
+                const cat = CATEGORIAS[e.categoria] || CATEGORIAS.outro;
+                const meta = [e.medico, e.hospital].filter(Boolean).join(' · ');
+                const desc = (e.descricao || e.observacoes || '').trim();
+                const tags = [];
+                if (e.custo)               tags.push(`<span class="tlc-tag tlc-tag-custo">${formatarDinheiro(parseFloat(e.custo))}</span>`);
+                if (e.medicamentos?.length) tags.push(`<span class="tlc-tag">${e.medicamentos.length} medicamento${e.medicamentos.length>1?'s':''}</span>`);
+                if (e.tratamento)          tags.push(`<span class="tlc-tag">Tratamento registrado</span>`);
+                if (e.imagemUrl)           tags.push(`<span class="tlc-tag">📎 Anexo</span>`);
+                return `<div class="tlc-card" onclick="abrirDetalheEvento('${e.id}')">
+                    <span class="event-recent-icon icon-${e.categoria}">${cat.icone}</span>
+                    <div class="tlc-body">
+                      <span class="event-category-badge badge-${e.categoria}">${cat.label}</span>
+                      <div class="tlc-title">${esc(e.titulo)}</div>
+                      ${meta ? `<div class="tlc-meta">${esc(meta)}</div>` : ''}
+                      ${desc ? `<div class="tlc-desc">${esc(desc)}</div>` : ''}
+                      ${tags.length ? `<div class="tlc-tags">${tags.join('')}</div>` : ''}
+                    </div>
+                  </div>`;
+              }).join('');
+              return `<div class="tl-cards-group">
+                  <div class="tl-cards-date">
+                    <span class="tlc-date-dia">${gDia}</span>
+                    <span class="tlc-date-resto">
+                      <span class="tlc-date-mes">${MESES_EXT[parseInt(gMes,10)-1]} ${gAno}</span>
+                      <span class="tlc-date-sem">${dSem}${n>1?` · ${n} eventos`:''}</span>
+                    </span>
+                  </div>
+                  ${cards}
+                </div>`;
             }).join('')}</div>`
           : `<div class="tl-wrapper">
               <div class="tl-axis"></div>
