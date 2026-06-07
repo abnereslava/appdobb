@@ -21,3 +21,5 @@
 10. Avatar do perfil (`mamadeira.png`) ainda tem tema de bebê → criar **versão neutra** para o público geral, mantendo nome/dimensões (256×256, fundo transparente). (O antigo ícone de boas-vindas já virou o SVG neutro `heart-pulse`.)
 
 11. Retrabalhar inserção de eventos (revelando campos aos poucos de acordo com o evento que está sendo registrado).
+
+12. Permitir ao usuário poder escolher a cor do perfil.
