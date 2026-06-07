@@ -89,7 +89,8 @@ const VIAS_NASCIMENTO = {
 const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
 // Estado da timeline
-let filtroAtivo  = 'todos';
+let categoriasSelecionadas = []; // categorias marcadas no filtro; vazio = mostrar tudo
+let _filtroCatsTemp        = []; // seleção temporária enquanto o modal está aberto
 let buscaAtiva   = '';
 let _tlModoCards = true;
 let _resetFiltrosScroll = false; // ao entrar na aba, volta as chips ao início; senão preserva a rolagem
@@ -784,7 +785,8 @@ function renderizarTimeline() {
   const todos  = eventosCache;
   const perfil = carregarPerfil();
 
-  let lista = filtroAtivo === 'todos' ? todos : todos.filter(e => e.categoria === filtroAtivo);
+  const semCategoria = categoriasSelecionadas.length === 0;
+  let lista = semCategoria ? todos : todos.filter(e => categoriasSelecionadas.includes(e.categoria));
   if (filtroDataInicio) lista = lista.filter(e => e.data >= filtroDataInicio);
   if (filtroDataFim)    lista = lista.filter(e => e.data <= filtroDataFim);
   if (buscaAtiva.trim()) {
@@ -795,13 +797,6 @@ function renderizarTimeline() {
       (e.hospital||'').toLowerCase().includes(b) ||
       (e.observacoes||'').toLowerCase().includes(b));
   }
-
-  const filtros = [
-    { valor:'todos', label:`Todos (${todos.length}${!eventosEsgotado?'+':''})` },
-    ...Object.entries(CATEGORIAS)
-      .filter(([v]) => todos.some(e => e.categoria === v))
-      .map(([v,c]) => ({ valor:v, label:`${c.label} (${todos.filter(e=>e.categoria===v).length})` }))
-  ];
 
   // Separador discreto de mês/ano (inserido quando o mês muda ao descer a timeline)
   const MESES_EXT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -866,7 +861,7 @@ function renderizarTimeline() {
   // (e só quando todos os eventos já foram carregados, garantindo a posição correta).
   const dataNasc = perfil?.dataNascimento || null;
   const mostrarNascimento = !!dataNasc
-    && filtroAtivo === 'todos'
+    && semCategoria
     && !buscaAtiva.trim()
     && eventosEsgotado
     && (!filtroDataInicio || dataNasc >= filtroDataInicio)
@@ -921,18 +916,19 @@ function renderizarTimeline() {
         ${filtroDataAtivo ? `<button class="filtro-datas-limpar" onclick="limparFiltroData()" title="Limpar filtro de datas">×</button>` : ''}
       </div>
 
-      <div class="timeline-filters">
-        ${filtros.map(f => `<button class="filter-btn ${filtroAtivo===f.valor?'active':''}" onclick="filtrarPorCategoria('${f.valor}')">${f.label}</button>`).join('')}
+      <div class="tl-filtro2">
+        <button class="filter-btn ${semCategoria?'active':''}" onclick="mostrarTudoCategorias()">Mostrar tudo</button>
+        <button class="filter-btn ${!semCategoria?'active':''}" onclick="abrirFiltroCategorias()">Mostrar selecionados${!semCategoria?` (${categoriasSelecionadas.length})`:''}</button>
       </div>
 
       ${filtroDataAtivo ? `<div class="paginacao-info">Período: ${fmtD(filtroDataInicio)||'início'} → ${fmtD(filtroDataFim)||'hoje'}</div>` : ''}
 
       ${lista.length === 0 && !mostrarNascimento
         ? `<div class="empty-state">
-            <div class="empty-icon">${filtroAtivo==='todos'&&!buscaAtiva&&!filtroDataAtivo ? IMG_URSINHOBEM : SEARCH_SVG}</div>
-            <div class="empty-title">${filtroAtivo==='todos'&&!buscaAtiva&&!filtroDataAtivo?'Nenhum evento ainda':'Nenhum resultado'}</div>
-            <p class="empty-text">${filtroAtivo==='todos'&&!buscaAtiva&&!filtroDataAtivo?'Adicione o primeiro evento usando o botão + abaixo.':'Tente outro filtro ou termo de busca.'}</p>
-            ${filtroAtivo==='todos'&&!buscaAtiva&&!filtroDataAtivo?`<button class="btn-primary" style="max-width:220px;margin-top:8px;" onclick="abrirFormEvento(null)">+ Adicionar Evento</button>`:''}
+            <div class="empty-icon">${semCategoria&&!buscaAtiva&&!filtroDataAtivo ? IMG_URSINHOBEM : SEARCH_SVG}</div>
+            <div class="empty-title">${semCategoria&&!buscaAtiva&&!filtroDataAtivo?'Nenhum evento ainda':'Nenhum resultado'}</div>
+            <p class="empty-text">${semCategoria&&!buscaAtiva&&!filtroDataAtivo?'Adicione o primeiro evento usando o botão + abaixo.':'Tente outro filtro ou termo de busca.'}</p>
+            ${semCategoria&&!buscaAtiva&&!filtroDataAtivo?`<button class="btn-primary" style="max-width:220px;margin-top:8px;" onclick="abrirFormEvento(null)">+ Adicionar Evento</button>`:''}
           </div>`
         : _tlModoCards
           ? `<div class="tl-cards">${grupos.map(grupo => {
@@ -989,7 +985,49 @@ function renderizarTimeline() {
   // scrollParaHoje() é chamado apenas pelo btn-topo (botão flutuante)
 }
 
-function filtrarPorCategoria(cat) { filtroAtivo = cat; renderizarTimeline(); }
+function mostrarTudoCategorias() { categoriasSelecionadas = []; renderizarTimeline(); }
+
+function abrirFiltroCategorias() {
+  _filtroCatsTemp = [...categoriasSelecionadas];
+  _renderFiltroCatsLista();
+  abrirModal('modal-filtro-cats');
+}
+
+function _renderFiltroCatsLista() {
+  const cont = document.getElementById('filtro-cats-lista');
+  if (!cont) return;
+  const CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+  const disponiveis = Object.entries(CATEGORIAS)
+    .filter(([v]) => eventosCache.some(e => e.categoria === v))
+    .map(([v, c]) => ({ valor: v, label: c.label, icone: c.icone, n: eventosCache.filter(e => e.categoria === v).length }));
+  if (!disponiveis.length) {
+    cont.innerHTML = `<p class="filtro-cats-vazio">Nenhuma categoria com eventos ainda.</p>`;
+    return;
+  }
+  cont.innerHTML = disponiveis.map(d => {
+    const sel = _filtroCatsTemp.includes(d.valor);
+    return `<button type="button" class="filtro-cat-item ${sel?'sel':''}" onclick="toggleFiltroCat('${d.valor}')">
+        <span class="event-recent-icon icon-${d.valor}">${d.icone}</span>
+        <span class="filtro-cat-label">${d.label}</span>
+        <span class="filtro-cat-n">${d.n}</span>
+        <span class="filtro-cat-check">${sel ? CHECK : ''}</span>
+      </button>`;
+  }).join('');
+}
+
+function toggleFiltroCat(v) {
+  const i = _filtroCatsTemp.indexOf(v);
+  if (i === -1) _filtroCatsTemp.push(v); else _filtroCatsTemp.splice(i, 1);
+  _renderFiltroCatsLista();
+}
+
+function limparFiltroCategorias() { _filtroCatsTemp = []; _renderFiltroCatsLista(); }
+
+function aplicarFiltroCategorias() {
+  categoriasSelecionadas = [..._filtroCatsTemp];
+  fecharModal('modal-filtro-cats');
+  renderizarTimeline();
+}
 function buscarEventos(txt)        { buscaAtiva  = txt; renderizarTimeline(); }
 function toggleTlModo()            { _tlModoCards = !_tlModoCards; renderizarTimeline(); mostrarToast(_tlModoCards ? 'Visualização em cartões' : 'Linha do tempo', 'success'); }
 function buscarAgenda(txt)         { buscaAgendaAtiva = txt; renderizarAgenda(); }
