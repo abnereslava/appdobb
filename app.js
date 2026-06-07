@@ -362,7 +362,7 @@ function saltarBotaoPerfil() {
 
 function showView(nome) {
   if (!temPerfil && (nome === 'timeline' || nome === 'agenda' || nome === 'calendario')) {
-    mostrarToast('Crie o perfil do bebê primeiro.', 'error');
+    mostrarToast('Crie um perfil primeiro.', 'error');
     saltarBotaoPerfil();
     return;
   }
@@ -418,13 +418,13 @@ function atualizarNavSemPerfil() {
   btns.forEach(b => {
     if (!b) return;
     b.style.opacity = temPerfil ? '' : '0.35';
-    b.title = temPerfil ? '' : 'Crie o perfil do bebê primeiro';
+    b.title = temPerfil ? '' : 'Crie um perfil primeiro';
   });
 }
 
 function mostrarMenuAdicionar() {
   if (!temPerfil) {
-    mostrarToast('Crie o perfil do bebê primeiro.', 'error');
+    mostrarToast('Crie um perfil primeiro.', 'error');
     saltarBotaoPerfil();
     return;
   }
@@ -468,8 +468,8 @@ function renderizarHome() {
       <div class="welcome-screen">
         <div class="welcome-icon">${IMG_BRINQUEDO}</div>
         <h1 class="welcome-title">Bem-vindo(a)!</h1>
-        <p class="welcome-text">Vamos criar o perfil do seu bebê para acompanhar toda a sua jornada de saúde com carinho e organização.</p>
-        <button class="btn-primary" style="max-width:280px;" onclick="abrirFormPerfil()">Criar Perfil do Bebê</button>
+        <p class="welcome-text">Vamos criar seu perfil para acompanhar toda a sua jornada de saúde com carinho e organização.</p>
+        <button class="btn-primary" style="max-width:280px;" onclick="abrirFormPerfil()">Criar Perfil</button>
       </div>`;
     return;
   }
@@ -497,7 +497,7 @@ function renderizarHome() {
   if (perfil.viaNascimento)   infoNasc.push({ label:'Via de parto',          value: VIAS_NASCIMENTO[perfil.viaNascimento] || perfil.viaNascimento });
   if (perfil.localNascimento) infoNasc.push({ label:'Local',                 value: LOCAIS_NASCIMENTO[perfil.localNascimento] || perfil.localNascimento });
   if (perfil.semanasGestacao) infoNasc.push({ label:'Gestação',              value: `${perfil.semanasGestacao} semanas` + (prematuro ? ' (prematuro)' : '') });
-  if (perfil.tipoBebe)        infoNasc.push({ label:'Tipo sanguíneo (bebê)', value: perfil.tipoBebe });
+  if (perfil.tipoBebe)        infoNasc.push({ label:'Tipo sanguíneo', value: perfil.tipoBebe });
   if (perfil.tipoMae)         infoNasc.push({ label:'Tipo sanguíneo (mãe)', value: perfil.tipoMae });
   if (perfil.amamentacao) {
     const amamLabel = perfil.amamentacao === 'sim' ? 'Sim, até os 6 meses'
@@ -1244,7 +1244,7 @@ function renderizarAgendaLista() {
           ? `<div class="empty-state" style="padding:24px;">
               <div class="empty-icon">${semFiltros ? IMG_AGENDA : SEARCH_SVG}</div>
               <div class="empty-title">${semFiltros ? 'Nenhuma consulta agendada' : 'Nenhum resultado'}</div>
-              <p class="empty-text">${semFiltros ? 'Adicione a próxima consulta do bebê.' : 'Tente outro filtro ou termo de busca.'}</p>
+              <p class="empty-text">${semFiltros ? 'Adicione a próxima consulta.' : 'Tente outro filtro ou termo de busca.'}</p>
               ${semFiltros ? `<button class="btn-primary" style="max-width:220px;margin-top:8px;" onclick="abrirFormConsulta(null)">+ Agendar Consulta</button>` : ''}
             </div>`
           : proximas.map((c, idx) => renderizarCardConsulta(c, idx === 0)).join('')
@@ -1630,7 +1630,7 @@ function _icsEscape(s) {
 
 function gerarICS(consultas) {
   const uid = () => Math.random().toString(36).substr(2,9) + '@linhatempobebeapp';
-  const linhas = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Linha do Tempo do Bebê//PT','CALSCALE:GREGORIAN'];
+  const linhas = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Dos tais//PT','CALSCALE:GREGORIAN'];
   consultas.filter(c => c.status !== 'cancelada').forEach(c => {
     const tipo    = TIPOS_CONSULTA[c.tipo] || c.tipo || '';
     const resumo  = _icsEscape([tipo, c.medico].filter(Boolean).join(' - '));
@@ -1861,7 +1861,7 @@ async function abrirSeletorBebe() {
   }).join('') + `
     <button class="seletor-bebe-novo" onclick="fecharModal('modal-seletor-bebe');abrirFormNovoBebe()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Novo bebê
+      Novo perfil
     </button>`;
 }
 
@@ -1884,7 +1884,7 @@ async function salvarNovoBebe(event) {
   event.preventDefault();
   const nome = document.getElementById('novo-bebe-nome').value.trim();
   const nasc = document.getElementById('novo-bebe-nasc').value;
-  if (!nome) { mostrarToast('Digite o nome do bebê.', 'error'); return; }
+  if (!nome) { mostrarToast('Digite o nome.', 'error'); return; }
   if (!nasc) { mostrarToast('Selecione a data de nascimento.', 'error'); return; }
 
   const novoId = 'profile-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
@@ -1906,7 +1906,7 @@ async function salvarNovoBebe(event) {
     showView('home');
     mostrarToast(`Perfil de ${nome} criado!`, 'success');
   } catch (e) {
-    console.error('Erro ao criar bebê:', e);
+    console.error('Erro ao criar perfil:', e);
     mostrarToast('Erro ao criar perfil. Tente novamente.', 'error');
   }
 }
@@ -2100,7 +2100,7 @@ function renderizarBarraTopo() {
       ${foto}
     </div>
     <div class="barra-topo-centro">
-      <button class="bebe-chip" id="bebe-chip" onclick="abrirSeletorBebe()" title="Trocar bebê">
+      <button class="bebe-chip" id="bebe-chip" onclick="abrirSeletorBebe()" title="Trocar perfil">
         <span id="bebe-chip-nome">…</span>
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
