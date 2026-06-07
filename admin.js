@@ -222,13 +222,13 @@ async function renderizarAdmin() {
 /* ---------- Ações ---------- */
 
 function resumoCard(resumos) {
-  if (!resumos.length) return `<div class="admin-card-resumo">Nenhum bebê cadastrado.</div>`;
+  if (!resumos.length) return `<div class="admin-card-resumo">Nenhum perfil cadastrado.</div>`;
   const totalEventos   = resumos.reduce((s, r) => s + (r.eventCount || 0), 0);
   const totalConsultas = resumos.reduce((s, r) => s + (r.consultationCount || 0), 0);
   const nomes = resumos.map(r => r.nomeCompleto || 'Sem nome').join(', ');
   return `
     <div class="admin-card-resumo">
-      <span class="admin-resumo-pill">🍼 ${resumos.length} bebê${resumos.length !== 1 ? 's' : ''}</span>
+      <span class="admin-resumo-pill">👤 ${resumos.length} perfil${resumos.length !== 1 ? 's' : ''}</span>
       <span class="admin-resumo-pill">📋 ${totalEventos} evento${totalEventos !== 1 ? 's' : ''}</span>
       <span class="admin-resumo-pill">📅 ${totalConsultas} consulta${totalConsultas !== 1 ? 's' : ''}</span>
       <div class="admin-resumo-nomes">${esc(nomes)}</div>
@@ -294,7 +294,7 @@ async function adminAlterarRole(email, role) {
 }
 
 async function adminRemoverAcesso(email) {
-  const ok = await confirmar({ titulo: 'Remover acesso', msg: `Remover "${email}"? O perfil e os dados do bebê não serão excluídos.`, txtOk: 'Remover', destrutivo: true });
+  const ok = await confirmar({ titulo: 'Remover acesso', msg: `Remover "${email}"? O perfil e os dados não serão excluídos.`, txtOk: 'Remover', destrutivo: true });
   if (!ok) return;
   try {
     await window._db.removerAcesso(email);
