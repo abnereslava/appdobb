@@ -1889,7 +1889,9 @@ async function salvarNovoBebe(event) {
 
   const novoId = 'profile-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
   try {
-    await window._db.criarNovoPerfil(usuarioAtual.email, novoId, usuarioAtual.uid);
+    // Inclui os ids já existentes (e o profileId legado) para preservar a lista
+    const idsExistentes = [...new Set([...(profileIds || []), acessoAtual?.profileId].filter(Boolean))];
+    await window._db.criarNovoPerfil(usuarioAtual.email, novoId, usuarioAtual.uid, idsExistentes);
     // Salva os dados básicos no perfil recém-criado
     await window._db.gravarPerfil(novoId, { nomeCompleto: nome, dataNascimento: nasc }, usuarioAtual.uid);
 

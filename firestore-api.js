@@ -148,11 +148,15 @@ window._db = {
 
   /* ---------- Multi-perfil ---------- */
 
-  async criarNovoPerfil(email, novoProfileId, uid) {
+  async criarNovoPerfil(email, novoProfileId, uid, idsExistentes = []) {
     const agora = serverTimestamp();
-    // Adiciona o novo profileId ao array do usuário no accessIndex
+    // Adiciona o novo profileId ao array do usuário no accessIndex.
+    // Inclui também os ids já existentes (incluindo o profileId legado) para
+    // garantir que a lista resultante contenha o profileId atual — exigência
+    // da regra de segurança onlyUpdatingProfileIds em documentos legados que
+    // ainda não possuem o array profileIds.
     await updateDoc(doc(db, 'accessIndex', email), {
-      profileIds: arrayUnion(novoProfileId),
+      profileIds: arrayUnion(...idsExistentes, novoProfileId),
       updatedAt:  agora,
     });
     // Cria o documento de perfil vazio
