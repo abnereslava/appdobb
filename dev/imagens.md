@@ -1,64 +1,38 @@
 # Relação de imagens (`img/`)
 
 Inventário das imagens do projeto, seu estado e onde são utilizadas no código.
-Atualizado após: troca do ícone de Doença (ursinhodoente → termômetro) e adição dos ícones de categoria vacina/alergia/outro.
+Atualizado após: **migração dos ícones de categoria e das ilustrações para SVG inline (Lucide)** — os PNGs correspondentes foram removidos.
 
-## Tratamento visual — silhueta branca
+## Ícones agora são SVG inline (não-PNG)
 
-> **Convenção do projeto:** as imagens enviadas pelo desenvolvedor **sempre têm fundo transparente** quando necessário (alpha nos cantos/área externa à forma). Isso é pré-requisito para o tratamento de silhueta funcionar — o `filter` pinta de branco apenas a forma, deixando o entorno transparente.
+Os ícones que só serviam como **silhueta branca monocromática** deixaram de ser PNG e passaram a ser **SVG inline** (conjunto [Lucide](https://lucide.dev), o mesmo estilo dos ícones de interface já usados no app: lupa, olho, etc.). Vantagens: sem arquivos/requisições de rede, sem cache, nítidos em qualquer tamanho, e cor controlada por CSS (`currentColor`) em vez do hack `filter: brightness(0) invert(1)`.
 
-As imagens PNG **continuam sendo a base**, mas são renderizadas como **silhueta branca sobre fundo de cor sólida** via CSS (`filter: brightness(0) invert(1)`), em vez de aparecerem coloridas. Locais com esse tratamento:
+- **Ícones de categoria** — constantes `IMG_DOENCA`, `IMG_ACIDENTE`, `IMG_CONSULTA`, `IMG_CIRURGIA`, `IMG_ALERGIA`, `IMG_VACINA`, `IMG_EXAMES`, `IMG_OUTRO` em `app.js`, via classe `.category-icon` (stroke branco sobre o fundo colorido da categoria nos dots da timeline, nos círculos de "Últimos eventos" e no detalhe do evento). Mapeamento Lucide: doença→`thermometer`, acidente→`bandage`, consulta→`stethoscope`, cirurgia→`scissors`, alergia→`flower-2`, vacina→`syringe`, exames→`microscope`, outro→`ellipsis`.
+- **Ilustrações** (boas-vindas e estados vazios) — `IMG_BRINQUEDO` (boas-vindas → `heart-pulse`), `IMG_URSINHOBEM` (Histórico vazio → `clipboard-list`), `IMG_AGENDA` (Agenda vazia → `calendar-x`). Renderizadas em branco pelos seletores `.welcome-icon svg` / `.empty-icon svg`.
+- **dentes** — categoria "Dentes": SVG inline **desenhado à mão** (`IMG_DENTES`, classe `category-icon category-icon-fill`), pois o Lucide não tem ícone de dente.
 
-- **Ícones de categoria** (`.category-icon-img`): dots da timeline, círculos de "Últimos eventos" (home) e detalhe do evento — fundo na cor sólida da categoria.
-- **Imagens ilustrativas** (`.img-icon-ilustracao`): boas-vindas (brinquedo) e estados vazios (ursinho/agenda) — fundo na cor primária do tema.
+> Para trocar/adicionar um ícone de categoria, basta editar o `<path>` da constante em `app.js` — nenhuma imagem ou entrada no `sw.js` é necessária. Pegue o SVG correspondente em lucide.dev e mantenha apenas `viewBox` + os elementos internos, usando `class="category-icon"`.
 
-Exceções (mantidas como imagem original, **sem** silhueta):
-- **logo.png** e variantes — identidade da marca (login, carregamento, favicon, ícones PWA).
-- **mamadeira.png** — avatar padrão do perfil (placeholder quando não há foto).
+As chips de filtro **não exibem ícone** (só texto).
 
-As chips de filtro **deixaram de exibir ícone** (ficaram só com texto), pois uma silhueta branca seria invisível no fundo claro da chip.
+## PNGs ainda em uso
 
-## Compressão / dimensões
+As únicas imagens raster restantes são a marca e o avatar:
 
-Para acelerar o carregamento do app, as imagens são salvas **no tamanho realmente usado** (com folga para telas retina), não em alta resolução. Total de `img/` caiu de ~4,6 MB para ~0,7 MB.
+- **logo.png** — `index.html` / `admin.html`, favicon e logo das telas de login.
+- **logo-180.png** — `apple-touch-icon`; cache `sw.js`.
+- **logo-192.png** / **logo-512.png** — ícones PWA (`manifest.json`); cache `sw.js`.
+- **mamadeira.png** — avatar padrão do perfil (`app.js`, placeholder sem foto; e `admin.html`); cache `sw.js`.
 
-- **Ícones de categoria** (`alergia`, `calendario`, `cirurgia`, `curativo`, `hospital`, `outro`, `termometro`, `vacina`): **96×96** (exibidos ≤22 px).
-- **Ilustrações** (`agenda`, `brinquedo`, `ursinhobem`): **256×256** (exibidas ≤72 px).
-- **mamadeira** (avatar): **256×256** (exibido ≤88 px).
-- **logo.png** (marca/favicon): **256×256** (exibido ≤88 px) — era 1079×1105 / 2,5 MB.
-- **logo-180 / logo-192 / logo-512** (ícones PWA/Apple): **mantêm as dimensões nominais**; reduzidos via quantização de paleta (256 cores) preservando o alfa.
+> Dimensões/compressão: `logo*` em 256×256 (e dimensões nominais para os ícones PWA, via quantização de paleta preservando o alfa); `mamadeira` 256×256. Reprocessar com Pillow (`Image.LANCZOS`; `optimize=True`; `quantize(method=FASTOCTREE)` para preservar transparência). Originais em alta resolução ficam no histórico do git e em `dev/icones-originais/`.
 
-> Reprocessar com Pillow (`Image.LANCZOS` para redimensionar; `optimize=True`; `quantize(method=FASTOCTREE)` quando precisar preservar transparência). Os PNGs originais em alta resolução ficam preservados no histórico do git e em `dev/icones-originais/`.
+## ⏳ Pendentes
 
-## ✅ Em uso
+- **dentes** — quando houver um desenho melhor, substituir o `<path>` de `IMG_DENTES` (continua SVG inline; não precisa virar PNG).
+- **ilustrações com tema infantil → versão neutra** — com a generalização do app para um público geral:
+  - `IMG_BRINQUEDO` já foi trocado pelo ícone neutro `heart-pulse`; reavaliar se é o melhor símbolo de boas-vindas.
+  - **mamadeira.png** (avatar) ainda tem tema de bebê; mantida provisoriamente. Ao substituir por uma versão neutra, manter nome/dimensões (256×256, fundo transparente).
 
-- **agenda.png** — `app.js` (`IMG_AGENDA`), estado vazio da Agenda; cache `sw.js`
-- **brinquedo.png** — `app.js:385` (`IMG_BRINQUEDO`), ícone de boas-vindas; cache `sw.js`
-- **calendario.png** — `app.js` (`IMG_CONSULTA`), categoria Consulta; cache `sw.js`
-- **cirurgia.png** — `app.js` (`IMG_CIRURGIA`), categoria Cirurgia; cache `sw.js`
-- **curativo.png** — `app.js` (`IMG_ACIDENTE`), categoria Acidente; cache `sw.js`
-- **termometro.png** — `app.js` (`IMG_DOENCA`), categoria Doença (substituiu `ursinhodoente.png`); cache `sw.js`
-- **hospital.png** — `app.js` (`IMG_EXAMES`), categoria Exames; cache `sw.js`
-- **alergia.png** — `app.js` (`IMG_ALERGIA`), categoria Alergia; cache `sw.js`
-- **vacina.png** — `app.js` (`IMG_VACINA`), categoria Vacina; cache `sw.js`
-- **outro.png** — `app.js` (`IMG_OUTRO`), categoria Outro (renomeado a partir de `caderneta.png`); cache `sw.js`
-- **mamadeira.png** — `admin.html:24` e `app.js:402`, perfil do bebê; cache `sw.js`
-- **ursinhobem.png** — `app.js` (`IMG_URSINHOBEM`), estado vazio da Timeline; cache `sw.js`
-- **logo.png** — `index.html` / `admin.html`, favicon e logo das telas de login
-- **logo-180.png** — `index.html` / `admin.html`, `apple-touch-icon`; cache `sw.js`
-- **logo-192.png** — `manifest.json`, ícone PWA 192×192; cache `sw.js`
-- **logo-512.png** — `manifest.json`, ícone PWA 512×512; cache `sw.js`
+## 🗑️ Não utilizadas
 
-## ⏳ Pendentes (imagens a criar / substituir)
-
-- **dentes** — categoria "Dentes" (eventos). Ainda **sem imagem**; usa um SVG inline preenchido (`IMG_DENTES`, classe `category-icon category-icon-fill`) como silhueta branca provisória. Quando houver o PNG (fundo transparente, 96×96), substituir o SVG por `<img class="category-icon-img">` como as demais categorias.
-- **ilustrações com tema de bebê** — com a generalização do app para um público geral, ainda **faltam versões neutras** para duas imagens que continuam com tema infantil:
-  - **brinquedo.png** — ícone da tela de boas-vindas (`IMG_BRINQUEDO`).
-  - **mamadeira.png** — avatar padrão do perfil (mantido provisoriamente; trocar depois).
-  Quando houver as versões neutras (fundo transparente, mesmas dimensões atuais — 256×256), substituir os PNGs preservando os nomes/usos no código.
-
-## 🗑️ Não utilizadas (candidatas a descarte)
-
-- **ursinhodoente.png** — era a categoria Doença, substituída por `termometro.png`. Sem uso.
-- **relogio.png** — o relógio é desenhado via SVG inline (`CLOCK_SVG`).
-- **remedios.png** — não há categoria "remédios"; a constante `IMG_REMEDIOS` foi removida do código.
+PNGs de ícone/ilustração foram **removidos do repositório** ao migrar para SVG (`agenda`, `alergia`, `brinquedo`, `calendario`, `cirurgia`, `curativo`, `hospital`, `outro`, `termometro`, `ursinhobem`, `vacina`) — recuperáveis pelo histórico do git se necessário. Também removidos: `remedios.png` (sem categoria correspondente). Permanecem fora de uso no histórico: `ursinhodoente.png`, `relogio.png` (relógio é SVG inline `CLOCK_SVG`).

@@ -16,6 +16,6 @@
 
 8. Criar histórico de medicamentos.
 
-9. Criar imagem PNG para a categoria **Dentes** (96×96 px, fundo transparente). Enquanto isso, a categoria usa um SVG inline provisório. Ao criar o PNG, substituir `IMG_DENTES` em `app.js` por `<img src="img/dentes.png" class="category-icon-img">` e adicionar `dentes.png` ao cache do `sw.js`.
+9. (Opcional) Melhorar o desenho do ícone de **Dentes** — hoje é um SVG inline feito à mão (`IMG_DENTES`), já que o Lucide não tem ícone de dente. Não precisa virar PNG; basta refinar o `<path>`.
 
-10. Criar **versões neutras** (público geral, não-infantil) das ilustrações que ainda têm tema de bebê: o ícone de boas-vindas (`brinquedo.png`) e o avatar padrão do perfil (`mamadeira.png`). Manter os mesmos nomes/dimensões (256×256, fundo transparente) ao substituir.
+10. Avatar do perfil (`mamadeira.png`) ainda tem tema de bebê → criar **versão neutra** para o público geral, mantendo nome/dimensões (256×256, fundo transparente). (O antigo ícone de boas-vindas já virou o SVG neutro `heart-pulse`.)

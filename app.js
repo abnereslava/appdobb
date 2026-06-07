@@ -15,20 +15,20 @@
 /* ================================================
    1. CONSTANTES DE ÍCONES (SVG)
    ================================================ */
-// Ícones ilustrativos → imagens PNG
-const IMG_BRINQUEDO    = `<img src="img/brinquedo.png"    class="img-icon-ilustracao" alt="" />`;
-const IMG_URSINHOBEM   = `<img src="img/ursinhobem.png"   class="img-icon-ilustracao" alt="" />`;
-const IMG_AGENDA       = `<img src="img/agenda.png"       class="img-icon-ilustracao" alt="" />`;
+// Ícones ilustrativos → SVG inline (Lucide), renderizados em branco pelo container
+const IMG_BRINQUEDO    = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/><path d="M3.22 13H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/></svg>`;
+const IMG_URSINHOBEM   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>`;
+const IMG_AGENDA       = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m14 14-4 4"/><path d="m10 14 4 4"/></svg>`;
 
-// Ícones de categoria → imagens PNG
-const IMG_DOENCA   = `<img src="img/termometro.png"    class="category-icon-img" alt="" />`;
-const IMG_ACIDENTE = `<img src="img/curativo.png"      class="category-icon-img" alt="" />`;
-const IMG_CONSULTA = `<img src="img/calendario.png"    class="category-icon-img" alt="" />`;
-const IMG_CIRURGIA = `<img src="img/cirurgia.png"      class="category-icon-img" alt="" />`;
-const IMG_ALERGIA  = `<img src="img/alergia.png"       class="category-icon-img" alt="" />`;
-const IMG_VACINA   = `<img src="img/vacina.png"        class="category-icon-img" alt="" />`;
-const IMG_EXAMES   = `<img src="img/hospital.png"      class="category-icon-img" alt="" />`;
-const IMG_OUTRO    = `<img src="img/outro.png"         class="category-icon-img" alt="" />`;
+// Ícones de categoria → SVG inline (Lucide), via classe .category-icon (silhueta branca sobre fundo colorido)
+const IMG_DOENCA   = `<svg class="category-icon" viewBox="0 0 24 24"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></svg>`;
+const IMG_ACIDENTE = `<svg class="category-icon" viewBox="0 0 24 24"><path d="M10 10.01h.01"/><path d="M10 14.01h.01"/><path d="M14 10.01h.01"/><path d="M14 14.01h.01"/><path d="M18 6v12"/><path d="M6 6v12"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg>`;
+const IMG_CONSULTA = `<svg class="category-icon" viewBox="0 0 24 24"><path d="M11 2v2"/><path d="M5 2v2"/><path d="M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1"/><path d="M8 15a6 6 0 0 0 12 0v-3"/><circle cx="20" cy="10" r="2"/></svg>`;
+const IMG_CIRURGIA = `<svg class="category-icon" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><path d="M8.12 8.12 12 12"/><path d="M20 4 8.12 15.88"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/></svg>`;
+const IMG_ALERGIA  = `<svg class="category-icon" viewBox="0 0 24 24"><path d="M12 5a3 3 0 1 1 3 3m-3-3a3 3 0 1 0-3 3m3-3v1M9 8a3 3 0 1 0 3 3M9 8h1m5 0a3 3 0 1 1-3 3m3-3h-1m-2 3v-1"/><circle cx="12" cy="8" r="2"/><path d="M12 10v12"/><path d="M12 22c4.2 0 7-1.667 7-5-4.2 0-7 1.667-7 5Z"/><path d="M12 22c-4.2 0-7-1.667-7-5 4.2 0 7 1.667 7 5Z"/></svg>`;
+const IMG_VACINA   = `<svg class="category-icon" viewBox="0 0 24 24"><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/><path d="m14 4 6 6"/></svg>`;
+const IMG_EXAMES   = `<svg class="category-icon" viewBox="0 0 24 24"><path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"/><path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"/></svg>`;
+const IMG_OUTRO    = `<svg class="category-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>`;
 // Categoria "Dentes" ainda sem PNG: usa SVG inline (silhueta preenchida)
 const IMG_DENTES   = `<svg class="category-icon category-icon-fill" viewBox="0 0 24 24"><path d="M12 2c-2.5 0-3.5 1.2-5 1.2C5 3.2 3 4.5 3 8c0 2.4.8 4.2 1.5 6.5.5 1.7.9 4 1.4 5.7.3 1.1.7 1.8 1.4 1.8.8 0 1.1-1 1.4-2.3.4-1.8.7-3.4 1.9-3.4s1.5 1.6 1.9 3.4c.3 1.3.6 2.3 1.4 2.3.7 0 1.1-.7 1.4-1.8.5-1.7.9-4 1.4-5.7C20.2 12.2 21 10.4 21 8c0-3.5-2-4.8-4-4.8-1.5 0-2.5-1.2-5-1.2z"/></svg>`;
 
