@@ -532,6 +532,30 @@
 
 
   <!-- ================================================
+       MODAL: FILTRAR CATEGORIAS (HISTÓRICO)
+       ================================================ -->
+  <div id="modal-filtro-cats" class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-filtro-cats">
+    <div class="modal-overlay" onclick="fecharModal('modal-filtro-cats')"></div>
+    <div class="modal-sheet" style="max-height:75dvh;">
+      <div class="modal-header">
+        <h2 id="titulo-filtro-cats" class="modal-title">Filtrar categorias</h2>
+        <button class="modal-close" onclick="fecharModal('modal-filtro-cats')" aria-label="Fechar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Selecione as categorias que deseja ver no histórico.</p>
+        <div id="filtro-cats-lista" class="filtro-cats-lista"></div>
+        <div class="form-actions">
+          <button type="button" class="btn-ghost" onclick="limparFiltroCategorias()">Limpar</button>
+          <button type="button" class="btn-primary" onclick="aplicarFiltroCategorias()">Aplicar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ================================================
        MODAL: CONFIRMAÇÃO GENÉRICA
        ================================================ -->
   <div id="modal-confirmar" class="modal modal-confirmar" role="dialog" aria-modal="true">
