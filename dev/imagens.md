@@ -49,9 +49,13 @@ Para acelerar o carregamento do app, as imagens são salvas **no tamanho realmen
 - **logo-192.png** — `manifest.json`, ícone PWA 192×192; cache `sw.js`
 - **logo-512.png** — `manifest.json`, ícone PWA 512×512; cache `sw.js`
 
-## ⏳ Pendentes (categoria sem PNG)
+## ⏳ Pendentes (imagens a criar / substituir)
 
 - **dentes** — categoria "Dentes" (eventos). Ainda **sem imagem**; usa um SVG inline preenchido (`IMG_DENTES`, classe `category-icon category-icon-fill`) como silhueta branca provisória. Quando houver o PNG (fundo transparente, 96×96), substituir o SVG por `<img class="category-icon-img">` como as demais categorias.
+- **ilustrações com tema de bebê** — com a generalização do app para um público geral, ainda **faltam versões neutras** para duas imagens que continuam com tema infantil:
+  - **brinquedo.png** — ícone da tela de boas-vindas (`IMG_BRINQUEDO`).
+  - **mamadeira.png** — avatar padrão do perfil (mantido provisoriamente; trocar depois).
+  Quando houver as versões neutras (fundo transparente, mesmas dimensões atuais — 256×256), substituir os PNGs preservando os nomes/usos no código.
 
 ## 🗑️ Não utilizadas (candidatas a descarte)
 
