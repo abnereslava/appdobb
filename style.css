@@ -2021,49 +2021,6 @@ body[data-theme="dark"] .badge-outro   { background: rgba(138, 138, 154, 0.20); 
   object-fit: contain;
 }
 
-.img-icon-ilustracao {
-  width: 72px;
-  height: 72px;
-  object-fit: contain;
-}
-
-.category-icon-img {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-  display: inline-block;
-  vertical-align: middle;
-}
-
-/* Dentro dos dots da timeline, a imagem vira silhueta branca sobre o fundo colorido */
-.tl-dot .category-icon-img {
-  width: 22px;
-  height: 22px;
-  filter: brightness(0) invert(1);
-}
-
-/* Dentro dos event-recent-icon, ajuste de tamanho */
-.event-recent-icon .category-icon-img {
-  width: 20px;
-  height: 20px;
-  filter: brightness(0) invert(1);
-}
-
-/* No empty-icon, a imagem ilustrativa ocupa todo o espaço do círculo */
-.empty-icon .img-icon-ilustracao {
-  width: 48px;
-  height: 48px;
-  filter: brightness(0) invert(1);
-}
-
-/* No welcome-icon, imagem maior */
-.welcome-icon .img-icon-ilustracao {
-  width: 64px;
-  height: 64px;
-  filter: brightness(0) invert(1);
-}
-
-
 /* ================================================
    ÍCONES VETORIAIS (SVG)
    ================================================ */

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bebe-shell-v7';
+const CACHE_NAME = 'bebe-shell-v8';
 
 const SHELL_FILES = [
   './',
@@ -16,17 +16,6 @@ const SHELL_FILES = [
   './img/logo-192.png',
   './img/logo-512.png',
   './img/mamadeira.png',
-  './img/brinquedo.png',
-  './img/ursinhobem.png',
-  './img/termometro.png',
-  './img/curativo.png',
-  './img/cirurgia.png',
-  './img/calendario.png',
-  './img/agenda.png',
-  './img/alergia.png',
-  './img/vacina.png',
-  './img/outro.png',
-  './img/hospital.png',
 ];
 
 self.addEventListener('install', event => {
