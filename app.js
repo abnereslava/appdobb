@@ -535,7 +535,14 @@ document.addEventListener('keydown', e => {
 
 function renderizarHome() {
   const container = document.getElementById('view-home');
+
+  // Consome a flag de animação ANTES de qualquer return antecipado, para que
+  // estados intermediários (loading/boas-vindas) não a deixem pendente.
+  const deveAnimarEntrada = _animacaoPerfilEntrada;
+  _animacaoPerfilEntrada = false;
+
   if (!_cacheReady) {
+    _trocandoPerfil = false;
     container.innerHTML = `<div class="carregando-view"><div class="login-spinner"></div></div>`;
     return;
   }
@@ -547,6 +554,7 @@ function renderizarHome() {
   const eventos = carregarEventos();
 
   if (!perfil || !perfil.nomeCompleto) {
+    _trocandoPerfil = false;
     atualizarNomeBebe('');
     container.innerHTML = `
       <div class="welcome-screen">
@@ -661,8 +669,7 @@ function renderizarHome() {
     </div>`;
 
   // Animação de entrada após troca de perfil por swipe
-  if (_animacaoPerfilEntrada) {
-    _animacaoPerfilEntrada = false;
+  if (deveAnimarEntrada) {
     container.classList.add('perfil-entrando-esquerda');
     container.addEventListener('animationend', () => {
       container.classList.remove('perfil-entrando-esquerda');
