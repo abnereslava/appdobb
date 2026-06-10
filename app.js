@@ -40,6 +40,7 @@ const PULSE_SVG   = `<svg class="inline-icon" viewBox="0 0 24 24" style="color: 
 const MALE_SVG    = `<svg class="inline-icon" viewBox="0 0 24 24" style="margin-right: 4px; color: #2a62a0;"><circle cx="10" cy="14" r="5"/><path d="M14 10L19 5"/><path d="M14 5h5v5"/></svg>`;
 const FEMALE_SVG  = `<svg class="inline-icon" viewBox="0 0 24 24" style="margin-right: 4px; color: #a03458;"><circle cx="12" cy="9" r="5"/><path d="M12 14v7"/><path d="M9 18h6"/></svg>`;
 const NASCIMENTO_SVG = `<svg class="category-icon" viewBox="0 0 24 24"><path d="M12 2l2.39 4.84 5.34.78-3.86 3.77.91 5.32L12 14.98 7.22 16.5l.91-5.32L4.27 7.62l5.34-.78z"/></svg>`;
+const IMG_PESSOA     = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
 
 const CATEGORIAS = {
   acidente: { label: 'Acidente', icone: IMG_ACIDENTE },
@@ -98,6 +99,9 @@ let _resetFiltrosScroll = false; // ao entrar na aba, volta as chips ao início;
 // Escritas pendentes de confirmação pelo servidor
 let _escritasPendentes = 0;
 
+// Foto de perfil selecionada no form (data URL temporário, salvo no IndexedDB ao confirmar)
+let _avatarNovoDataUrl = null;
+
 // Estado da agenda
 let buscaAgendaAtiva = '';
 let filtroTipoConsulta = 'todos';
@@ -148,7 +152,50 @@ let doencasCronicasTemp = [];
 
 
 /* ================================================
-   2. DADOS
+   2. AVATAR LOCAL (IndexedDB)
+   ================================================ */
+
+function _abrirAvatarDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('appdobb-avatars', 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore('avatars');
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = reject;
+  });
+}
+
+async function salvarAvatarLocal(profileId, dataUrl) {
+  const db = await _abrirAvatarDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('avatars', 'readwrite');
+    tx.objectStore('avatars').put(dataUrl, profileId);
+    tx.oncomplete = resolve;
+    tx.onerror = reject;
+  });
+}
+
+async function buscarAvatarLocal(profileId) {
+  const db = await _abrirAvatarDB();
+  return new Promise(resolve => {
+    const tx = db.transaction('avatars', 'readonly');
+    const req = tx.objectStore('avatars').get(profileId);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => resolve(null);
+  });
+}
+
+async function excluirAvatarLocal(profileId) {
+  const db = await _abrirAvatarDB();
+  return new Promise(resolve => {
+    const tx = db.transaction('avatars', 'readwrite');
+    tx.objectStore('avatars').delete(profileId);
+    tx.oncomplete = resolve;
+    tx.onerror = resolve;
+  });
+}
+
+/* ================================================
+   3. DADOS
    ================================================ */
 
 // Helper: registra escrita pendente e aguarda confirmação do servidor
@@ -477,9 +524,7 @@ function renderizarHome() {
 
   aplicarTema(perfil.sexo);
 
-  const avatarHTML = perfil.fotoUrl
-    ? `<img src="${esc(perfil.fotoUrl)}" alt="${esc(perfil.nomeCompleto)}" onerror="this.style.display='none'" />`
-    : `<img src="img/mamadeira.png" alt="" style="width:56px;height:56px;object-fit:contain;" />`;
+  const avatarHTML = IMG_PESSOA;
 
   const idadeTxt  = calcularIdade(perfil.dataNascimento);
   const sexoTxt   = perfil.sexo === 'menino' ? 'Masculino' : 'Feminino';
@@ -575,6 +620,15 @@ function renderizarHome() {
       </div>` : ''}
 
     </div>`;
+
+  // Carrega foto local do perfil ativo (IndexedDB) e atualiza o avatar assincronamente
+  if (profileIdAtivo) {
+    buscarAvatarLocal(profileIdAtivo).then(dataUrl => {
+      if (!dataUrl) return;
+      const av = document.querySelector('#view-home .profile-avatar');
+      if (av) av.innerHTML = `<img src="${dataUrl}" alt="${esc(perfil.nomeCompleto)}" />`;
+    });
+  }
 }
 
 function renderizarAlergiasLista(alergias) {
@@ -613,8 +667,8 @@ async function abrirFormPerfil() {
   set('perfil-tipo-mae', p.tipoMae || '');
   set('perfil-peso', p.peso || '');
   set('perfil-altura', p.altura || '');
-  set('perfil-foto', p.fotoUrl || '');
   set('perfil-sexo', p.sexo || '');
+  _avatarNovoDataUrl = null;
   set('perfil-amamentacao-outro', p.amamentacaoOutro || '');
   atualizarBotoesSexo(p.sexo);
 
@@ -639,6 +693,15 @@ async function abrirFormPerfil() {
   doencasCronicasTemp = JSON.parse(JSON.stringify(p.doencasCronicas || []));
   renderizarDoencasForm();
   abrirModal('modal-perfil');
+
+  // Carrega avatar local para preview no form
+  buscarAvatarLocal(profileIdAtivo || '').then(dataUrl => {
+    const preview = document.getElementById('avatar-upload-preview');
+    if (!preview) return;
+    preview.innerHTML = dataUrl
+      ? `<img src="${dataUrl}" alt="" />`
+      : IMG_PESSOA;
+  });
 }
 
 function atualizarBotoesSexo(sexo) {
@@ -646,6 +709,32 @@ function atualizarBotoesSexo(sexo) {
   const bf = document.getElementById('btn-menina');
   if (bm) bm.className = 'gender-btn' + (sexo === 'menino' ? ' selected-menino' : '');
   if (bf) bf.className = 'gender-btn' + (sexo === 'menina' ? ' selected-menina' : '');
+}
+
+function onFotoPerfilSelecionada(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = ''; // reset para permitir reselecionar o mesmo arquivo
+  const reader = new FileReader();
+  reader.onload = e => {
+    const imgEl = new Image();
+    imgEl.onload = () => {
+      const SIZE = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = SIZE; canvas.height = SIZE;
+      const ctx = canvas.getContext('2d');
+      // Crop centralizado (square)
+      const s = Math.min(imgEl.width, imgEl.height);
+      const ox = (imgEl.width  - s) / 2;
+      const oy = (imgEl.height - s) / 2;
+      ctx.drawImage(imgEl, ox, oy, s, s, 0, 0, SIZE, SIZE);
+      _avatarNovoDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+      const preview = document.getElementById('avatar-upload-preview');
+      if (preview) preview.innerHTML = `<img src="${_avatarNovoDataUrl}" alt="" />`;
+    };
+    imgEl.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 
 function selecionarSexo(sexo) {
@@ -750,12 +839,15 @@ async function salvarPerfil(event) {
     amamentacaoOutro: document.getElementById('perfil-amamentacao-outro').value.trim() || null,
     peso:             document.getElementById('perfil-peso').value || null,
     altura:           document.getElementById('perfil-altura').value || null,
-    fotoUrl:          document.getElementById('perfil-foto').value.trim() || null,
     alergias:         alergiasTemp.filter(a => a.descricao.trim()),
     doencasCronicas:  doencasCronicasTemp.filter(d => d.descricao.trim()),
   };
   try {
     await gravarPerfil(perfil);
+    if (_avatarNovoDataUrl && profileIdAtivo) {
+      await salvarAvatarLocal(profileIdAtivo, _avatarNovoDataUrl);
+      _avatarNovoDataUrl = null;
+    }
     temPerfil = true;
     atualizarNavSemPerfil();
     atualizarNomeBebe(perfil.nomeCompleto);

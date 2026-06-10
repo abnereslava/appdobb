@@ -18,7 +18,7 @@
 
 9. (Opcional) Melhorar o desenho do ícone de **Dentes** — hoje é um SVG inline feito à mão (`IMG_DENTES`), já que o Lucide não tem ícone de dente. Não precisa virar PNG; basta refinar o `<path>`.
 
-10. Avatar do perfil (`mamadeira.png`) ainda tem tema de bebê → criar **versão neutra** para o público geral, mantendo nome/dimensões (256×256, fundo transparente). (O antigo ícone de boas-vindas já virou o SVG neutro `heart-pulse`.)
+10. ~~Avatar do perfil (`mamadeira.png`) ainda tem tema de bebê~~ → substituído por ícone SVG de pessoa (`IMG_PESSOA`); o usuário agora pode colocar a própria foto (salva localmente no IndexedDB). A `mamadeira.png` foi removida do fluxo principal (ainda referenciada em `admin.html` e `sw.js` como legado).
 
 11. Retrabalhar inserção de eventos (revelando campos aos poucos de acordo com o evento que está sendo registrado).
 

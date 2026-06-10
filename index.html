@@ -265,8 +265,16 @@
               </div>
             </div>
             <div class="form-group">
-              <label class="form-label" for="perfil-foto">URL da foto (opcional)</label>
-              <input class="form-input" type="url" id="perfil-foto" placeholder="https://..." />
+              <label class="form-label">Foto do perfil</label>
+              <div class="avatar-upload-wrap">
+                <button type="button" class="avatar-upload-btn" onclick="document.getElementById('perfil-foto-input').click()" aria-label="Alterar foto de perfil">
+                  <div class="avatar-upload-preview" id="avatar-upload-preview">
+                    <!-- preenchido via JS: foto local ou ícone de pessoa -->
+                  </div>
+                </button>
+                <input type="file" id="perfil-foto-input" accept="image/*" style="display:none" onchange="onFotoPerfilSelecionada(this)" />
+                <span class="avatar-upload-hint">Toque para alterar · salvo localmente</span>
+              </div>
             </div>
           </div>
 
