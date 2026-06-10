@@ -597,7 +597,7 @@ function renderizarHome() {
         </button>
         <div class="profile-avatar-wrap">
           <button type="button" class="profile-avatar profile-avatar-btn" onclick="abrirFormPerfil()" title="Editar perfil" aria-label="Editar foto e perfil">${avatarHTML}</button>
-          <span class="profile-avatar-cam" aria-hidden="true">${CAMERA_SVG}</span>
+          <button type="button" class="profile-avatar-cam" onclick="abrirFormPerfil()" title="Adicionar foto" aria-label="Adicionar foto">${CAMERA_SVG}</button>
         </div>
         <div class="profile-name">${esc(perfil.nomeCompleto)}</div>
         <div class="profile-age-genero">
@@ -656,12 +656,14 @@ function renderizarHome() {
 
     </div>`;
 
-  // Carrega foto local do perfil ativo (IndexedDB) e atualiza o avatar assincronamente
+  // Carrega foto local do perfil ativo (IndexedDB) e atualiza o avatar assincronamente.
+  // O badge de câmera só aparece quando NÃO há foto.
   if (profileIdAtivo) {
     buscarAvatarLocal(profileIdAtivo).then(dataUrl => {
       if (!dataUrl) return;
       const av = document.querySelector('#view-home .profile-avatar');
       if (av) av.innerHTML = `<img src="${dataUrl}" alt="${esc(perfil.nomeCompleto)}" />`;
+      _toggleCamHome(true);
     });
   }
 }
@@ -822,6 +824,13 @@ function atualizarBotoesSexo(sexo) {
 function _atualizarAvatarHome(dataUrl, nome) {
   const av = document.querySelector('#view-home .profile-avatar');
   if (av) av.innerHTML = dataUrl ? `<img src="${dataUrl}" alt="${esc(nome || '')}" />` : IMG_PESSOA;
+  _toggleCamHome(!!dataUrl);
+}
+
+// Mostra/esconde o badge de câmera no avatar da home (esconde quando há foto)
+function _toggleCamHome(temFoto) {
+  const cam = document.querySelector('#view-home .profile-avatar-cam');
+  if (cam) cam.style.display = temFoto ? 'none' : '';
 }
 
 // Seleção de foto no formulário: redimensiona e salva automaticamente.
