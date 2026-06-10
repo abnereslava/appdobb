@@ -47,7 +47,6 @@ const CATEGORIAS = {
   acidente: { label: 'Acidente', icone: IMG_ACIDENTE },
   alergia:  { label: 'Alergia',  icone: IMG_ALERGIA  },
   cirurgia: { label: 'Cirurgia', icone: IMG_CIRURGIA },
-  consulta: { label: 'Consulta', icone: IMG_CONSULTA },
   dentes:   { label: 'Dentes',   icone: IMG_DENTES   },
   doenca:   { label: 'Doença',   icone: IMG_DOENCA   },
   exames:   { label: 'Exames',   icone: IMG_EXAMES   },
@@ -135,8 +134,9 @@ let _animacaoPerfilEntrada = false; // sinaliza renderizarHome para animar a ent
 let _trocandoPerfil        = false; // guarda contra swipes duplos durante a animação
 
 // Estado da agenda
-let buscaAgendaAtiva = '';
-let filtroTipoConsulta = 'todos';
+let buscaAgendaAtiva   = '';
+let tiposSelecionados  = []; // tipos marcados no filtro da agenda; vazio = mostrar tudo
+let _filtroTiposTemp   = []; // seleção temporária enquanto o modal está aberto
 let modoAgenda          = localStorage.getItem('modo-agenda') || 'lista';
 let mesCalendarioAtivo  = { ano: new Date().getFullYear(), mes: new Date().getMonth() };
 let diaCalendarioAberto = null;
@@ -1322,9 +1322,51 @@ function aplicarFiltroCategorias() {
 }
 function buscarEventos(txt)        { buscaAtiva  = txt; renderizarTimeline(); }
 function toggleTlModo()            { _tlModoCards = !_tlModoCards; renderizarTimeline(); mostrarToast(_tlModoCards ? 'Visualização em cartões' : 'Linha do tempo', 'success'); }
-function buscarAgenda(txt)         { buscaAgendaAtiva = txt; renderizarAgenda(); }
-function filtrarPorTipoConsulta(t) { filtroTipoConsulta = t; renderizarAgenda(); }
-function limparFiltroData()        { alterarFiltroData('', ''); }
+function buscarAgenda(txt) { buscaAgendaAtiva = txt; renderizarAgenda(); }
+function limparFiltroData() { alterarFiltroData('', ''); }
+
+function mostrarTodosTipos() { tiposSelecionados = []; renderizarAgenda(); }
+
+function abrirFiltroTipos() {
+  _filtroTiposTemp = [...tiposSelecionados];
+  _renderFiltroTiposLista();
+  abrirModal('modal-filtro-tipos');
+}
+
+function _renderFiltroTiposLista() {
+  const cont = document.getElementById('filtro-tipos-lista');
+  if (!cont) return;
+  const CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+  const disponiveis = Object.entries(TIPOS_CONSULTA)
+    .filter(([v]) => consultasCache.some(c => (c.tipo || 'outro') === v))
+    .map(([v, label]) => ({ valor: v, label, n: consultasCache.filter(c => (c.tipo || 'outro') === v).length }));
+  if (!disponiveis.length) {
+    cont.innerHTML = `<p class="filtro-cats-vazio">Nenhum tipo de consulta registrado ainda.</p>`;
+    return;
+  }
+  cont.innerHTML = disponiveis.map(d => {
+    const sel = _filtroTiposTemp.includes(d.valor);
+    return `<button type="button" class="filtro-cat-item ${sel?'sel':''}" onclick="toggleFiltroTipo('${d.valor}')">
+        <span class="filtro-cat-label">${d.label}</span>
+        <span class="filtro-cat-n">${d.n}</span>
+        <span class="filtro-cat-check">${sel ? CHECK : ''}</span>
+      </button>`;
+  }).join('');
+}
+
+function toggleFiltroTipo(v) {
+  const i = _filtroTiposTemp.indexOf(v);
+  if (i === -1) _filtroTiposTemp.push(v); else _filtroTiposTemp.splice(i, 1);
+  _renderFiltroTiposLista();
+}
+
+function limparFiltroTipos() { _filtroTiposTemp = []; _renderFiltroTiposLista(); }
+
+function aplicarFiltroTipos() {
+  tiposSelecionados = [..._filtroTiposTemp];
+  fecharModal('modal-filtro-tipos');
+  renderizarAgenda();
+}
 
 
 /* ================================================
@@ -1509,10 +1551,11 @@ function renderizarAgendaLista() {
 
   const consultas = consultasCache;
   const hoje      = new Date(); hoje.setHours(0,0,0,0);
+  const semTipo   = tiposSelecionados.length === 0;
 
-  let consultasFiltradas = filtroTipoConsulta === 'todos'
+  let consultasFiltradas = semTipo
     ? consultas
-    : consultas.filter(c => (c.tipo || 'outro') === filtroTipoConsulta);
+    : consultas.filter(c => tiposSelecionados.includes(c.tipo || 'outro'));
   if (filtroDataInicio) consultasFiltradas = consultasFiltradas.filter(c => c.data >= filtroDataInicio);
   if (filtroDataFim)    consultasFiltradas = consultasFiltradas.filter(c => c.data <= filtroDataFim);
 
@@ -1532,15 +1575,7 @@ function renderizarAgendaLista() {
 
   const filtroDataAtivo = filtroDataInicio || filtroDataFim;
   const fmtD = s => s ? s.split('-').reverse().join('/') : '';
-  const semFiltros = !buscaAgendaAtiva && !filtroDataAtivo && filtroTipoConsulta === 'todos';
-
-  // Chips de filtro por tipo de consulta (só mostra os tipos presentes nas consultas)
-  const filtrosTipo = [
-    { valor:'todos', label:`Todas (${consultas.length}${!consultasEsgotado?'+':''})` },
-    ...Object.entries(TIPOS_CONSULTA)
-      .filter(([v]) => consultas.some(c => (c.tipo || 'outro') === v))
-      .map(([v,label]) => ({ valor:v, label:`${label} (${consultas.filter(c => (c.tipo || 'outro') === v).length})` }))
-  ];
+  const semFiltros = !buscaAgendaAtiva && !filtroDataAtivo && semTipo;
 
   container.innerHTML = `
     <div>
@@ -1562,8 +1597,9 @@ function renderizarAgendaLista() {
         ${filtroDataAtivo ? `<button class="filtro-datas-limpar" onclick="limparFiltroData()" title="Limpar filtro de datas">×</button>` : ''}
       </div>
 
-      <div class="timeline-filters">
-        ${filtrosTipo.map(f => `<button class="filter-btn ${filtroTipoConsulta===f.valor?'active':''}" onclick="filtrarPorTipoConsulta('${f.valor}')">${f.label}</button>`).join('')}
+      <div class="tl-filtro2">
+        <button class="filter-btn ${semTipo?'active':''}" onclick="mostrarTodosTipos()">Mostrar tudo</button>
+        <button class="filter-btn ${!semTipo?'active':''}" onclick="abrirFiltroTipos()">Mostrar selecionados${!semTipo?` (${tiposSelecionados.length})`:''}</button>
       </div>
 
       ${filtroDataAtivo ? `<div class="paginacao-info">Período: ${fmtD(filtroDataInicio)||'início'} → ${fmtD(filtroDataFim)||'hoje'}</div>` : ''}
