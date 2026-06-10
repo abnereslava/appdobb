@@ -180,6 +180,7 @@ window._db = {
       .map(s => ({
         profileId:         s.id,
         nomeCompleto:      s.data().babyProfile?.nomeCompleto || null,
+        corPerfil:         s.data().babyProfile?.corPerfil    || null,
         eventCount:        s.data().eventCount        || 0,
         consultationCount: s.data().consultationCount || 0,
       }));

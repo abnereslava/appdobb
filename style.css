@@ -2132,14 +2132,16 @@ body[data-theme="dark"] .badge-outro   { background: rgba(138, 138, 154, 0.20); 
   width: 40px;
   height: 40px;
   border-radius: 50%;
+  /* cor do perfil aplicada via inline style; fallback para primary */
   background: var(--primary);
-  color: var(--primary-text);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 16px;
   font-weight: 700;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .seletor-bebe-info { flex: 1; min-width: 0; }
