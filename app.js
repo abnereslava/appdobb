@@ -2330,8 +2330,6 @@ function _trocarPerfilSwipe() {
   const chipNome = document.getElementById('bebe-nome-chip');
   if (chipNome) chipNome.textContent = '…';
   profileIdAtivo = proxId;
-  temPerfil = false;
-  atualizarNavSemPerfil();
   subscribeAoPerfilAtivo(proxId);
 
   homeView.classList.add('perfil-saindo-direita');
