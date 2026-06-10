@@ -335,7 +335,6 @@
                   <option value="acidente">Acidente</option>
                   <option value="alergia">Alergia</option>
                   <option value="cirurgia">Cirurgia</option>
-                  <option value="consulta">Consulta</option>
                   <option value="dentes">Dentes</option>
                   <option value="doenca">Doença</option>
                   <option value="exames">Exames</option>
@@ -563,6 +562,30 @@
         <div class="form-actions">
           <button type="button" class="btn-ghost" onclick="limparFiltroCategorias()">Limpar</button>
           <button type="button" class="btn-primary" onclick="aplicarFiltroCategorias()">Aplicar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ================================================
+       MODAL: FILTRAR TIPOS (AGENDA)
+       ================================================ -->
+  <div id="modal-filtro-tipos" class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-filtro-tipos">
+    <div class="modal-overlay" onclick="fecharModal('modal-filtro-tipos')"></div>
+    <div class="modal-sheet" style="max-height:75dvh;">
+      <div class="modal-header">
+        <h2 id="titulo-filtro-tipos" class="modal-title">Filtrar tipos de consulta</h2>
+        <button class="modal-close" onclick="fecharModal('modal-filtro-tipos')" aria-label="Fechar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Selecione os tipos que deseja ver na agenda.</p>
+        <div id="filtro-tipos-lista" class="filtro-cats-lista"></div>
+        <div class="form-actions">
+          <button type="button" class="btn-ghost" onclick="limparFiltroTipos()">Limpar</button>
+          <button type="button" class="btn-primary" onclick="aplicarFiltroTipos()">Aplicar</button>
         </div>
       </div>
     </div>
