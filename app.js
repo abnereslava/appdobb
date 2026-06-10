@@ -90,6 +90,27 @@ const VIAS_NASCIMENTO = {
 
 const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
+// Cores de perfil escolhíveis (substituem a antiga pintura por gênero).
+// O id é usado como data-theme/data-genero no <body> (ver CSS).
+const CORES_PERFIL = {
+  beige: { label: 'Bege',  hex: '#b08d70' },
+  azul:  { label: 'Azul',  hex: '#3a82c4' },
+  rosa:  { label: 'Rosa',  hex: '#c4567a' },
+  verde: { label: 'Verde', hex: '#3a9d6e' },
+  roxo:  { label: 'Roxo',  hex: '#8a54c8' },
+  ambar: { label: 'Âmbar', hex: '#c89a3a' },
+};
+
+// Resolve a cor de um perfil: usa corPerfil; se ausente, deriva do antigo
+// campo de gênero (compatibilidade); senão, bege.
+function corDoPerfil(p) {
+  const c = p?.corPerfil;
+  if (c && CORES_PERFIL[c]) return c;
+  if (c === 'menino' || p?.sexo === 'menino') return 'azul';
+  if (c === 'menina' || p?.sexo === 'menina') return 'rosa';
+  return 'beige';
+}
+
 // Estado da timeline
 let categoriasSelecionadas = []; // categorias marcadas no filtro; vazio = mostrar tudo
 let _filtroCatsTemp        = []; // seleção temporária enquanto o modal está aberto
@@ -99,6 +120,12 @@ let _resetFiltrosScroll = false; // ao entrar na aba, volta as chips ao início;
 
 // Escritas pendentes de confirmação pelo servidor
 let _escritasPendentes = 0;
+
+// Estado do formulário de perfil: foto e cor ficam "preparadas" e só são
+// persistidas ao salvar (permite cancelar sem efeitos colaterais)
+let _avatarFormDataUrl = null;   // string com a nova foto selecionada
+let _avatarFormRemover = false;  // true se o usuário pediu para remover a foto
+let _corPerfilTemp     = null;   // cor selecionada no form (com preview ao vivo)
 
 
 // Estado da agenda
@@ -381,11 +408,15 @@ function subscribeAoPerfilAtivo(profileId) {
    3. TEMA
    ================================================ */
 
-function aplicarTema(sexo) {
-  const mapa = { menino: 'menino', menina: 'menina' };
-  const tema = mapa[sexo] || 'beige';
+// Aplica uma cor de perfil (id de CORES_PERFIL). Aceita também os antigos
+// valores 'menino'/'menina' por compatibilidade.
+function aplicarTema(cor) {
+  const tema = CORES_PERFIL[cor] ? cor
+    : cor === 'menino' ? 'azul'
+    : cor === 'menina' ? 'rosa'
+    : 'beige';
   localStorage.setItem('tema-genero', tema);
-  // Sempre atualiza o atributo de gênero (usado para cores primárias no dark mode)
+  // Sempre atualiza o atributo de cor (usado para cores primárias no dark mode)
   document.body.setAttribute('data-genero', tema);
   // Só aplica o tema de fundo se não estiver no dark mode
   if (document.body.getAttribute('data-theme') !== 'dark') {
@@ -521,7 +552,7 @@ function renderizarHome() {
     return;
   }
 
-  aplicarTema(perfil.sexo);
+  aplicarTema(corDoPerfil(perfil));
 
   const avatarHTML = IMG_PESSOA;
 
@@ -562,8 +593,7 @@ function renderizarHome() {
         <button class="profile-edit-btn" onclick="abrirFormPerfil()" title="Editar perfil">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
-        <button type="button" class="profile-avatar profile-avatar-btn" onclick="document.getElementById('home-foto-input').click()" title="Alterar foto" aria-label="Alterar foto de perfil">${avatarHTML}<span class="profile-avatar-cam">${CAMERA_SVG}</span></button>
-        <input type="file" id="home-foto-input" accept="image/*" style="display:none" onchange="onFotoPerfilSelecionada(this)" />
+        <button type="button" class="profile-avatar profile-avatar-btn" onclick="abrirFormPerfil()" title="Editar perfil" aria-label="Editar foto e perfil">${avatarHTML}<span class="profile-avatar-cam">${CAMERA_SVG}</span></button>
         <div class="profile-name">${esc(perfil.nomeCompleto)}</div>
         <div class="profile-age-genero">
           ${generoIdadeBadge}${premHTML}
@@ -691,7 +721,51 @@ async function abrirFormPerfil() {
   renderizarAlergiasForm();
   doencasCronicasTemp = JSON.parse(JSON.stringify(p.doencasCronicas || []));
   renderizarDoencasForm();
+
+  // Foto e cor: prepara o estado do form (aplicado só ao salvar)
+  _avatarFormDataUrl = null;
+  _avatarFormRemover = false;
+  _corPerfilTemp = corDoPerfil(p);
+  _renderCoresPerfil();
+  _carregarPreviewAvatarForm();
+
   abrirModal('modal-perfil');
+}
+
+// Renderiza as bolinhas de cor do perfil no formulário
+function _renderCoresPerfil() {
+  const c = document.getElementById('cor-perfil-swatches');
+  if (!c) return;
+  c.innerHTML = Object.entries(CORES_PERFIL).map(([id, info]) =>
+    `<button type="button" class="cor-swatch${id === _corPerfilTemp ? ' sel' : ''}" style="--swatch:${info.hex}" onclick="selecionarCorPerfil('${id}')" title="${info.label}" aria-label="Cor ${info.label}"></button>`
+  ).join('');
+}
+
+function selecionarCorPerfil(cor) {
+  _corPerfilTemp = cor;
+  _renderCoresPerfil();
+  aplicarTema(cor); // preview ao vivo
+}
+
+// Carrega a foto local (IndexedDB) no preview do form, ou mostra o ícone padrão
+async function _carregarPreviewAvatarForm() {
+  const preview = document.getElementById('avatar-upload-preview');
+  const btnRem  = document.getElementById('btn-remover-foto');
+  if (!preview) return;
+  const dataUrl = profileIdAtivo ? await buscarAvatarLocal(profileIdAtivo) : null;
+  if (dataUrl) {
+    preview.innerHTML = `<img src="${dataUrl}" alt="" />`;
+    if (btnRem) btnRem.style.display = '';
+  } else {
+    preview.innerHTML = IMG_PESSOA;
+    if (btnRem) btnRem.style.display = 'none';
+  }
+}
+
+// Fecha o form descartando o preview de cor (restaura a cor salva)
+function fecharFormPerfil() {
+  aplicarTema(corDoPerfil(carregarPerfil()));
+  fecharModal('modal-perfil');
 }
 
 function atualizarBotoesSexo(sexo) {
@@ -701,15 +775,15 @@ function atualizarBotoesSexo(sexo) {
   if (bf) bf.className = 'gender-btn' + (sexo === 'menina' ? ' selected-menina' : '');
 }
 
-function onFotoPerfilSelecionada(input) {
+// Seleção de foto no formulário: redimensiona e prepara (salva só ao confirmar)
+function onFotoFormSelecionada(input) {
   const file = input.files[0];
   if (!file) return;
   input.value = ''; // reset para permitir reselecionar o mesmo arquivo
-  if (!profileIdAtivo) { mostrarToast('Crie o perfil antes de adicionar a foto.', 'error'); return; }
   const reader = new FileReader();
   reader.onload = e => {
     const imgEl = new Image();
-    imgEl.onload = async () => {
+    imgEl.onload = () => {
       const SIZE = 256;
       const canvas = document.createElement('canvas');
       canvas.width = SIZE; canvas.height = SIZE;
@@ -719,26 +793,30 @@ function onFotoPerfilSelecionada(input) {
       const ox = (imgEl.width  - s) / 2;
       const oy = (imgEl.height - s) / 2;
       ctx.drawImage(imgEl, ox, oy, s, s, 0, 0, SIZE, SIZE);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-      try {
-        await salvarAvatarLocal(profileIdAtivo, dataUrl);
-        const av = document.querySelector('#view-home .profile-avatar');
-        if (av) av.innerHTML = `<img src="${dataUrl}" alt="" /><span class="profile-avatar-cam">${CAMERA_SVG}</span>`;
-        mostrarToast('Foto atualizada!', 'success');
-      } catch (err) {
-        console.error('Erro ao salvar foto:', err);
-        mostrarToast('Erro ao salvar a foto.', 'error');
-      }
+      _avatarFormDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+      _avatarFormRemover = false;
+      const preview = document.getElementById('avatar-upload-preview');
+      const btnRem  = document.getElementById('btn-remover-foto');
+      if (preview) preview.innerHTML = `<img src="${_avatarFormDataUrl}" alt="" />`;
+      if (btnRem) btnRem.style.display = '';
     };
     imgEl.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
 
+function removerFotoPerfil() {
+  _avatarFormDataUrl = null;
+  _avatarFormRemover = true;
+  const preview = document.getElementById('avatar-upload-preview');
+  const btnRem  = document.getElementById('btn-remover-foto');
+  if (preview) preview.innerHTML = IMG_PESSOA;
+  if (btnRem) btnRem.style.display = 'none';
+}
+
 function selecionarSexo(sexo) {
   set('perfil-sexo', sexo);
   atualizarBotoesSexo(sexo);
-  aplicarTema(sexo);
 }
 
 function toggleAmamentacaoOutro() {
@@ -837,15 +915,23 @@ async function salvarPerfil(event) {
     amamentacaoOutro: document.getElementById('perfil-amamentacao-outro').value.trim() || null,
     peso:             document.getElementById('perfil-peso').value || null,
     altura:           document.getElementById('perfil-altura').value || null,
+    corPerfil:        _corPerfilTemp || 'beige',
     alergias:         alergiasTemp.filter(a => a.descricao.trim()),
     doencasCronicas:  doencasCronicasTemp.filter(d => d.descricao.trim()),
   };
   try {
     await gravarPerfil(perfil);
+    // Persiste a foto preparada (nova ou remoção) no IndexedDB
+    if (profileIdAtivo) {
+      if (_avatarFormRemover)      await excluirAvatarLocal(profileIdAtivo);
+      else if (_avatarFormDataUrl) await salvarAvatarLocal(profileIdAtivo, _avatarFormDataUrl);
+    }
+    _avatarFormDataUrl = null;
+    _avatarFormRemover = false;
     temPerfil = true;
     atualizarNavSemPerfil();
     atualizarNomeBebe(perfil.nomeCompleto);
-    aplicarTema(perfil.sexo);
+    aplicarTema(corDoPerfil(perfil));
     fecharModal('modal-perfil');
     renderizarHome();
     mostrarToast('Perfil salvo!', 'success');

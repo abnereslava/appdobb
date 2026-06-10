@@ -22,4 +22,4 @@
 
 11. Retrabalhar inserção de eventos (revelando campos aos poucos de acordo com o evento que está sendo registrado).
 
-12. Permitir ao usuário poder escolher a cor do perfil.
+12. ~~Permitir ao usuário poder escolher a cor do perfil~~ → feito: 6 cores pré-selecionadas (bege/azul/rosa/verde/roxo/âmbar) escolhíveis no formulário, substituindo a antiga pintura automática por gênero.
