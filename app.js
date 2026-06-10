@@ -668,13 +668,18 @@ function renderizarHome() {
 
     </div>`;
 
-  // Animação de entrada após troca de perfil por swipe
+  // Animação de entrada: a classe já foi aplicada em _trocarPerfilSwipe (mesmo bloco
+  // síncrono que remove a de saída). Aqui só registramos a limpeza ao fim da animação.
   if (deveAnimarEntrada) {
-    container.classList.add('perfil-entrando-esquerda');
-    container.addEventListener('animationend', () => {
-      container.classList.remove('perfil-entrando-esquerda');
+    if (container.classList.contains('perfil-entrando-esquerda')) {
+      container.addEventListener('animationend', () => {
+        container.classList.remove('perfil-entrando-esquerda');
+        _trocandoPerfil = false;
+      }, { once: true });
+    } else {
+      // Animação já terminou antes de renderizarHome ser chamado (perfil carregou devagar)
       _trocandoPerfil = false;
-    }, { once: true });
+    }
   }
 
   // Carrega foto local do perfil ativo (IndexedDB) e atualiza o avatar assincronamente.
@@ -2319,6 +2324,7 @@ function _trocarPerfilSwipe() {
   homeView.classList.add('perfil-saindo-direita');
   homeView.addEventListener('animationend', () => {
     homeView.classList.remove('perfil-saindo-direita');
+    homeView.classList.add('perfil-entrando-esquerda'); // mesmo bloco síncrono: sem frame estático entre as duas animações
     _animacaoPerfilEntrada = true;
     profileIdAtivo = proxId;
     temPerfil = false;
