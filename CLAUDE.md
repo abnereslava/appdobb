@@ -25,7 +25,7 @@ Se o push falhar por rede, tente até 4 vezes com espera exponencial (2s, 4s, 8s
 ## Convenções
 
 - Commits em português, mensagens descritivas (tipo: `feat:`, `fix:`, `docs:`, `style:`).
-- Imagens PNG com fundo transparente; exibidas como silhueta branca via `filter: brightness(0) invert(1)`. Exceções: `logo.png` e `mamadeira.png`.
+- Imagens PNG com fundo transparente; exibidas como silhueta branca via `filter: brightness(0) invert(1)`. Exceção: `logo.png`.
 - Imagens comprimidas para o tamanho de uso (ver `dev/imagens.md`).
 - Não criar arquivos `.md` de documentação extra sem o usuário pedir.
 - Specs em `specs/<feature>/` (spec.md → plan.md → tasks.md → review.md) conforme `AGENTS.md`.

@@ -1,72 +1,92 @@
-# Guia de Uso: Linha do Tempo do Bebe
+# Guia de Uso: Dos tais
 
-## 1. Abrir o aplicativo
+## 1. Acesso
 
-Abra o arquivo `index.html` em um navegador moderno. O aplicativo nao exige instalacao nem servidor local para funcionar.
+O aplicativo está hospedado no GitHub Pages. Acesse pelo navegador no celular ou computador. Para usar, faça login com sua conta Google — sem cadastro manual.
 
-[Nao confirmado] O projeto nao possui instrucoes de publicacao ou hospedagem.
+Para instalar como app (PWA): no Chrome/Safari, use "Adicionar à tela inicial" ou "Instalar app".
 
-## 2. Criar o perfil do bebe
+## 2. Criar o primeiro perfil
 
-1. Na primeira tela, clique em "Criar Perfil do Bebe".
+1. Após o login, a tela de boas-vindas aparece. Toque em **"Criar Perfil"**.
 2. Preencha pelo menos o nome completo e a data de nascimento.
-3. Opcionalmente, informe sexo, dados de nascimento, tipo sanguineo, amamentacao, peso, altura, foto por URL e alergias.
-4. Clique em "Salvar Perfil".
+3. Opcionalmente, defina foto, cor do perfil, sexo, dados de nascimento, tipo sanguíneo, alergias etc.
+4. Toque em **"Salvar Perfil"**.
 
-Depois de salvar, a tela principal passa a mostrar o cartao do perfil, idade calculada, alergias, estatisticas e ultimos eventos.
+Após salvar, a tela principal mostra o card do perfil com idade calculada, alergias, estatísticas e últimos eventos.
 
-## 3. Editar o perfil
+## 3. Foto do perfil
 
-1. Na tela de perfil, clique no botao de edicao no canto superior direito do cartao.
-2. Altere os dados desejados.
-3. Clique em "Salvar Perfil".
+- Toque no avatar ou no ícone de câmera (aparece quando não há foto).
+- Selecione uma imagem do dispositivo — ela é cortada em círculo e salva automaticamente, sem precisar salvar o perfil inteiro.
+- Para remover, abra o formulário de perfil e toque em **"Remover"**.
 
-## 4. Registrar um evento de saude
+> A foto fica salva apenas no dispositivo atual (não sincroniza com outros aparelhos).
 
-1. Clique no botao central `+` da barra inferior.
-2. Escolha "Novo Evento de Saude".
-3. Preencha titulo, categoria e data.
-4. Opcionalmente, informe descricao, tratamento, medico, hospital, medicamentos, gasto, URL de imagem e observacoes.
-5. Clique em "Salvar".
+## 4. Cor do perfil
 
-O evento passa a aparecer no historico e, se estiver entre os tres mais recentes, tambem no perfil.
+- No formulário de perfil, a primeira seção mostra 8 bolinhas de cor.
+- Toque em uma para ver o preview ao vivo. A cor é aplicada em botões, badges e fundos do app.
+- Se fechar sem salvar, a cor anterior é restaurada.
 
-## 5. Consultar o historico
+## 5. Múltiplos perfis
 
-1. Clique em "Historico" na barra inferior.
-2. Use a busca para procurar por titulo, medico, hospital ou observacoes.
-3. Use os filtros para ver apenas uma categoria especifica.
-4. Clique em um item da linha do tempo para abrir detalhes.
+- Toque no nome do perfil ativo no topo para abrir o seletor.
+- Cada card exibe as cores e foto do respectivo perfil.
+- Para criar um novo: toque em **"+ Novo perfil"** no seletor.
 
-No detalhe de um evento, e possivel editar ou excluir o registro.
+## 6. Registrar um evento de saúde
 
-## 6. Agendar uma consulta
+1. Toque no botão **+** na barra inferior.
+2. Escolha **"Novo Evento de Saúde"**.
+3. Preencha título, categoria e data (obrigatórios).
+4. Opcionalmente, informe descrição, tratamento, médico, hospital, medicamentos, custo e observações.
+5. Toque em **"Salvar"**.
 
-1. Clique no botao central `+` da barra inferior.
-2. Escolha "Nova Consulta".
-3. Preencha tipo e data.
-4. Opcionalmente, informe horario, medico, local, observacoes e status.
-5. Clique em "Salvar Consulta".
+## 7. Consultar o histórico
 
-## 7. Gerenciar consultas
+1. Toque em **Histórico** na barra inferior.
+2. Alterne entre linha do tempo e visualização em cartões com o botão de olho (canto superior direito).
+3. Use a busca para procurar por título, médico, hospital ou observações.
+4. Use os filtros de categoria e intervalo de datas para refinar.
+5. Toque em um item para ver detalhes, editar ou excluir.
 
-1. Clique em "Agenda" na barra inferior.
-2. Clique em uma consulta para abrir as acoes disponiveis.
-3. Use as opcoes para editar, marcar como realizada, cancelar ou excluir.
+## 8. Agendar uma consulta
 
-As consultas futuras nao canceladas aparecem em "Proximas". Consultas passadas ou canceladas aparecem em "Historico".
+1. Toque no botão **+** na barra inferior.
+2. Escolha **"Nova Consulta"**.
+3. Preencha tipo e data (obrigatórios).
+4. Opcionalmente, informe horário, médico, local, observações e status.
+5. Toque em **"Salvar Consulta"**.
 
-## 8. Dados salvos no navegador
+## 9. Gerenciar consultas
 
-O aplicativo salva tudo no navegador atual. Isso significa que:
+1. Toque em **Agenda** na barra inferior.
+2. Consultas futuras aparecem em "Próximas" com contagem regressiva.
+3. Toque em uma consulta para editar, marcar como realizada, cancelar ou excluir.
+4. No detalhe, use **"Exportar .ics"** para adicionar ao calendário do dispositivo, ou **"Google Agenda"** para abrir direto no Google Calendar.
 
-- os dados nao aparecem automaticamente em outro aparelho;
-- limpar o armazenamento do navegador pode apagar os registros;
-- nao ha recuperacao automatica por conta ou email.
+## 10. Calendário
 
-## 9. Cuidados recomendados
+1. Toque em **Calendário** na barra inferior.
+2. Navegue entre meses com as setas, ou toque no nome do mês para o seletor rápido.
+3. Toque em um dia marcado para ver os eventos e consultas daquele dia.
+4. No cabeçalho, use **"Exportar"** para baixar todas as consultas em formato `.ics`.
 
-- Evite usar o aplicativo em computador compartilhado se os dados forem sensiveis.
-- Antes de apagar dados do navegador, considere que os registros podem ser perdidos.
-- URLs externas de fotos devem ser acessiveis publicamente para aparecerem no app.
+## 11. Modo escuro
 
+Toque no ícone de lua (🌙) no topo para alternar entre tema claro e escuro. A cor do perfil é preservada nos dois modos.
+
+## 12. Onde os dados ficam
+
+| Dado | Onde |
+|---|---|
+| Perfil, eventos, consultas | Firebase Firestore — sincroniza entre dispositivos logados na mesma conta |
+| Foto do perfil | IndexedDB local do dispositivo — não sincroniza |
+| Preferência de tema (dark/light) | LocalStorage do dispositivo |
+
+> Limpar dados do navegador pode apagar a foto do perfil salva localmente.
+
+## 13. Painel administrativo (apenas admins)
+
+Acessível em `admin.html`. Permite criar e gerenciar acessos de usuários, definir papéis (`usuario` / `admin`) e ativar/desativar contas.
