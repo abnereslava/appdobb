@@ -8,7 +8,9 @@
    - Rosa:  data-theme="rosa"  (compat: "menina")
    - Verde: data-theme="verde"
    - Roxo:  data-theme="roxo"
-   - Âmbar: data-theme="ambar"
+   - Âmbar:     data-theme="ambar"
+   - Cinza:     data-theme="cinza"
+   - Terracota: data-theme="terracota"
    ================================================ */
 
 /* ----------- Tema: Dark mode ----------- */
@@ -89,6 +91,28 @@ body[data-theme="dark"][data-genero="ambar"] {
   --alergia-bg:     #2a2010;
   --alergia-border: #5a481e;
   --alergia-text:   #f0d890;
+}
+
+/* Dark + Cinza */
+body[data-theme="dark"][data-genero="cinza"] {
+  --primary:       #9ab0c4;
+  --primary-light: #141c24;
+  --primary-dark:  #c0d4e4;
+  --primary-text:  #0a1018;
+  --alergia-bg:     #141c24;
+  --alergia-border: #2a3a4a;
+  --alergia-text:   #c0d4e4;
+}
+
+/* Dark + Terracota */
+body[data-theme="dark"][data-genero="terracota"] {
+  --primary:       #d48060;
+  --primary-light: #281410;
+  --primary-dark:  #f0a888;
+  --primary-text:  #180a08;
+  --alergia-bg:     #281410;
+  --alergia-border: #582418;
+  --alergia-text:   #f0a888;
 }
 
 /* ----------- Variáveis de Tema: Bege (padrão) ----------- */
@@ -213,6 +237,46 @@ body[data-theme="ambar"] {
   --alergia-bg:     #faf1da;
   --alergia-border: #e8d29a;
   --alergia-text:   #a07a2a;
+}
+
+/* ----------- Cor: Cinza ----------- */
+body[data-theme="cinza"] {
+  --primary:        #6a7a8a;
+  --primary-light:  #e8ecf0;
+  --primary-dark:   #4a5a6a;
+  --bg:             #f4f6f8;
+  --bg-input:       #f8fafb;
+  --text:           #1e2830;
+  --text-muted:     #5a6a7a;
+  --text-light:     #9aaabb;
+  --border:         #d0d8e0;
+  --border-input:   #b8c4ce;
+  --shadow-sm:      0 1px 3px rgba(30,40,48,.08);
+  --shadow-md:      0 4px 12px rgba(30,40,48,.12);
+  --shadow-lg:      0 8px 24px rgba(30,40,48,.16);
+  --alergia-bg:     #e8ecf0;
+  --alergia-border: #b8c4ce;
+  --alergia-text:   #4a5a6a;
+}
+
+/* ----------- Cor: Terracota ----------- */
+body[data-theme="terracota"] {
+  --primary:        #c46040;
+  --primary-light:  #fae8e0;
+  --primary-dark:   #a04030;
+  --bg:             #fdf4f0;
+  --bg-input:       #fef8f6;
+  --text:           #3a1a10;
+  --text-muted:     #8a5a4a;
+  --text-light:     #c89888;
+  --border:         #f0d0c0;
+  --border-input:   #e8b8a0;
+  --shadow-sm:      0 1px 3px rgba(58,26,16,.08);
+  --shadow-md:      0 4px 12px rgba(58,26,16,.12);
+  --shadow-lg:      0 8px 24px rgba(58,26,16,.16);
+  --alergia-bg:     #fae8e0;
+  --alergia-border: #e8b8a0;
+  --alergia-text:   #a04030;
 }
 
 
@@ -393,7 +457,7 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
 .profile-avatar {
   width: 88px; height: 88px; border-radius: 50%;
   border: 3px solid var(--primary-light);
-  margin: 0 auto 12px;
+  /* sem margin aqui: o wrap cuida do posicionamento */
   background: var(--primary-light);
   display: flex; align-items: center; justify-content: center;
   font-size: 32px; color: var(--primary); overflow: hidden;
@@ -402,9 +466,18 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
 .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .profile-avatar svg { width: 50px; height: 50px; color: var(--primary); }
 
+/* Wrapper relativo para o avatar + badge de câmera */
+.profile-avatar-wrap {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  margin: 0 auto 12px;
+}
+
 /* Avatar clicável no card de perfil (abre o formulário de edição) */
 .profile-avatar-btn {
-  position: relative;
+  width: 100%;
+  height: 100%;
   padding: 0;
   cursor: pointer;
   transition: border-color 0.2s, transform 0.1s;
@@ -414,10 +487,12 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
   outline: none;
 }
 .profile-avatar-btn:active { transform: scale(0.97); }
+
+/* Badge de câmera — fica fora do overflow:hidden do botão */
 .profile-avatar-cam {
   position: absolute;
-  right: 0;
-  bottom: 0;
+  right: -2px;
+  bottom: -2px;
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -426,6 +501,7 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
 }
 .profile-avatar-cam svg { width: 15px; height: 15px; color: #fff; }
 
@@ -469,6 +545,7 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+  justify-content: center;
 }
 .cor-swatch {
   width: 34px;
