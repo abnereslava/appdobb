@@ -253,7 +253,7 @@
           </div>
 
           <div class="form-section">
-            <h3 class="form-section-title">Medidas Atuais</h3>
+            <h3 class="form-section-title">Medidas no Nascimento</h3>
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label" for="perfil-peso">Peso (kg)</label>
@@ -262,18 +262,6 @@
               <div class="form-group">
                 <label class="form-label" for="perfil-altura">Altura (cm)</label>
                 <input class="form-input" type="number" id="perfil-altura" placeholder="Ex: 72" step="0.1" />
-              </div>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Foto do perfil</label>
-              <div class="avatar-upload-wrap">
-                <button type="button" class="avatar-upload-btn" onclick="document.getElementById('perfil-foto-input').click()" aria-label="Alterar foto de perfil">
-                  <div class="avatar-upload-preview" id="avatar-upload-preview">
-                    <!-- preenchido via JS: foto local ou ícone de pessoa -->
-                  </div>
-                </button>
-                <input type="file" id="perfil-foto-input" accept="image/*" style="display:none" onchange="onFotoPerfilSelecionada(this)" />
-                <span class="avatar-upload-hint">Toque para alterar · salvo localmente</span>
               </div>
             </div>
           </div>
