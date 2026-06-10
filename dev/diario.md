@@ -2,7 +2,7 @@
 
 1. Substituir a exportação manual do calendário por uma opção de vinculo com o Google Calendar (já foi criado spec)
 
-2. Verificar possibilidades de anexação de imagens (solução: anexar apenas no local!)
+2. ~~Verificar possibilidades de anexação de imagens~~ → solução definida: salvar apenas localmente (IndexedDB), sem upload para servidores externos.
 
 3. Enviar por email o lembrete da consulta ou exame para o usuário um dia antes
 
@@ -13,8 +13,6 @@
 6. Animação de parabéns que aparece uma vez quando o aplicativo é aberto na data de aniversário de um dos usuários
 
 7. ~~Implementar cache em memória por bebê (profileId) para perfil/eventos/consultas, reaproveitado entre as abas~~ → feito: `onSnapshot` mantém três listeners ativos (`subscribePerfil`, `subscribeEventos`, `subscribeConsultas`) com cache local em `_perfilCache`, `eventosCache`, `consultasCache`. Trocar de aba não dispara nenhuma leitura Firestore; dados só recarregam quando há escrita ou troca de perfil.
-
-8. Criar histórico de medicamentos.
 
 9. (Opcional) Melhorar o desenho do ícone de **Dentes** — hoje é um SVG inline feito à mão (`IMG_DENTES`), já que o Lucide não tem ícone de dente. Não precisa virar PNG; basta refinar o `<path>`.
 
