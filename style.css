@@ -144,8 +144,8 @@ body[data-theme="azul"], body[data-theme="menino"] {
   --primary:        #3a82c4;
   --primary-light:  #eef5fb;
   --primary-dark:   #2a62a0;
-  --bg:             #f8fbfd;
-  --bg-input:       #f8fbfd;
+  --bg:             #fbfdfe;
+  --bg-input:       #fbfdfe;
   --text:           #1a2e42;
   --text-muted:     #5a7a9a;
   --text-light:     #90afc8;
@@ -164,8 +164,8 @@ body[data-theme="rosa"], body[data-theme="menina"] {
   --primary:        #c4567a;
   --primary-light:  #fcf0f4;
   --primary-dark:   #a03458;
-  --bg:             #fdf8fa;
-  --bg-input:       #fefafb;
+  --bg:             #fefbfc;
+  --bg-input:       #fefbfc;
   --text:           #3a1a26;
   --text-muted:     #9a5a70;
   --text-light:     #c8909f;
@@ -184,8 +184,8 @@ body[data-theme="verde"] {
   --primary:        #3a9d6e;
   --primary-light:  #ecf7f1;
   --primary-dark:   #2a7a54;
-  --bg:             #f6fbf8;
-  --bg-input:       #f8fdfa;
+  --bg:             #fafdfb;
+  --bg-input:       #fafdfb;
   --text:           #16331f;
   --text-muted:     #4f7d63;
   --text-light:     #8fb9a3;
@@ -204,8 +204,8 @@ body[data-theme="roxo"] {
   --primary:        #8a54c8;
   --primary-light:  #f4eefb;
   --primary-dark:   #6a3aa0;
-  --bg:             #fbf8fd;
-  --bg-input:       #fcfafe;
+  --bg:             #fdfbfe;
+  --bg-input:       #fdfbfe;
   --text:           #2a1a3a;
   --text-muted:     #6e5a8a;
   --text-light:     #ac90c8;
@@ -224,8 +224,8 @@ body[data-theme="ambar"] {
   --primary:        #c89a3a;
   --primary-light:  #faf4e6;
   --primary-dark:   #a07a2a;
-  --bg:             #fdfbf5;
-  --bg-input:       #fefcf7;
+  --bg:             #fefdf9;
+  --bg-input:       #fefdf9;
   --text:           #3a2e12;
   --text-muted:     #8a744a;
   --text-light:     #c8b48f;
@@ -244,7 +244,7 @@ body[data-theme="cinza"] {
   --primary:        #6a7a8a;
   --primary-light:  #eef1f4;
   --primary-dark:   #4a5a6a;
-  --bg:             #f7f9fb;
+  --bg:             #fafbfc;
   --bg-input:       #fafbfc;
   --text:           #1e2830;
   --text-muted:     #5a6a7a;
@@ -264,8 +264,8 @@ body[data-theme="terracota"] {
   --primary:        #c46040;
   --primary-light:  #faf0ea;
   --primary-dark:   #a04030;
-  --bg:             #fdf8f5;
-  --bg-input:       #fefaf8;
+  --bg:             #fefbf9;
+  --bg-input:       #fefbf9;
   --text:           #3a1a10;
   --text-muted:     #8a5a4a;
   --text-light:     #c89888;
@@ -857,9 +857,11 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
   isolation: isolate;
 }
 
-/* Faixa horizontal discreta — atravessa a página inteira, fica atrás dos cards */
+/* Faixa horizontal — atravessa a página inteira, fica atrás dos cards.
+   Usa a cor do tema (color-mix) para ficar visível em qualquer fundo, com
+   degradê suave nas bordas superior/inferior. */
 .tl-cards-group:nth-child(even) {
-  padding: 10px 0;
+  padding: 12px 0;
 }
 .tl-cards-group:nth-child(even)::before {
   content: '';
@@ -868,11 +870,12 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
   bottom: 0;
   left: -200vw;
   right: -200vw;
+  background: rgba(0, 0, 0, 0.05); /* fallback */
   background: linear-gradient(
     to bottom,
     transparent 0%,
-    rgba(0, 0, 0, 0.045) 22%,
-    rgba(0, 0, 0, 0.045) 78%,
+    color-mix(in srgb, var(--primary) 10%, transparent) 20%,
+    color-mix(in srgb, var(--primary) 10%, transparent) 80%,
     transparent 100%
   );
   z-index: -1;

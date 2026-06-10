@@ -2152,8 +2152,11 @@ async function abrirSeletorBebe() {
     const primeiro = r.nomeCompleto ? r.nomeCompleto.trim().split(/\s+/)[0] : 'Sem nome';
     const cor      = corDoPerfil(r);
     const hex      = CORES_PERFIL[cor]?.hex || CORES_PERFIL.beige.hex;
+    // Card inteiro tingido com a cor do perfil (fundo leve + borda)
+    const bgCard   = ativo ? `${hex}24` : `${hex}12`;
+    const bdCard   = ativo ? hex : `${hex}59`;
     return `
-      <button class="seletor-bebe-item ${ativo ? 'ativo' : ''}" onclick="selecionarPerfil('${r.profileId}')" data-sid="${r.profileId}">
+      <button class="seletor-bebe-item ${ativo ? 'ativo' : ''}" onclick="selecionarPerfil('${r.profileId}')" data-sid="${r.profileId}" style="background:${bgCard};border-color:${bdCard};">
         <div class="seletor-bebe-avatar" id="sav-${r.profileId}" style="background:${hex}">${primeiro.charAt(0).toUpperCase()}</div>
         <div class="seletor-bebe-info">
           <div class="seletor-bebe-nome">${esc(r.nomeCompleto || 'Sem nome')}${ativo ? ' <span class="seletor-badge-ativo">ativo</span>' : ''}</div>
