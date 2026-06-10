@@ -127,7 +127,6 @@ let _avatarFormDataUrl = null;   // string com a nova foto selecionada
 let _avatarFormRemover = false;  // true se o usuário pediu para remover a foto
 let _corPerfilTemp     = null;   // cor selecionada no form (com preview ao vivo)
 
-
 // Estado da agenda
 let buscaAgendaAtiva = '';
 let filtroTipoConsulta = 'todos';
