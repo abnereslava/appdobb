@@ -41,6 +41,7 @@ const MALE_SVG    = `<svg class="inline-icon" viewBox="0 0 24 24" style="margin-
 const FEMALE_SVG  = `<svg class="inline-icon" viewBox="0 0 24 24" style="margin-right: 4px; color: #a03458;"><circle cx="12" cy="9" r="5"/><path d="M12 14v7"/><path d="M9 18h6"/></svg>`;
 const NASCIMENTO_SVG = `<svg class="category-icon" viewBox="0 0 24 24"><path d="M12 2l2.39 4.84 5.34.78-3.86 3.77.91 5.32L12 14.98 7.22 16.5l.91-5.32L4.27 7.62l5.34-.78z"/></svg>`;
 const IMG_PESSOA     = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+const CAMERA_SVG     = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>`;
 
 const CATEGORIAS = {
   acidente: { label: 'Acidente', icone: IMG_ACIDENTE },
@@ -99,8 +100,6 @@ let _resetFiltrosScroll = false; // ao entrar na aba, volta as chips ao início;
 // Escritas pendentes de confirmação pelo servidor
 let _escritasPendentes = 0;
 
-// Foto de perfil selecionada no form (data URL temporário, salvo no IndexedDB ao confirmar)
-let _avatarNovoDataUrl = null;
 
 // Estado da agenda
 let buscaAgendaAtiva = '';
@@ -563,7 +562,8 @@ function renderizarHome() {
         <button class="profile-edit-btn" onclick="abrirFormPerfil()" title="Editar perfil">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
-        <div class="profile-avatar">${avatarHTML}</div>
+        <button type="button" class="profile-avatar profile-avatar-btn" onclick="document.getElementById('home-foto-input').click()" title="Alterar foto" aria-label="Alterar foto de perfil">${avatarHTML}<span class="profile-avatar-cam">${CAMERA_SVG}</span></button>
+        <input type="file" id="home-foto-input" accept="image/*" style="display:none" onchange="onFotoPerfilSelecionada(this)" />
         <div class="profile-name">${esc(perfil.nomeCompleto)}</div>
         <div class="profile-age-genero">
           ${generoIdadeBadge}${premHTML}
@@ -626,7 +626,7 @@ function renderizarHome() {
     buscarAvatarLocal(profileIdAtivo).then(dataUrl => {
       if (!dataUrl) return;
       const av = document.querySelector('#view-home .profile-avatar');
-      if (av) av.innerHTML = `<img src="${dataUrl}" alt="${esc(perfil.nomeCompleto)}" />`;
+      if (av) av.innerHTML = `<img src="${dataUrl}" alt="${esc(perfil.nomeCompleto)}" /><span class="profile-avatar-cam">${CAMERA_SVG}</span>`;
     });
   }
 }
@@ -668,7 +668,6 @@ async function abrirFormPerfil() {
   set('perfil-peso', p.peso || '');
   set('perfil-altura', p.altura || '');
   set('perfil-sexo', p.sexo || '');
-  _avatarNovoDataUrl = null;
   set('perfil-amamentacao-outro', p.amamentacaoOutro || '');
   atualizarBotoesSexo(p.sexo);
 
@@ -693,15 +692,6 @@ async function abrirFormPerfil() {
   doencasCronicasTemp = JSON.parse(JSON.stringify(p.doencasCronicas || []));
   renderizarDoencasForm();
   abrirModal('modal-perfil');
-
-  // Carrega avatar local para preview no form
-  buscarAvatarLocal(profileIdAtivo || '').then(dataUrl => {
-    const preview = document.getElementById('avatar-upload-preview');
-    if (!preview) return;
-    preview.innerHTML = dataUrl
-      ? `<img src="${dataUrl}" alt="" />`
-      : IMG_PESSOA;
-  });
 }
 
 function atualizarBotoesSexo(sexo) {
@@ -715,10 +705,11 @@ function onFotoPerfilSelecionada(input) {
   const file = input.files[0];
   if (!file) return;
   input.value = ''; // reset para permitir reselecionar o mesmo arquivo
+  if (!profileIdAtivo) { mostrarToast('Crie o perfil antes de adicionar a foto.', 'error'); return; }
   const reader = new FileReader();
   reader.onload = e => {
     const imgEl = new Image();
-    imgEl.onload = () => {
+    imgEl.onload = async () => {
       const SIZE = 256;
       const canvas = document.createElement('canvas');
       canvas.width = SIZE; canvas.height = SIZE;
@@ -728,9 +719,16 @@ function onFotoPerfilSelecionada(input) {
       const ox = (imgEl.width  - s) / 2;
       const oy = (imgEl.height - s) / 2;
       ctx.drawImage(imgEl, ox, oy, s, s, 0, 0, SIZE, SIZE);
-      _avatarNovoDataUrl = canvas.toDataURL('image/jpeg', 0.82);
-      const preview = document.getElementById('avatar-upload-preview');
-      if (preview) preview.innerHTML = `<img src="${_avatarNovoDataUrl}" alt="" />`;
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+      try {
+        await salvarAvatarLocal(profileIdAtivo, dataUrl);
+        const av = document.querySelector('#view-home .profile-avatar');
+        if (av) av.innerHTML = `<img src="${dataUrl}" alt="" /><span class="profile-avatar-cam">${CAMERA_SVG}</span>`;
+        mostrarToast('Foto atualizada!', 'success');
+      } catch (err) {
+        console.error('Erro ao salvar foto:', err);
+        mostrarToast('Erro ao salvar a foto.', 'error');
+      }
     };
     imgEl.src = e.target.result;
   };
@@ -844,10 +842,6 @@ async function salvarPerfil(event) {
   };
   try {
     await gravarPerfil(perfil);
-    if (_avatarNovoDataUrl && profileIdAtivo) {
-      await salvarAvatarLocal(profileIdAtivo, _avatarNovoDataUrl);
-      _avatarNovoDataUrl = null;
-    }
     temPerfil = true;
     atualizarNavSemPerfil();
     atualizarNomeBebe(perfil.nomeCompleto);
