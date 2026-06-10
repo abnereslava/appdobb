@@ -125,9 +125,10 @@ let _escritasPendentes = 0;
 
 // Estado do formulário de perfil: foto e cor ficam "preparadas" e só são
 // persistidas ao salvar (permite cancelar sem efeitos colaterais)
-let _avatarFormDataUrl = null;   // string com a nova foto selecionada
-let _avatarFormRemover = false;  // true se o usuário pediu para remover a foto
+let _avatarFormDataUrl = null;   // string com a nova foto selecionada (só p/ perfil novo)
+let _avatarFormRemover = false;  // true se o usuário pediu para remover a foto (só p/ perfil novo)
 let _corPerfilTemp     = null;   // cor selecionada no form (com preview ao vivo)
+let _perfilFormSnapshot = null;  // snapshot dos campos ao abrir, p/ detectar alterações não salvas
 
 // Estado da agenda
 let buscaAgendaAtiva = '';
@@ -733,7 +734,33 @@ async function abrirFormPerfil() {
   _renderCoresPerfil();
   _carregarPreviewAvatarForm();
 
+  // Snapshot dos campos para detectar alterações não salvas ao fechar
+  _perfilFormSnapshot = _lerFormPerfilSnapshot();
+
   abrirModal('modal-perfil');
+}
+
+// Serializa os campos do formulário (exceto foto, que é salva automaticamente)
+function _lerFormPerfilSnapshot() {
+  const rVia  = document.querySelector('input[name="via-nascimento"]:checked');
+  const rAmam = document.querySelector('input[name="amamentacao"]:checked');
+  return JSON.stringify({
+    nome:      document.getElementById('perfil-nome').value.trim(),
+    nasc:      document.getElementById('perfil-nascimento').value,
+    sexo:      document.getElementById('perfil-sexo').value || '',
+    via:       rVia ? rVia.value : '',
+    semanas:   document.getElementById('perfil-semanas').value,
+    local:     document.getElementById('perfil-local-nasc').value,
+    tipoBebe:  document.getElementById('perfil-tipo-bebe').value,
+    tipoMae:   document.getElementById('perfil-tipo-mae').value,
+    amam:      rAmam ? rAmam.value : '',
+    amamOutro: document.getElementById('perfil-amamentacao-outro').value.trim(),
+    peso:      document.getElementById('perfil-peso').value,
+    altura:    document.getElementById('perfil-altura').value,
+    cor:       _corPerfilTemp || 'beige',
+    alergias:  alergiasTemp,
+    doencas:   doencasCronicasTemp,
+  });
 }
 
 // Renderiza as bolinhas de cor do perfil no formulário
@@ -766,9 +793,21 @@ async function _carregarPreviewAvatarForm() {
   }
 }
 
-// Fecha o form descartando o preview de cor (restaura a cor salva)
-function fecharFormPerfil() {
+// Fecha o form. Se houver alterações não salvas (exceto a foto, que é salva
+// automaticamente), pede confirmação antes de descartar.
+async function fecharFormPerfil() {
+  if (_perfilFormSnapshot !== null && _lerFormPerfilSnapshot() !== _perfilFormSnapshot) {
+    const ok = await confirmar({
+      titulo: 'Descartar alterações?',
+      msg: 'Você tem alterações não salvas. Se sair agora, elas serão perdidas.',
+      txtOk: 'Descartar',
+      destrutivo: true,
+    });
+    if (!ok) return;
+  }
+  // Restaura a cor salva (descarta o preview ao vivo) e fecha
   aplicarTema(corDoPerfil(carregarPerfil()));
+  _perfilFormSnapshot = null;
   fecharModal('modal-perfil');
 }
 
@@ -779,7 +818,14 @@ function atualizarBotoesSexo(sexo) {
   if (bf) bf.className = 'gender-btn' + (sexo === 'menina' ? ' selected-menina' : '');
 }
 
-// Seleção de foto no formulário: redimensiona e prepara (salva só ao confirmar)
+// Atualiza o avatar exibido no card da home (após salvar/remover foto)
+function _atualizarAvatarHome(dataUrl, nome) {
+  const av = document.querySelector('#view-home .profile-avatar');
+  if (av) av.innerHTML = dataUrl ? `<img src="${dataUrl}" alt="${esc(nome || '')}" />` : IMG_PESSOA;
+}
+
+// Seleção de foto no formulário: redimensiona e salva automaticamente.
+// Em perfil já existente persiste na hora; em perfil novo (sem id) só prepara.
 function onFotoFormSelecionada(input) {
   const file = input.files[0];
   if (!file) return;
@@ -787,7 +833,7 @@ function onFotoFormSelecionada(input) {
   const reader = new FileReader();
   reader.onload = e => {
     const imgEl = new Image();
-    imgEl.onload = () => {
+    imgEl.onload = async () => {
       const SIZE = 256;
       const canvas = document.createElement('canvas');
       canvas.width = SIZE; canvas.height = SIZE;
@@ -797,25 +843,55 @@ function onFotoFormSelecionada(input) {
       const ox = (imgEl.width  - s) / 2;
       const oy = (imgEl.height - s) / 2;
       ctx.drawImage(imgEl, ox, oy, s, s, 0, 0, SIZE, SIZE);
-      _avatarFormDataUrl = canvas.toDataURL('image/jpeg', 0.82);
-      _avatarFormRemover = false;
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
       const preview = document.getElementById('avatar-upload-preview');
       const btnRem  = document.getElementById('btn-remover-foto');
-      if (preview) preview.innerHTML = `<img src="${_avatarFormDataUrl}" alt="" />`;
+      if (preview) preview.innerHTML = `<img src="${dataUrl}" alt="" />`;
       if (btnRem) btnRem.style.display = '';
+      if (profileIdAtivo) {
+        // Perfil existente: salva na hora, sem precisar confirmar o perfil
+        _avatarFormDataUrl = null;
+        _avatarFormRemover = false;
+        try {
+          await salvarAvatarLocal(profileIdAtivo, dataUrl);
+          _atualizarAvatarHome(dataUrl, carregarPerfil()?.nomeCompleto);
+          mostrarToast('Foto atualizada!', 'success');
+        } catch (err) {
+          console.error('Erro ao salvar foto:', err);
+          mostrarToast('Erro ao salvar a foto.', 'error');
+        }
+      } else {
+        // Perfil novo ainda sem id: prepara para salvar junto com o perfil
+        _avatarFormDataUrl = dataUrl;
+        _avatarFormRemover = false;
+      }
     };
     imgEl.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
 
-function removerFotoPerfil() {
-  _avatarFormDataUrl = null;
-  _avatarFormRemover = true;
+// Remove a foto. Em perfil existente exclui na hora; em perfil novo só prepara.
+async function removerFotoPerfil() {
   const preview = document.getElementById('avatar-upload-preview');
   const btnRem  = document.getElementById('btn-remover-foto');
   if (preview) preview.innerHTML = IMG_PESSOA;
   if (btnRem) btnRem.style.display = 'none';
+  if (profileIdAtivo) {
+    _avatarFormDataUrl = null;
+    _avatarFormRemover = false;
+    try {
+      await excluirAvatarLocal(profileIdAtivo);
+      _atualizarAvatarHome(null);
+      mostrarToast('Foto removida.', 'success');
+    } catch (err) {
+      console.error('Erro ao remover foto:', err);
+      mostrarToast('Erro ao remover a foto.', 'error');
+    }
+  } else {
+    _avatarFormDataUrl = null;
+    _avatarFormRemover = true;
+  }
 }
 
 function selecionarSexo(sexo) {
@@ -932,6 +1008,7 @@ async function salvarPerfil(event) {
     }
     _avatarFormDataUrl = null;
     _avatarFormRemover = false;
+    _perfilFormSnapshot = null;
     temPerfil = true;
     atualizarNavSemPerfil();
     atualizarNomeBebe(perfil.nomeCompleto);
