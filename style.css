@@ -334,6 +334,18 @@ a { color: var(--primary); text-decoration: none; }
 .vista-entrando-direita  { animation: slideInFromRight 0.28s cubic-bezier(.25,.46,.45,.94) both; }
 .vista-entrando-esquerda { animation: slideInFromLeft  0.28s cubic-bezier(.25,.46,.45,.94) both; }
 
+/* Troca rápida de perfil via swipe: "tela deitando" para a direita */
+@keyframes perfilSaindoDireita {
+  from { transform: translateX(0)     rotate(0deg);   opacity: 1;   }
+  to   { transform: translateX(105%)  rotate(6deg);   opacity: 0;   }
+}
+@keyframes perfilEntrandoEsquerda {
+  from { transform: translateX(-40%)  rotate(-3deg);  opacity: 0.3; }
+  to   { transform: translateX(0)     rotate(0deg);   opacity: 1;   }
+}
+.perfil-saindo-direita    { animation: perfilSaindoDireita    0.28s cubic-bezier(.4,0,1,1)       both; pointer-events: none; }
+.perfil-entrando-esquerda { animation: perfilEntrandoEsquerda 0.34s cubic-bezier(.25,.46,.45,.94) both; }
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }

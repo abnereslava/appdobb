@@ -130,6 +130,10 @@ let _avatarFormRemover = false;  // true se o usuário pediu para remover a foto
 let _corPerfilTemp     = null;   // cor selecionada no form (com preview ao vivo)
 let _perfilFormSnapshot = null;  // snapshot dos campos ao abrir, p/ detectar alterações não salvas
 
+// Troca rápida de perfil via swipe
+let _animacaoPerfilEntrada = false; // sinaliza renderizarHome para animar a entrada
+let _trocandoPerfil        = false; // guarda contra swipes duplos durante a animação
+
 // Estado da agenda
 let buscaAgendaAtiva = '';
 let filtroTipoConsulta = 'todos';
@@ -655,6 +659,16 @@ function renderizarHome() {
       </div>` : ''}
 
     </div>`;
+
+  // Animação de entrada após troca de perfil por swipe
+  if (_animacaoPerfilEntrada) {
+    _animacaoPerfilEntrada = false;
+    container.classList.add('perfil-entrando-esquerda');
+    container.addEventListener('animationend', () => {
+      container.classList.remove('perfil-entrando-esquerda');
+      _trocandoPerfil = false;
+    }, { once: true });
+  }
 
   // Carrega foto local do perfil ativo (IndexedDB) e atualiza o avatar assincronamente.
   // O badge de câmera só aparece quando NÃO há foto.
@@ -2284,6 +2298,31 @@ function iniciarBotaoTopo() {
   atualizarBotaoTopo();
 }
 
+// Troca para o próximo perfil com animação de "tela deitando para a direita"
+function _trocarPerfilSwipe() {
+  if (profileIds.length < 2 || _trocandoPerfil) return;
+  _trocandoPerfil = true;
+
+  const homeView = document.getElementById('view-home');
+  if (!homeView) { _trocandoPerfil = false; return; }
+
+  const idxAtual = profileIds.indexOf(profileIdAtivo);
+  const proxId   = profileIds[(idxAtual + 1) % profileIds.length];
+
+  homeView.classList.add('perfil-saindo-direita');
+  homeView.addEventListener('animationend', () => {
+    homeView.classList.remove('perfil-saindo-direita');
+    _animacaoPerfilEntrada = true;
+    profileIdAtivo = proxId;
+    temPerfil = false;
+    atualizarNavSemPerfil();
+    subscribeAoPerfilAtivo(proxId);
+    // Atualiza o chip de nome no topo imediatamente
+    const chipNome = document.getElementById('bebe-nome-chip');
+    if (chipNome) chipNome.textContent = '…';
+  }, { once: true });
+}
+
 function iniciarSwipe() {
   const app = document.getElementById('app');
   if (!app) return;
@@ -2322,6 +2361,12 @@ function iniciarSwipe() {
     const nomeAtual = vistaAtiva.id.replace('view-', '');
     const idxAtual  = ORDEM_VISTAS.indexOf(nomeAtual);
     if (idxAtual === -1) return;
+
+    // Swipe direita na aba Perfil com múltiplos perfis = troca de perfil
+    if (dx > 0 && nomeAtual === 'home' && profileIds.length > 1) {
+      _trocarPerfilSwipe();
+      return;
+    }
 
     const proxIdx = dx < 0 ? idxAtual + 1 : idxAtual - 1;
     if (proxIdx < 0 || proxIdx >= ORDEM_VISTAS.length) return;
