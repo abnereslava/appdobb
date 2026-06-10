@@ -849,6 +849,7 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
   flex-direction: column;
   gap: 8px;
   position: relative;
+  isolation: isolate;
 }
 
 /* Faixa horizontal discreta — atravessa a página inteira, fica atrás dos cards */
