@@ -1353,7 +1353,7 @@ async function abrirFormEvento(id) {
   }
 
   if (id) {
-    const ev = await window._db.carregarEvento(acessoAtual.profileId, id);
+    const ev = await window._db.carregarEvento(profileIdAtivo, id);
     if (!ev) { mostrarToast('Evento não encontrado.', 'error'); return; }
     set('evento-id', ev.id);
     set('evento-titulo', ev.titulo || '');
@@ -1439,7 +1439,7 @@ async function salvarEvento(event) {
    ================================================ */
 
 async function abrirDetalheEvento(id) {
-  const ev = await window._db.carregarEvento(acessoAtual.profileId, id);
+  const ev = await window._db.carregarEvento(profileIdAtivo, id);
   if (!ev) { mostrarToast('Evento não encontrado.', 'error'); return; }
   const cat = CATEGORIAS[ev.categoria] || CATEGORIAS.outro;
 
@@ -1855,7 +1855,7 @@ function renderizarCardConsulta(c, destaque) {
 
 /* Abre o detalhe de uma consulta */
 async function abrirDetalheConsulta(id) {
-  const c = await window._db.carregarConsulta(acessoAtual.profileId, id);
+  const c = await window._db.carregarConsulta(profileIdAtivo, id);
   if (!c) { mostrarToast('Consulta não encontrada.', 'error'); return; }
 
   const opcoes = [
@@ -1923,7 +1923,7 @@ async function abrirDetalheConsulta(id) {
 
 async function atualizarStatusConsulta(id, status) {
   try {
-    const c = await window._db.carregarConsulta(acessoAtual.profileId, id);
+    const c = await window._db.carregarConsulta(profileIdAtivo, id);
     if (!c) { mostrarToast('Consulta não encontrada.', 'error'); return; }
     await gravarConsulta({ ...c, status });
     fecharModal('modal-evento-detalhe');
@@ -2045,7 +2045,7 @@ async function abrirFormConsulta(id) {
   if (rPad) rPad.checked = true;
 
   if (id) {
-    const c = await window._db.carregarConsulta(acessoAtual.profileId, id);
+    const c = await window._db.carregarConsulta(profileIdAtivo, id);
     if (!c) { mostrarToast('Consulta não encontrada.', 'error'); return; }
     set('consulta-id', c.id);
     set('consulta-tipo', c.tipo || '');
