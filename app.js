@@ -2141,9 +2141,11 @@ async function abrirSeletorBebe() {
   lista.innerHTML = resumos.map(r => {
     const ativo    = r.profileId === profileIdAtivo;
     const primeiro = r.nomeCompleto ? r.nomeCompleto.trim().split(/\s+/)[0] : 'Sem nome';
+    const cor      = corDoPerfil(r);
+    const hex      = CORES_PERFIL[cor]?.hex || CORES_PERFIL.beige.hex;
     return `
-      <button class="seletor-bebe-item ${ativo ? 'ativo' : ''}" onclick="selecionarPerfil('${r.profileId}')">
-        <div class="seletor-bebe-avatar">${primeiro.charAt(0).toUpperCase()}</div>
+      <button class="seletor-bebe-item ${ativo ? 'ativo' : ''}" onclick="selecionarPerfil('${r.profileId}')" data-sid="${r.profileId}">
+        <div class="seletor-bebe-avatar" id="sav-${r.profileId}" style="background:${hex}">${primeiro.charAt(0).toUpperCase()}</div>
         <div class="seletor-bebe-info">
           <div class="seletor-bebe-nome">${esc(r.nomeCompleto || 'Sem nome')}${ativo ? ' <span class="seletor-badge-ativo">ativo</span>' : ''}</div>
           <div class="seletor-bebe-meta">${r.eventCount} evento${r.eventCount !== 1 ? 's' : ''} · ${r.consultationCount} consulta${r.consultationCount !== 1 ? 's' : ''}</div>
@@ -2154,6 +2156,14 @@ async function abrirSeletorBebe() {
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Novo perfil
     </button>`;
+
+  // Substitui a inicial pela foto local, se houver
+  resumos.forEach(async r => {
+    const dataUrl = await buscarAvatarLocal(r.profileId);
+    if (!dataUrl) return;
+    const el = document.getElementById(`sav-${r.profileId}`);
+    if (el) el.innerHTML = `<img src="${dataUrl}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+  });
 }
 
 function selecionarPerfil(novoProfileId) {
