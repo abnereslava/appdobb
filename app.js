@@ -536,6 +536,10 @@ document.addEventListener('keydown', e => {
 function renderizarHome() {
   const container = document.getElementById('view-home');
 
+  // Durante a animação de saída os dados do novo perfil ainda estão carregando;
+  // o animationend ou _aoCarregarTudo chamará renderizarHome na hora certa.
+  if (container.classList.contains('perfil-saindo-direita')) return;
+
   // Consome a flag de animação ANTES de qualquer return antecipado, para que
   // estados intermediários (loading/boas-vindas) não a deixem pendente.
   const deveAnimarEntrada = _animacaoPerfilEntrada;
@@ -2321,18 +2325,23 @@ function _trocarPerfilSwipe() {
   const idxAtual = profileIds.indexOf(profileIdAtivo);
   const proxId   = profileIds[(idxAtual + 1) % profileIds.length];
 
+  // Inicia a carga dos dados do próximo perfil ANTES da animação de saída começar,
+  // para que estejam prontos quando a animação de entrada iniciar (0.28 s depois).
+  const chipNome = document.getElementById('bebe-nome-chip');
+  if (chipNome) chipNome.textContent = '…';
+  profileIdAtivo = proxId;
+  temPerfil = false;
+  atualizarNavSemPerfil();
+  subscribeAoPerfilAtivo(proxId);
+
   homeView.classList.add('perfil-saindo-direita');
   homeView.addEventListener('animationend', () => {
     homeView.classList.remove('perfil-saindo-direita');
-    homeView.classList.add('perfil-entrando-esquerda'); // mesmo bloco síncrono: sem frame estático entre as duas animações
+    homeView.classList.add('perfil-entrando-esquerda');
     _animacaoPerfilEntrada = true;
-    profileIdAtivo = proxId;
-    temPerfil = false;
-    atualizarNavSemPerfil();
-    subscribeAoPerfilAtivo(proxId);
-    // Atualiza o chip de nome no topo imediatamente
-    const chipNome = document.getElementById('bebe-nome-chip');
-    if (chipNome) chipNome.textContent = '…';
+    // Se os dados já chegaram (cache local), renderiza imediatamente;
+    // caso contrário _aoCarregarTudo chamará renderizarHome assim que pronto.
+    if (_cacheReady) renderizarHome();
   }, { once: true });
 }
 
