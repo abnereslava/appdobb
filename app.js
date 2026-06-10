@@ -93,12 +93,14 @@ const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov'
 // Cores de perfil escolhíveis (substituem a antiga pintura por gênero).
 // O id é usado como data-theme/data-genero no <body> (ver CSS).
 const CORES_PERFIL = {
-  beige: { label: 'Bege',  hex: '#b08d70' },
-  azul:  { label: 'Azul',  hex: '#3a82c4' },
-  rosa:  { label: 'Rosa',  hex: '#c4567a' },
-  verde: { label: 'Verde', hex: '#3a9d6e' },
-  roxo:  { label: 'Roxo',  hex: '#8a54c8' },
-  ambar: { label: 'Âmbar', hex: '#c89a3a' },
+  beige:    { label: 'Bege',      hex: '#b08d70' },
+  azul:     { label: 'Azul',      hex: '#3a82c4' },
+  rosa:     { label: 'Rosa',      hex: '#c4567a' },
+  verde:    { label: 'Verde',     hex: '#3a9d6e' },
+  roxo:     { label: 'Roxo',      hex: '#8a54c8' },
+  ambar:    { label: 'Âmbar',     hex: '#c89a3a' },
+  cinza:    { label: 'Cinza',     hex: '#6a7a8a' },
+  terracota:{ label: 'Terracota', hex: '#c46040' },
 };
 
 // Resolve a cor de um perfil: usa corPerfil; se ausente, deriva do antigo
@@ -592,7 +594,10 @@ function renderizarHome() {
         <button class="profile-edit-btn" onclick="abrirFormPerfil()" title="Editar perfil">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
-        <button type="button" class="profile-avatar profile-avatar-btn" onclick="abrirFormPerfil()" title="Editar perfil" aria-label="Editar foto e perfil">${avatarHTML}<span class="profile-avatar-cam">${CAMERA_SVG}</span></button>
+        <div class="profile-avatar-wrap">
+          <button type="button" class="profile-avatar profile-avatar-btn" onclick="abrirFormPerfil()" title="Editar perfil" aria-label="Editar foto e perfil">${avatarHTML}</button>
+          <span class="profile-avatar-cam" aria-hidden="true">${CAMERA_SVG}</span>
+        </div>
         <div class="profile-name">${esc(perfil.nomeCompleto)}</div>
         <div class="profile-age-genero">
           ${generoIdadeBadge}${premHTML}
@@ -655,7 +660,7 @@ function renderizarHome() {
     buscarAvatarLocal(profileIdAtivo).then(dataUrl => {
       if (!dataUrl) return;
       const av = document.querySelector('#view-home .profile-avatar');
-      if (av) av.innerHTML = `<img src="${dataUrl}" alt="${esc(perfil.nomeCompleto)}" /><span class="profile-avatar-cam">${CAMERA_SVG}</span>`;
+      if (av) av.innerHTML = `<img src="${dataUrl}" alt="${esc(perfil.nomeCompleto)}" />`;
     });
   }
 }
