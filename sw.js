@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bebe-shell-v11';
+const CACHE_NAME = 'bebe-shell-v12';
 
 // SDK do Firebase servido pelo CDN do Google. Precisa ficar em cache para o
 // app conseguir abrir offline (sem ele, os imports ESM falham e o app trava

@@ -142,10 +142,10 @@ body[data-theme="dark"][data-genero="terracota"] {
 /* ----------- Cor: Azul (compat: antigo "menino") ----------- */
 body[data-theme="azul"], body[data-theme="menino"] {
   --primary:        #3a82c4;
-  --primary-light:  #e5f0fa;
+  --primary-light:  #eef5fb;
   --primary-dark:   #2a62a0;
-  --bg:             #f2f7fb;
-  --bg-input:       #f5f9fd;
+  --bg:             #f8fbfd;
+  --bg-input:       #f8fbfd;
   --text:           #1a2e42;
   --text-muted:     #5a7a9a;
   --text-light:     #90afc8;
@@ -162,10 +162,10 @@ body[data-theme="azul"], body[data-theme="menino"] {
 /* ----------- Cor: Rosa (compat: antigo "menina") ----------- */
 body[data-theme="rosa"], body[data-theme="menina"] {
   --primary:        #c4567a;
-  --primary-light:  #fce8ef;
+  --primary-light:  #fcf0f4;
   --primary-dark:   #a03458;
-  --bg:             #fdf3f6;
-  --bg-input:       #fef7f9;
+  --bg:             #fdf8fa;
+  --bg-input:       #fefafb;
   --text:           #3a1a26;
   --text-muted:     #9a5a70;
   --text-light:     #c8909f;
@@ -182,10 +182,10 @@ body[data-theme="rosa"], body[data-theme="menina"] {
 /* ----------- Cor: Verde ----------- */
 body[data-theme="verde"] {
   --primary:        #3a9d6e;
-  --primary-light:  #e3f5ec;
+  --primary-light:  #ecf7f1;
   --primary-dark:   #2a7a54;
-  --bg:             #f1faf5;
-  --bg-input:       #f5fcf8;
+  --bg:             #f6fbf8;
+  --bg-input:       #f8fdfa;
   --text:           #16331f;
   --text-muted:     #4f7d63;
   --text-light:     #8fb9a3;
@@ -202,10 +202,10 @@ body[data-theme="verde"] {
 /* ----------- Cor: Roxo ----------- */
 body[data-theme="roxo"] {
   --primary:        #8a54c8;
-  --primary-light:  #f0e8fa;
+  --primary-light:  #f4eefb;
   --primary-dark:   #6a3aa0;
-  --bg:             #f9f4fd;
-  --bg-input:       #fbf8fe;
+  --bg:             #fbf8fd;
+  --bg-input:       #fcfafe;
   --text:           #2a1a3a;
   --text-muted:     #6e5a8a;
   --text-light:     #ac90c8;
@@ -222,10 +222,10 @@ body[data-theme="roxo"] {
 /* ----------- Cor: Âmbar ----------- */
 body[data-theme="ambar"] {
   --primary:        #c89a3a;
-  --primary-light:  #faf1da;
+  --primary-light:  #faf4e6;
   --primary-dark:   #a07a2a;
-  --bg:             #fdf9ee;
-  --bg-input:       #fefbf4;
+  --bg:             #fdfbf5;
+  --bg-input:       #fefcf7;
   --text:           #3a2e12;
   --text-muted:     #8a744a;
   --text-light:     #c8b48f;
@@ -242,10 +242,10 @@ body[data-theme="ambar"] {
 /* ----------- Cor: Cinza ----------- */
 body[data-theme="cinza"] {
   --primary:        #6a7a8a;
-  --primary-light:  #e8ecf0;
+  --primary-light:  #eef1f4;
   --primary-dark:   #4a5a6a;
-  --bg:             #f4f6f8;
-  --bg-input:       #f8fafb;
+  --bg:             #f7f9fb;
+  --bg-input:       #fafbfc;
   --text:           #1e2830;
   --text-muted:     #5a6a7a;
   --text-light:     #9aaabb;
@@ -262,10 +262,10 @@ body[data-theme="cinza"] {
 /* ----------- Cor: Terracota ----------- */
 body[data-theme="terracota"] {
   --primary:        #c46040;
-  --primary-light:  #fae8e0;
+  --primary-light:  #faf0ea;
   --primary-dark:   #a04030;
-  --bg:             #fdf4f0;
-  --bg-input:       #fef8f6;
+  --bg:             #fdf8f5;
+  --bg-input:       #fefaf8;
   --text:           #3a1a10;
   --text-muted:     #8a5a4a;
   --text-light:     #c89888;
@@ -488,7 +488,8 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
 }
 .profile-avatar-btn:active { transform: scale(0.97); }
 
-/* Badge de câmera — fica fora do overflow:hidden do botão */
+/* Badge de câmera — fica fora do overflow:hidden do botão. É clicável e
+   abre o mesmo formulário de foto/perfil. Só aparece quando não há foto. */
 .profile-avatar-cam {
   position: absolute;
   right: -2px;
@@ -501,8 +502,12 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
   display: flex;
   align-items: center;
   justify-content: center;
-  pointer-events: none;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.15s ease;
 }
+.profile-avatar-cam:hover { transform: scale(1.08); }
+.profile-avatar-cam:active { transform: scale(0.95); }
 .profile-avatar-cam svg { width: 15px; height: 15px; color: #fff; }
 
 /* Widget de foto no formulário de perfil */
