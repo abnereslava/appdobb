@@ -10,7 +10,7 @@
 
 5. Implementar histórico de medicamentos/tipos de medicamentos, independente da data do evento
 
-6. Animação de parabéns que aparece uma vez quando o aplicativo é aberto na data de aniversário de um dos usuários
+6. ~~Animação de parabéns que aparece uma vez quando o aplicativo é aberto na data de aniversário de um dos usuários~~ → feito: chuva de confetes (`dispararConfetes`) + toast de parabéns disparada por `verificarAniversario()` no fim de `renderizarHome`, quando dia/mês de `dataNascimento` batem com hoje. Exibida uma única vez por perfil por ano (guarda em `localStorage`: `aniversario-visto-<profileId>-<ano>`). Teste manual: 15 toques no avatar da conta (canto superior esquerdo).
 
 7. ~~Implementar cache em memória por bebê (profileId) para perfil/eventos/consultas, reaproveitado entre as abas~~ → feito: `onSnapshot` mantém três listeners ativos (`subscribePerfil`, `subscribeEventos`, `subscribeConsultas`) com cache local em `_perfilCache`, `eventosCache`, `consultasCache`. Trocar de aba não dispara nenhuma leitura Firestore; dados só recarregam quando há escrita ou troca de perfil.
 

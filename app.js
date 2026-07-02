@@ -696,6 +696,80 @@ function renderizarHome() {
       _toggleCamHome(true);
     });
   }
+
+  // Confetes de aniversário (uma vez por perfil por ano)
+  verificarAniversario(perfil);
+}
+
+/* ---------- Confetes de aniversário ---------- */
+
+// Dispara uma chuva de confetes sobre a tela. Camada única e autolimpante.
+function dispararConfetes() {
+  if (document.querySelector('.confetes-camada')) return; // evita empilhar
+  const camada = document.createElement('div');
+  camada.className = 'confetes-camada';
+
+  const cores = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#c77dff','#ff9f1c','#ff5da2'];
+  const TOTAL = 90;
+  let maisLongo = 0;
+
+  for (let i = 0; i < TOTAL; i++) {
+    const c    = document.createElement('div');
+    c.className = 'confete';
+    const larg   = 6 + Math.random() * 6;
+    const dur    = 2.4 + Math.random() * 1.8;
+    const atraso = Math.random() * 0.9;
+    const drift  = (Math.random() * 2 - 1) * 140;
+    maisLongo = Math.max(maisLongo, dur + atraso);
+
+    c.style.left             = (Math.random() * 100) + 'vw';
+    c.style.background       = cores[Math.floor(Math.random() * cores.length)];
+    c.style.width            = larg + 'px';
+    c.style.height           = (larg * 1.4) + 'px';
+    if (Math.random() > 0.55) c.style.borderRadius = '50%';
+    c.style.setProperty('--drift', drift + 'px');
+    c.style.animationDuration = dur + 's';
+    c.style.animationDelay    = atraso + 's';
+    camada.appendChild(c);
+  }
+
+  document.body.appendChild(camada);
+  setTimeout(() => camada.remove(), (maisLongo + 0.6) * 1000);
+}
+
+// Mostra os confetes uma vez quando um perfil é aberto no dia do seu aniversário.
+function verificarAniversario(perfil) {
+  if (!perfil || !perfil.dataNascimento || !profileIdAtivo) return;
+  const partes = perfil.dataNascimento.split('-');
+  if (partes.length !== 3) return;
+  const mesNasc = parseInt(partes[1], 10);
+  const diaNasc = parseInt(partes[2], 10);
+
+  const hoje = new Date();
+  if (hoje.getMonth() + 1 !== mesNasc || hoje.getDate() !== diaNasc) return;
+
+  const chave = `aniversario-visto-${profileIdAtivo}-${hoje.getFullYear()}`;
+  if (localStorage.getItem(chave)) return;
+  localStorage.setItem(chave, '1');
+
+  const primeiro = (perfil.nomeCompleto || '').trim().split(/\s+/)[0] || '';
+  dispararConfetes();
+  mostrarToast(`🎉 Feliz aniversário${primeiro ? ', ' + primeiro : ''}!`, 'success');
+}
+
+// Teste manual: 15 toques no avatar da conta (canto superior esquerdo)
+let _toquesAvatarTeste = 0;
+let _toquesAvatarTimer = null;
+function _tocarAvatarTeste() {
+  _toquesAvatarTeste++;
+  clearTimeout(_toquesAvatarTimer);
+  _toquesAvatarTimer = setTimeout(() => { _toquesAvatarTeste = 0; }, 4000);
+  if (_toquesAvatarTeste >= 15) {
+    _toquesAvatarTeste = 0;
+    clearTimeout(_toquesAvatarTimer);
+    dispararConfetes();
+    mostrarToast('🎉 Confetes!', 'success');
+  }
 }
 
 function renderizarAlergiasLista(alergias) {
@@ -2510,7 +2584,7 @@ function renderizarBarraTopo() {
   const isDark  = document.body.getAttribute('data-theme') === 'dark';
 
   barra.innerHTML = `
-    <div class="barra-topo-esq">
+    <div class="barra-topo-esq" onclick="_tocarAvatarTeste()" title="">
       ${foto}
     </div>
     <div class="barra-topo-centro">
