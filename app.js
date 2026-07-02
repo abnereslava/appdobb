@@ -768,7 +768,6 @@ function _tocarAvatarTeste() {
     _toquesAvatarTeste = 0;
     clearTimeout(_toquesAvatarTimer);
     dispararConfetes();
-    mostrarToast('🎉 Confetes!', 'success');
   }
 }
 
@@ -1248,6 +1247,29 @@ function renderizarTimeline() {
       </div>`;
   })();
 
+  // Mesmo marco de nascimento para o modo de visualização em cartões.
+  const nascCardsHTML = !mostrarNascimento ? '' : (() => {
+    const [nAno, nMes, nDia] = dataNasc.split('-');
+    const dSem = DIAS_SEM[new Date(dataNasc + 'T00:00:00').getDay()];
+    return `<div class="tl-cards-group">
+        <div class="tl-cards-date">
+          <span class="tlc-date-dia">${nDia}</span>
+          <span class="tlc-date-resto">
+            <span class="tlc-date-mes">${MESES_EXT[parseInt(nMes,10)-1]} ${nAno}</span>
+            <span class="tlc-date-sem">${dSem}</span>
+          </span>
+        </div>
+        <div class="tlc-card tlc-card-nascimento" onclick="showView('home')">
+          <span class="event-recent-icon icon-nascimento">${NASCIMENTO_SVG}</span>
+          <div class="tlc-body">
+            <span class="event-category-badge badge-nascimento">Nascimento</span>
+            <div class="tlc-title">${esc(perfil.nomeCompleto || 'Nascimento')}</div>
+            <div class="tlc-meta">Início da linha do tempo</div>
+          </div>
+        </div>
+      </div>`;
+  })();
+
   // Preserva a rolagem horizontal das chips de filtro entre re-renderizações
   // (ao trocar de filtro/visualização). Só zera ao entrar na aba.
   let _filtrosScroll = 0;
@@ -1331,7 +1353,7 @@ function renderizarTimeline() {
                   </div>
                   ${cards}
                 </div>`;
-            }).join('')}</div>`
+            }).join('')}${nascCardsHTML}</div>`
           : `<div class="tl-wrapper">
               <div class="tl-axis"></div>
               ${itensHTML}
