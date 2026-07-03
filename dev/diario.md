@@ -4,7 +4,7 @@
 
 2. Enviar por email o lembrete da consulta ou exame para o usuário um dia antes
 
-3. Geradores de pdf
+3. Geradores de pdf → spec criada em `specs/gerador-pdf/spec.md`, em andamento.
 
 4. Implementar histórico de medicamentos/tipos de medicamentos, independente da data do evento
 
@@ -16,3 +16,5 @@
    - Custo Play Store: taxa única de US$25 na conta de desenvolvedor do Google Play Console (não é anual). Contas novas precisam rodar teste fechado com 20 testers por 14 dias antes de publicar em produção.
    - **[Pendente] Monetização futura**: o app é gratuito hoje, mas a intenção é comercializá-lo. Se a cobrança (assinatura, desbloqueio de recursos) acontecer **dentro** do app Android distribuído pela Play Store, a Google exige o uso do **Google Play Billing** (não dá pra usar Stripe/PayPal direto) e fica com 15% da receita até US$1M/ano (30% acima disso). Alternativa a avaliar: manter a versão da Play Store gratuita/básica e vender o upgrade pago pela versão web (fora da loja), sem repassar comissão — decisão de modelo de negócio a tomar mais à frente, ainda sem spec.
    - Ao decidir avançar, seguir o fluxo do `docs/AGENTS.md`: criar `/specs/empacotamento-android/spec.md` antes de qualquer implementação.
+
+7. Suportar imagens anexadas de fato aos eventos de saúde. Hoje o campo `imagemUrl` do evento aceita apenas um link digitado manualmente — não existe upload/anexo real de arquivo (surgiu ao especificar o gerador de PDF: perguntado se imagens deveriam entrar no relatório exportado, e hoje não há imagens anexadas pra incluir). Avaliar armazenamento (IndexedDB local, como já feito para foto de perfil, ou upload real a um serviço externo). Quando implementado, revisitar `specs/gerador-pdf/spec.md` pra decidir se essas imagens passam a entrar no PDF.
