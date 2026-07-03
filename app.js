@@ -1548,6 +1548,170 @@ function _renderExportPdfNivel() {
   if (bD) bD.classList.toggle('active', _pdfNivel === 'detalhado');
 }
 
+// Geometria e paleta do documento (A4, mm). Cores fixas claras: o PDF não
+// acompanha o tema da tela e precisa ser legível em preto e branco.
+const _PDF = {
+  margem: 15, largura: 210, altura: 297,
+  texto: [26, 26, 26], suave: [110, 110, 110], linha: [200, 200, 200],
+};
+
+// Mede e desenha um bloco de linhas [{txt, size, bold, cor, gap}] com quebra
+// de página: se o bloco inteiro não couber, vai pra próxima página; blocos
+// maiores que uma página são paginados linha a linha.
+function _pdfBloco(doc, y, linhas) {
+  const lh = s => s * 0.42 + 1.6; // altura de linha (mm) por tamanho de fonte
+  const alturaTotal = linhas.reduce((a, l) => a + lh(l.size) + (l.gap || 0), 0);
+  const limite = _PDF.altura - _PDF.margem;
+
+  if (y + alturaTotal > limite && alturaTotal <= limite - _PDF.margem) {
+    doc.addPage();
+    y = _PDF.margem;
+  }
+  for (const l of linhas) {
+    if (y + lh(l.size) > limite) { doc.addPage(); y = _PDF.margem; }
+    doc.setFont('helvetica', l.bold ? 'bold' : 'normal');
+    doc.setFontSize(l.size);
+    doc.setTextColor(...(l.cor || _PDF.texto));
+    doc.text(l.txt, l.x ?? _PDF.margem, y + l.size * 0.35);
+    y += lh(l.size) + (l.gap || 0);
+  }
+  return y;
+}
+
+// Quebra "Rótulo: valor longo..." na largura útil e devolve linhas prontas
+function _pdfCampo(doc, rotulo, valor, size = 9.5) {
+  doc.setFontSize(size);
+  const larguraUtil = _PDF.largura - _PDF.margem * 2;
+  return doc.splitTextToSize(`${rotulo}: ${valor}`, larguraUtil)
+    .map(txt => ({ txt, size }));
+}
+
+async function _pdfCabecalho(doc, perfil) {
+  const m = _PDF.margem;
+  let y = m;
+
+  // Foto do perfil (IndexedDB) — opcional; nunca impede a exportação
+  let temFoto = false;
+  try {
+    const foto = profileIdAtivo ? await buscarAvatarLocal(profileIdAtivo) : null;
+    if (foto) { doc.addImage(foto, 'JPEG', m, y, 24, 24); temFoto = true; }
+  } catch (e) { /* segue sem foto */ }
+
+  const xTexto = temFoto ? m + 29 : m;
+  const hoje   = new Date();
+  const emissao = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
+
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(17); doc.setTextColor(..._PDF.texto);
+  doc.text(perfil.nomeCompleto || 'Perfil', xTexto, y + 6);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(..._PDF.suave);
+  if (perfil.dataNascimento) {
+    doc.text(`${calcularIdade(perfil.dataNascimento)}  ·  Nascimento: ${formatarData(perfil.dataNascimento)}`, xTexto, y + 12.5);
+  }
+  doc.text(`Documento emitido em ${emissao}`, xTexto, y + 18);
+  y += temFoto ? 30 : 24;
+
+  const linhas = [];
+  if (perfil.tipoBebe) linhas.push({ txt: `Tipo sanguíneo: ${perfil.tipoBebe}`, size: 10, gap: 1 });
+
+  const alergias = perfil.alergias || [];
+  linhas.push({ txt: 'Alergias', size: 11, bold: true, gap: 0.5 });
+  if (!alergias.length) linhas.push({ txt: 'Nenhuma alergia registrada', size: 9.5, cor: _PDF.suave, gap: 1.5 });
+  alergias.forEach((a, i) => {
+    const extras = [TIPOS_ALERGIA[a.tipo] || a.tipo, SEVERIDADES[a.severidade] || a.severidade].filter(Boolean).join(', ');
+    linhas.push({ txt: `•  ${a.descricao}${extras ? ` (${extras})` : ''}`, size: 9.5, gap: i === alergias.length - 1 ? 1.5 : 0 });
+  });
+
+  const doencas = perfil.doencasCronicas || [];
+  linhas.push({ txt: 'Doenças crônicas', size: 11, bold: true, gap: 0.5 });
+  if (!doencas.length) linhas.push({ txt: 'Nenhuma doença crônica registrada', size: 9.5, cor: _PDF.suave });
+  doencas.forEach(d => {
+    linhas.push({ txt: `•  ${d.descricao}${d.observacao ? ` — ${d.observacao}` : ''}`, size: 9.5 });
+  });
+
+  y = _pdfBloco(doc, y, linhas) + 2;
+  doc.setDrawColor(..._PDF.linha);
+  doc.line(m, y, _PDF.largura - m, y);
+  return y + 6;
+}
+
+function _pdfLinhasEvento(doc, e) {
+  const cat = CATEGORIAS[e.categoria] || CATEGORIAS.outro;
+  if (_pdfNivel === 'resumido') {
+    const extra = e.medico ? `  ·  ${e.medico}` : '';
+    return _pdfCampo(doc, formatarData(e.data), `${e.titulo}${extra}`).map((l, i) => i === 0 ? { ...l, gap: 1.5 } : l);
+  }
+  const linhas = [
+    { txt: e.titulo, size: 11.5, bold: true },
+    { txt: `${formatarData(e.data)}  ·  ${cat.label}`, size: 9, cor: _PDF.suave, gap: 0.5 },
+  ];
+  if (e.descricao)             linhas.push(..._pdfCampo(doc, 'Descrição', e.descricao));
+  if (e.tratamento)            linhas.push(..._pdfCampo(doc, 'Tratamento', e.tratamento));
+  if (e.medico)                linhas.push(..._pdfCampo(doc, 'Médico', e.medico));
+  if (e.hospital)              linhas.push(..._pdfCampo(doc, 'Hospital / Posto', e.hospital));
+  if (e.medicamentos?.length)  linhas.push(..._pdfCampo(doc, 'Medicamentos', e.medicamentos.join(', ')));
+  if (e.custo)                 linhas.push(..._pdfCampo(doc, 'Gasto', formatarDinheiro(parseFloat(e.custo))));
+  if (e.observacoes)           linhas.push(..._pdfCampo(doc, 'Observações', e.observacoes));
+  linhas[linhas.length - 1] = { ...linhas[linhas.length - 1], gap: 4 };
+  return linhas;
+}
+
+function _pdfLinhasConsulta(doc, c) {
+  const tipo   = TIPOS_CONSULTA[c.tipo] || c.tipo || 'Consulta';
+  const status = { agendada: 'Agendada', realizada: 'Realizada', cancelada: 'Cancelada' }[c.status] || c.status || '';
+  if (_pdfNivel === 'resumido') {
+    const extra = c.medico ? `  ·  ${c.medico}` : '';
+    return _pdfCampo(doc, formatarData(c.data), `${tipo}${extra}${status ? `  (${status})` : ''}`).map((l, i) => i === 0 ? { ...l, gap: 1.5 } : l);
+  }
+  const linhas = [
+    { txt: tipo, size: 11.5, bold: true },
+    { txt: `${formatarData(c.data)}${c.hora ? ` às ${c.hora}` : ''}${status ? `  ·  ${status}` : ''}`, size: 9, cor: _PDF.suave, gap: 0.5 },
+  ];
+  if (c.medico)      linhas.push(..._pdfCampo(doc, 'Médico', c.medico));
+  if (c.local)       linhas.push(..._pdfCampo(doc, 'Local', c.local));
+  if (c.observacoes) linhas.push(..._pdfCampo(doc, 'Observações', c.observacoes));
+  linhas[linhas.length - 1] = { ...linhas[linhas.length - 1], gap: 4 };
+  return linhas;
+}
+
+async function gerarPdfExport() {
+  const perfil = carregarPerfil();
+  if (!perfil || !perfil.nomeCompleto) { mostrarToast('Crie um perfil primeiro.', 'error'); return; }
+  if (!window.jspdf?.jsPDF) { mostrarToast('Gerador de PDF ainda carregando. Tente novamente.', 'error'); return; }
+
+  try {
+    const doc = new jspdf.jsPDF({ unit: 'mm', format: 'a4' });
+    let y = await _pdfCabecalho(doc, perfil);
+
+    const ehEventos = _pdfContexto === 'eventos';
+    const itens = ehEventos
+      ? [...eventosCache].filter(e => _pdfCatsTemp.includes(e.categoria)).sort((a, b) => b.data.localeCompare(a.data))
+      : [...consultasCache].filter(c => _pdfCatsTemp.includes(c.tipo || 'outro')).sort((a, b) => b.data.localeCompare(a.data));
+
+    y = _pdfBloco(doc, y, [{
+      txt: `${ehEventos ? 'Histórico de Saúde' : 'Agenda de Consultas'} (${itens.length} ${ehEventos ? (itens.length === 1 ? 'evento' : 'eventos') : (itens.length === 1 ? 'consulta' : 'consultas')})`,
+      size: 13, bold: true, gap: 3,
+    }]);
+
+    if (!itens.length) {
+      y = _pdfBloco(doc, y, [{ txt: ehEventos ? 'Nenhum evento na seleção escolhida.' : 'Nenhuma consulta na seleção escolhida.', size: 9.5, cor: _PDF.suave }]);
+    }
+    for (const item of itens) {
+      y = _pdfBloco(doc, y, ehEventos ? _pdfLinhasEvento(doc, item) : _pdfLinhasConsulta(doc, item));
+    }
+
+    const nomeArq = (perfil.nomeCompleto.trim().split(/\s+/)[0] || 'perfil')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const dataArq = new Date().toISOString().slice(0, 10);
+    doc.save(`${ehEventos ? 'historico' : 'agenda'}-${nomeArq}-${dataArq}.pdf`);
+
+    fecharModal('modal-export-pdf');
+    mostrarToast('PDF gerado!', 'success');
+  } catch (e) {
+    console.error('Erro ao gerar PDF:', e);
+    mostrarToast('Erro ao gerar o PDF. Tente novamente.', 'error');
+  }
+}
+
 
 /* ================================================
    8. FORMULÁRIO DE EVENTO
