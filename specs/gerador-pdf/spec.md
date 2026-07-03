@@ -2,11 +2,11 @@
 
 ## 1. Objetivo
 
-Permitir que o usuário exporte um relatório em PDF com os dados de saúde de um perfil — pensado principalmente para ser levado a consultas médicas ou mantido como registro pessoal.
+Permitir que o usuário exporte relatórios em PDF com os dados de saúde de um perfil — pensado principalmente para ser levado a consultas médicas ou mantido como registro pessoal.
 
 ## 2. Contexto
 
-O app já possui Histórico de Eventos (timeline, com filtros por categoria/data/busca) e Agenda de Consultas (com filtros por tipo/data/busca), além dos dados de perfil (alergias, doenças crônicas, tipo sanguíneo etc.) exibidos na Home. O gerador de PDF se encaixa como uma ação de exportação que reaproveita os dados já carregados em cache local (`_perfilCache`, `eventosCache`, `consultasCache`), sem necessidade de novas leituras ao Firestore.
+O app já possui Histórico de Eventos (timeline, com filtro por categoria) e Agenda de Consultas (com filtro por tipo), além dos dados de perfil (alergias, doenças crônicas, tipo sanguíneo etc.) exibidos na Home. O gerador de PDF se encaixa como duas ações de exportação independentes — uma no Histórico, outra na Agenda —, reaproveitando os dados já carregados em cache local (`_perfilCache`, `eventosCache`, `consultasCache`), sem necessidade de novas leituras ao Firestore.
 
 ## 3. Usuários envolvidos
 
@@ -15,68 +15,92 @@ O app já possui Histórico de Eventos (timeline, com filtros por categoria/data
 
 ## 4. Funcionamento esperado
 
-O usuário aciona a exportação a partir de algum ponto do app (local exato: ver Dúvidas pendentes). O sistema monta uma versão "para impressão" dos dados do perfil ativo — cabeçalho com identificação do perfil, seguido do histórico de eventos e/ou das consultas — e aciona a interface nativa de impressão do navegador (`window.print()`), onde o usuário escolhe "Salvar como PDF".
+Cada aba — Histórico de Eventos e Agenda de Consultas — tem seu próprio botão de exportar PDF, gerando um tipo de relatório específico daquela aba (não existe exportação combinada num único PDF).
 
-## 5. Fluxo principal
+Ao tocar no botão, abre-se um **modal de configuração** onde o usuário escolhe:
+- Quais categorias (Histórico) ou tipos de consulta (Agenda) deseja incluir no relatório.
+- O nível de detalhamento desejado para os itens exportados (ex.: resumido vs. detalhado — os campos exatos por nível ficam a definir no `plan.md`).
 
-1. Usuário está com um perfil ativo carregado (Home, Histórico ou Agenda).
-2. Usuário toca em "Exportar PDF".
-3. Sistema monta o conteúdo do relatório a partir dos dados já em cache (perfil + eventos e/ou consultas).
-4. Sistema aciona `window.print()`.
-5. Usuário escolhe "Salvar como PDF" (ou imprime fisicamente) no diálogo nativo do navegador/SO.
+Essa escolha no modal é independente dos filtros que estejam ativos na tela no momento — a exportação não herda automaticamente o filtro visível na tela.
 
-## 6. Regras de negócio
+Após confirmar, o sistema monta o documento (cabeçalho do perfil, incluindo foto, + a lista configurada) e gera o PDF.
 
+## 5. Fluxo principal — Exportar Histórico de Eventos
+
+1. Usuário está na aba Histórico com um perfil ativo.
+2. Usuário toca em "Exportar PDF" (botão específico do Histórico).
+3. Sistema abre o modal de configuração: categorias de evento disponíveis (a partir das categorias existentes em `eventosCache`) + seleção de nível de detalhamento.
+4. Usuário seleciona as categorias desejadas (ou todas) e o nível de detalhamento, confirma.
+5. Sistema monta o documento — cabeçalho do perfil (nome, idade, foto) + lista de eventos filtrada pelas categorias escolhidas, no nível de detalhe escolhido.
+6. PDF é gerado e disponibilizado para download/salvar.
+
+## 6. Fluxo principal — Exportar Agenda de Consultas
+
+1. Usuário está na aba Agenda com um perfil ativo.
+2. Usuário toca em "Exportar PDF" (botão específico da Agenda).
+3. Sistema abre o modal de configuração: tipos de consulta disponíveis (a partir de `TIPOS_CONSULTA` presentes em `consultasCache`) + seleção de nível de detalhamento.
+4. Usuário seleciona os tipos desejados e o nível de detalhamento, confirma.
+5. Sistema monta o documento — cabeçalho do perfil (nome, idade, foto) + lista de consultas filtrada pelos tipos escolhidos, no nível de detalhe escolhido.
+6. PDF é gerado e disponibilizado para download/salvar.
+
+## 7. Regras de negócio
+
+- Dois pontos de exportação independentes (Histórico e Agenda); cada um gera um PDF do seu próprio domínio de dados.
+- A exportação é sempre precedida do modal de configuração — nunca dispara direto sem perguntar categorias/tipos e nível de detalhamento.
+- A geração acontece inteiramente no front-end, sem chamadas ao servidor.
 - O relatório contém apenas dados do perfil ativo no momento da exportação — nunca de múltiplos perfis simultaneamente.
-- A geração acontece inteiramente no front-end, sem chamadas ao servidor (mesmo princípio já usado na exportação `.ics` da Agenda).
-- [Pendente] O conteúdo exportado deve respeitar os filtros ativos na tela de origem (categoria, tipo, período, busca) ou sempre exportar o conjunto completo de dados do perfil, independente do que estiver filtrado na tela?
-- [Sugestão] Cabeçalho do relatório com nome do perfil, idade calculada, data de nascimento e data de emissão do documento.
-- [Pendente] A foto do perfil (avatar local, armazenado no IndexedDB) deve aparecer no cabeçalho do relatório?
-- [Pendente] Imagens anexadas a eventos individuais (campo `imagemUrl`) devem ser incluídas no corpo do relatório, ou omitidas para manter o documento leve e rápido de gerar?
+- Cabeçalho do relatório inclui: nome do perfil, idade calculada, data de nascimento, foto do perfil (avatar local do IndexedDB, quando existir) e data de emissão do documento.
+- Imagens anexadas a eventos individuais estão fora do escopo desta funcionalidade: atualmente não existe anexo real de imagem no app (o campo `imagemUrl` aceita apenas um link digitado manualmente). Necessidade registrada em `dev/diario.md` (item 7) para revisão futura.
 - O relatório deve ser legível em preto e branco / impressão física, independente do tema (claro/escuro/cor do perfil) ativo na tela no momento da exportação.
+- **Abordagem técnica**: geração via **jsPDF** (carregado via CDN), por oferecer maior controle de estilização de layout do que `window.print()` + CSS de impressão — mesmo exigindo mais esforço de implementação (nova dependência externa, que precisa entrar no `SHELL_FILES` do `sw.js` para funcionar offline).
+- [Inferência] O nível de detalhamento provavelmente controla quais campos aparecem por item — por exemplo, "Resumido" mostrando só título/tipo + data, e "Detalhado" incluindo todos os campos preenchidos (descrição, médico, hospital, tratamento, medicamentos, custo e observações para eventos; médico, local, horário, observações e status para consultas). A definição exata dos campos por nível fica para o `plan.md`.
 
-## 7. Permissões
+## 8. Permissões
 
 - [Inferência] Qualquer usuário autenticado com acesso ao perfil ativo pode exportar seus próprios dados. Não há necessidade de permissão adicional além do acesso já existente ao perfil.
 
-## 8. Dados necessários
+## 9. Dados necessários
 
-- Perfil: `nomeCompleto`, `dataNascimento`, `sexo`, `tipoBebe`/`tipoMae` (tipo sanguíneo), `alergias[]`, `doencasCronicas[]`, `peso`, `altura`.
+- Perfil: `nomeCompleto`, `dataNascimento`, `sexo`, `tipoBebe`/`tipoMae` (tipo sanguíneo), `alergias[]`, `doencasCronicas[]`, `peso`, `altura`, foto local (IndexedDB).
 - Eventos (`eventosCache`): `titulo`, `categoria`, `data`, `descricao`, `tratamento`, `medico`, `hospital`, `medicamentos[]`, `custo`, `observacoes`.
 - Consultas (`consultasCache`): `tipo`, `data`, `horario`, `medico`, `local`, `observacoes`, `status`.
 - [Inferência] Todos os dados acima já estão disponíveis localmente via cache em memória (`onSnapshot`), sem necessidade de nova leitura ao Firestore no momento da exportação.
 
-## 9. Estados e mensagens
+## 10. Estados e mensagens
 
 | Estado | Comportamento |
 |---|---|
-| Exportação acionada | Abre o diálogo nativo de impressão do navegador |
-| Perfil sem eventos e sem consultas | [Pendente] Exportar mesmo assim (só os dados do perfil), bloquear com toast informativo, ou perguntar ao usuário? |
-| Perfil sem foto/alergias/doenças | Seção correspondente omitida ou exibida como "Nenhum(a) registrado(a)", seguindo o padrão já usado na Home |
+| Exportação acionada | Abre o modal de configuração (categorias/tipos + nível de detalhamento) |
+| Perfil sem eventos (Histórico) ou sem consultas (Agenda), ou nenhum item na seleção escolhida | Exporta o PDF normalmente, contendo apenas o cabeçalho de dados do perfil — não bloqueia a exportação |
+| Perfil sem foto/alergias/doenças | Seção correspondente do cabeçalho omitida ou exibida como "Nenhum(a) registrado(a)", seguindo o padrão já usado na Home |
 
-## 10. Casos extremos
+## 11. Casos extremos
 
-- Grande volume de eventos/consultas: cards não devem ser cortados ao meio entre páginas (requer controle de quebra de página no CSS de impressão).
+- Grande volume de eventos/consultas: itens não devem ser cortados ao meio entre páginas (requer controle de quebra de página).
 - Perfil sem `dataNascimento`: não deveria ocorrer (campo obrigatório no formulário), mas o relatório não deve quebrar caso aconteça.
-- Modo escuro ativo no momento da exportação: o relatório impresso deve sempre usar cores claras/imprimíveis, independente do tema ativo na tela.
-- [Inferência] Exportação deve funcionar offline, já que os dados já estão em cache local (mesmo princípio da exportação `.ics` existente).
+- Modo escuro ativo no momento da exportação: o relatório deve sempre usar cores claras/imprimíveis, independente do tema ativo na tela.
+- [Inferência] Exportação deve funcionar offline, já que os dados já estão em cache local e o jsPDF (uma vez cacheado pelo Service Worker) não depende de rede.
 - Múltiplos perfis cadastrados: a exportação é sempre do perfil ativo no momento; não há exportação em lote de vários perfis de uma vez.
+- Nenhuma categoria/tipo disponível para seleção no modal (perfil sem nenhum evento ou consulta ainda): modal deve permitir confirmar mesmo assim, resultando no PDF apenas com o cabeçalho do perfil.
 
-## 11. Critérios de aceite
+## 12. Critérios de aceite
 
-- [ ] Ação de exportar PDF acessível a partir do(s) ponto(s) definido(s) na Dúvida 1.
-- [ ] Relatório contém dados do perfil ativo (nome, idade, tipo sanguíneo, alergias, doenças crônicas).
-- [ ] Relatório contém histórico de eventos (respeitando ou não filtros, conforme Dúvida 2).
-- [ ] Relatório contém consultas (respeitando ou não filtros, conforme Dúvida 2).
+- [ ] Botão "Exportar PDF" disponível na aba Histórico, específico para eventos.
+- [ ] Botão "Exportar PDF" disponível na aba Agenda, específico para consultas.
+- [ ] Ao tocar em qualquer um dos botões, abre modal de configuração com seleção de categorias/tipos e nível de detalhamento.
+- [ ] PDF gerado contém cabeçalho do perfil (nome, idade, tipo sanguíneo, alergias, doenças crônicas, foto).
+- [ ] PDF do Histórico contém apenas os eventos das categorias selecionadas, no nível de detalhe escolhido.
+- [ ] PDF da Agenda contém apenas as consultas dos tipos selecionados, no nível de detalhe escolhido.
 - [ ] Layout legível em impressão preto e branco, sem elementos de navegação do app.
 - [ ] Funciona offline (sem novas leituras ao Firestore durante a exportação).
-- [ ] Cards de eventos/consultas não são cortados ao meio entre páginas.
+- [ ] Itens de eventos/consultas não são cortados ao meio entre páginas.
+- [ ] Perfil sem dados na seleção escolhida gera PDF apenas com o cabeçalho, sem erro.
 
-## 12. Dúvidas pendentes
+## 13. Dúvidas respondidas
 
-1. **Onde disparar a exportação?** Um único botão (ex.: na tela de Perfil/Home) que gera um relatório completo com tudo, ou botões de exportação separados no Histórico e na Agenda, cada um respeitando os filtros ativos daquela aba?
-2. **O relatório deve respeitar os filtros ativos** (categoria, tipo, busca, período) no momento do clique, ou sempre exportar o conjunto completo de dados do perfil?
-3. **Imagens anexadas aos eventos** (`imagemUrl`) entram no PDF ou ficam de fora?
-4. **A foto do perfil** (avatar local) aparece no cabeçalho do relatório?
-5. **Perfil sem nenhum evento/consulta**: exporta só os dados do perfil, bloqueia com aviso, ou outra ação?
-6. **Abordagem técnica**: confirma `window.print()` + CSS de impressão (`@media print`), sem dependência nova, reavaliando uma biblioteca como jsPDF apenas se o resultado nativo não for satisfatório?
+- [Respondida] Onde disparar a exportação? Um botão por aba (Histórico e Agenda), cada um gerando um tipo de relatório específico daquela aba.
+- [Respondida] A exportação respeita os filtros ativos na tela? Não — o botão abre um modal dedicado onde o usuário escolhe categorias/tipos e nível de detalhamento, independente do filtro ativo na tela no momento.
+- [Respondida] Imagens anexadas aos eventos entram no PDF? Não — hoje não existem imagens anexadas de fato no app (apenas um campo de URL manual). Item registrado em `dev/diario.md` para tratar futuramente.
+- [Respondida] A foto do perfil aparece no cabeçalho? Sim.
+- [Respondida] Perfil sem eventos/consultas? Exporta normalmente, só com os dados do perfil no cabeçalho.
+- [Respondida] Abordagem técnica? jsPDF (via CDN) — prioriza controle de estilização do layout, mesmo exigindo mais esforço de implementação do que `window.print()` + CSS de impressão.
