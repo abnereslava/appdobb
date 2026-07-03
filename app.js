@@ -40,6 +40,7 @@ const PULSE_SVG   = `<svg class="inline-icon" viewBox="0 0 24 24" style="color: 
 const MALE_SVG    = `<svg class="inline-icon" viewBox="0 0 24 24" style="margin-right: 4px; color: #2a62a0;"><circle cx="10" cy="14" r="5"/><path d="M14 10L19 5"/><path d="M14 5h5v5"/></svg>`;
 const FEMALE_SVG  = `<svg class="inline-icon" viewBox="0 0 24 24" style="margin-right: 4px; color: #a03458;"><circle cx="12" cy="9" r="5"/><path d="M12 14v7"/><path d="M9 18h6"/></svg>`;
 const NASCIMENTO_SVG = `<svg class="category-icon" viewBox="0 0 24 24"><path d="M12 2l2.39 4.84 5.34.78-3.86 3.77.91 5.32L12 14.98 7.22 16.5l.91-5.32L4.27 7.62l5.34-.78z"/></svg>`;
+const ICON_PDF       = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>`;
 const IMG_PESSOA     = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
 const CAMERA_SVG     = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>`;
 
@@ -1285,9 +1286,14 @@ function renderizarTimeline() {
     <div>
       <div class="tl-header" style="margin-bottom:12px;">
         <h1 class="page-title">Histórico de Saúde</h1>
-        <button class="btn-ghost btn-sm" onclick="toggleTlModo()" title="${_tlModoCards ? 'Ver linha do tempo' : 'Ver como cartões'}" style="padding:7px 10px;">
-          ${ICON_EYE}
-        </button>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-ghost btn-sm" onclick="abrirExportPdf('eventos')" title="Exportar PDF" style="padding:7px 10px;">
+            ${ICON_PDF}
+          </button>
+          <button class="btn-ghost btn-sm" onclick="toggleTlModo()" title="${_tlModoCards ? 'Ver linha do tempo' : 'Ver como cartões'}" style="padding:7px 10px;">
+            ${ICON_EYE}
+          </button>
+        </div>
       </div>
 
       <div class="search-box">
@@ -1755,6 +1761,9 @@ function renderizarAgendaLista() {
     <div>
       <div class="tl-header" style="margin-bottom:12px;">
         <h1 class="page-title">Agenda de Consultas</h1>
+        <button class="btn-ghost btn-sm" onclick="abrirExportPdf('consultas')" title="Exportar PDF" style="padding:7px 10px;">
+          ${ICON_PDF}
+        </button>
       </div>
 
       <div class="search-box">
