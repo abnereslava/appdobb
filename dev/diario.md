@@ -9,3 +9,10 @@
 4. Implementar histórico de medicamentos/tipos de medicamentos, independente da data do evento
 
 5. Retrabalhar inserção de eventos (revelando campos aos poucos de acordo com o evento que está sendo registrado).
+
+6. Empacotar o app como aplicativo Android nativo (APK) e publicar na Play Store. Decisão registrada em conversa (não implementar antes de terminar as pendências acima):
+   - Tecnologia escolhida: **Capacitor** (não TWA) — TWA é Android-only; Capacitor empacota o mesmo HTML/CSS/JS pra Android **e** iOS a partir da mesma base de código, caso o iOS entre no escopo depois. iOS fica de fora por enquanto.
+   - Trade-off do Capacitor vs TWA: o app fica embarcado no binário (não é só uma URL carregada), então toda atualização visual/funcional exige gerar e reenviar um novo build pra loja — diferente de uma PWA pura, que atualiza sozinha via Service Worker.
+   - Custo Play Store: taxa única de US$25 na conta de desenvolvedor do Google Play Console (não é anual). Contas novas precisam rodar teste fechado com 20 testers por 14 dias antes de publicar em produção.
+   - **[Pendente] Monetização futura**: o app é gratuito hoje, mas a intenção é comercializá-lo. Se a cobrança (assinatura, desbloqueio de recursos) acontecer **dentro** do app Android distribuído pela Play Store, a Google exige o uso do **Google Play Billing** (não dá pra usar Stripe/PayPal direto) e fica com 15% da receita até US$1M/ano (30% acima disso). Alternativa a avaliar: manter a versão da Play Store gratuita/básica e vender o upgrade pago pela versão web (fora da loja), sem repassar comissão — decisão de modelo de negócio a tomar mais à frente, ainda sem spec.
+   - Ao decidir avançar, seguir o fluxo do `docs/AGENTS.md`: criar `/specs/empacotamento-android/spec.md` antes de qualquer implementação.
