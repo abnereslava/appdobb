@@ -1,5 +1,9 @@
 # Instruções do projeto — Dos tais (appdobb)
 
+## Orientação geral
+
+Toda ação neste projeto — planejamento, decisão técnica ou implementação — deve partir da consideração das orientações em `docs/AGENTS.md` (fluxo spec-driven, regras de spec.md/plan.md/tasks.md/review.md, tratamento de inferências/sugestões/pendências). Consulte esse arquivo antes de agir, mesmo quando não for citado explicitamente no pedido do usuário.
+
 ## Branch de desenvolvimento
 
 Sempre desenvolva na branch `claude/repo-copy-rename-appdocarro-PQGhA`.
@@ -28,4 +32,4 @@ Se o push falhar por rede, tente até 4 vezes com espera exponencial (2s, 4s, 8s
 - Imagens PNG com fundo transparente; exibidas como silhueta branca via `filter: brightness(0) invert(1)`. Exceção: `logo.png`.
 - Imagens comprimidas para o tamanho de uso (ver `dev/imagens.md`).
 - Não criar arquivos `.md` de documentação extra sem o usuário pedir.
-- Specs em `specs/<feature>/` (spec.md → plan.md → tasks.md → review.md) conforme `AGENTS.md`.
+- Specs em `specs/<feature>/` (spec.md → plan.md → tasks.md → review.md) conforme `docs/AGENTS.md`.
