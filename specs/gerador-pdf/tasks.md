@@ -6,7 +6,7 @@ Quatro tarefas sequenciais: (1) infraestrutura da biblioteca jsPDF, (2) modal de
 
 ## Tarefa 1 — Infraestrutura jsPDF (biblioteca + cache offline)
 
-Status: Pendente
+Status: Concluída
 
 ### Objetivo
 
@@ -36,7 +36,7 @@ Caminho relativo (`./lib/...`) por causa do subpath do GitHub Pages. Conflito re
 
 ## Tarefa 2 — Modal de configuração da exportação
 
-Status: Pendente
+Status: Concluída
 
 ### Objetivo
 
@@ -66,7 +66,7 @@ Perfil sem eventos/consultas: modal mostra aviso amigável no lugar da lista, ma
 
 ## Tarefa 3 — Botões "Exportar PDF" no Histórico e na Agenda
 
-Status: Pendente
+Status: Concluída
 
 ### Objetivo
 
@@ -94,7 +94,7 @@ No Histórico o cabeçalho já tem o botão de alternância de visualização (o
 
 ## Tarefa 4 — Geração do PDF (cabeçalho + corpo + download)
 
-Status: Pendente
+Status: Concluída
 
 ### Objetivo
 
