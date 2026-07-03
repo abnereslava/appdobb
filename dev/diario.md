@@ -4,7 +4,7 @@
 
 2. Enviar por email o lembrete da consulta ou exame para o usuário um dia antes
 
-3. Geradores de pdf → spec criada em `specs/gerador-pdf/spec.md`, em andamento.
+3. ~~Geradores de pdf~~ → feito: exportação em PDF no Histórico e na Agenda (botão no cabeçalho de cada aba → modal de categorias/tipos + nível de detalhamento → jsPDF vendorizado em `lib/`). Spec completa em `specs/gerador-pdf/` (spec/plan/tasks/review). Falta só validação manual no dispositivo (foto no cabeçalho + offline).
 
 4. Implementar histórico de medicamentos/tipos de medicamentos, independente da data do evento
 

@@ -593,6 +593,35 @@
 
 
   <!-- ================================================
+       MODAL: EXPORTAR PDF (HISTÓRICO / AGENDA)
+       ================================================ -->
+  <div id="modal-export-pdf" class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-export-pdf">
+    <div class="modal-overlay" onclick="fecharModal('modal-export-pdf')"></div>
+    <div class="modal-sheet" style="max-height:80dvh;">
+      <div class="modal-header">
+        <h2 id="titulo-export-pdf" class="modal-title">Exportar PDF</h2>
+        <button class="modal-close" onclick="fecharModal('modal-export-pdf')" aria-label="Fechar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p id="export-pdf-desc" style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Escolha o que incluir no relatório.</p>
+        <div id="export-pdf-lista" class="filtro-cats-lista"></div>
+        <div class="form-label" style="margin-top:16px;">Nível de detalhamento</div>
+        <div class="export-nivel">
+          <button type="button" id="export-nivel-resumido" class="filter-btn" onclick="setPdfNivel('resumido')">Resumido</button>
+          <button type="button" id="export-nivel-detalhado" class="filter-btn" onclick="setPdfNivel('detalhado')">Detalhado</button>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-ghost" onclick="fecharModal('modal-export-pdf')">Cancelar</button>
+          <button type="button" class="btn-primary" onclick="gerarPdfExport()">Gerar PDF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ================================================
        MODAL: CONFIRMAÇÃO GENÉRICA
        ================================================ -->
   <div id="modal-confirmar" class="modal modal-confirmar" role="dialog" aria-modal="true">
@@ -612,6 +641,7 @@
   <!-- Toast Notification -->
   <div id="toast" class="toast" role="alert" aria-live="polite"></div>
 
+  <script src="./lib/jspdf.umd.min.js" defer></script>
   <script type="module" src="firebase-config.js"></script>
   <script type="module" src="auth.js"></script>
   <script type="module" src="firestore-api.js"></script>
