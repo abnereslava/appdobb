@@ -1464,6 +1464,84 @@ function aplicarFiltroTipos() {
   renderizarAgenda();
 }
 
+/* ---------- Exportação em PDF (Histórico / Agenda) ---------- */
+
+let _pdfContexto = null;        // 'eventos' | 'consultas'
+let _pdfCatsTemp = [];          // categorias/tipos selecionados no modal
+let _pdfNivel    = 'detalhado'; // 'resumido' | 'detalhado'
+
+function abrirExportPdf(contexto) {
+  _pdfContexto = contexto;
+  _pdfNivel    = 'detalhado';
+
+  // Pré-seleciona tudo que existe no cache do contexto
+  if (contexto === 'eventos') {
+    _pdfCatsTemp = Object.keys(CATEGORIAS).filter(v => eventosCache.some(e => e.categoria === v));
+  } else {
+    _pdfCatsTemp = Object.keys(TIPOS_CONSULTA).filter(v => consultasCache.some(c => (c.tipo || 'outro') === v));
+  }
+
+  const titulo = document.getElementById('titulo-export-pdf');
+  const desc   = document.getElementById('export-pdf-desc');
+  if (titulo) titulo.textContent = contexto === 'eventos' ? 'Exportar Histórico em PDF' : 'Exportar Agenda em PDF';
+  if (desc)   desc.textContent   = contexto === 'eventos'
+    ? 'Escolha as categorias de evento que deseja incluir no relatório.'
+    : 'Escolha os tipos de consulta que deseja incluir no relatório.';
+
+  _renderExportPdfLista();
+  _renderExportPdfNivel();
+  abrirModal('modal-export-pdf');
+}
+
+function _renderExportPdfLista() {
+  const cont = document.getElementById('export-pdf-lista');
+  if (!cont) return;
+  const CHECK = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+  const disponiveis = _pdfContexto === 'eventos'
+    ? Object.entries(CATEGORIAS)
+        .filter(([v]) => eventosCache.some(e => e.categoria === v))
+        .map(([v, c]) => ({ valor: v, label: c.label, icone: c.icone, n: eventosCache.filter(e => e.categoria === v).length }))
+    : Object.entries(TIPOS_CONSULTA)
+        .filter(([v]) => consultasCache.some(c => (c.tipo || 'outro') === v))
+        .map(([v, label]) => ({ valor: v, label, icone: null, n: consultasCache.filter(c => (c.tipo || 'outro') === v).length }));
+
+  if (!disponiveis.length) {
+    cont.innerHTML = `<p class="filtro-cats-vazio">${_pdfContexto === 'eventos'
+      ? 'Nenhum evento registrado ainda — o PDF terá apenas os dados do perfil.'
+      : 'Nenhuma consulta registrada ainda — o PDF terá apenas os dados do perfil.'}</p>`;
+    return;
+  }
+
+  cont.innerHTML = disponiveis.map(d => {
+    const sel = _pdfCatsTemp.includes(d.valor);
+    return `<button type="button" class="filtro-cat-item ${sel?'sel':''}" onclick="togglePdfCat('${d.valor}')">
+        ${d.icone ? `<span class="event-recent-icon icon-${d.valor}">${d.icone}</span>` : ''}
+        <span class="filtro-cat-label">${d.label}</span>
+        <span class="filtro-cat-n">${d.n}</span>
+        <span class="filtro-cat-check">${sel ? CHECK : ''}</span>
+      </button>`;
+  }).join('');
+}
+
+function togglePdfCat(v) {
+  const i = _pdfCatsTemp.indexOf(v);
+  if (i === -1) _pdfCatsTemp.push(v); else _pdfCatsTemp.splice(i, 1);
+  _renderExportPdfLista();
+}
+
+function setPdfNivel(n) {
+  _pdfNivel = n;
+  _renderExportPdfNivel();
+}
+
+function _renderExportPdfNivel() {
+  const bR = document.getElementById('export-nivel-resumido');
+  const bD = document.getElementById('export-nivel-detalhado');
+  if (bR) bR.classList.toggle('active', _pdfNivel === 'resumido');
+  if (bD) bD.classList.toggle('active', _pdfNivel === 'detalhado');
+}
+
 
 /* ================================================
    8. FORMULÁRIO DE EVENTO
