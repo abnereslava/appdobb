@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bebe-shell-v22';
+const CACHE_NAME = 'bebe-shell-v23';
 
 // SDK do Firebase servido pelo CDN do Google. Precisa ficar em cache para o
 // app conseguir abrir offline (sem ele, os imports ESM falham e o app trava
@@ -16,6 +16,7 @@ const SHELL_FILES = [
   './firebase-config.js',
   './firestore-api.js',
   './manifest.json',
+  './lib/jspdf.umd.min.js',
   './img/logo.png',
   './img/logo-180.png',
   './img/logo-192.png',
