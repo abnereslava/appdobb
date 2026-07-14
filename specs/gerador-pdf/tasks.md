@@ -119,3 +119,34 @@ Roteiro da seção 9 do plan.md (7 cenários, incluindo offline e modo escuro).
 ### Observações
 
 Cores fixas claras (independentes do tema); texto puro via API do jsPDF; foto em try/catch para nunca quebrar a exportação.
+
+## Tarefa 5 — Iteração 2: refinamento visual, prévia e filtro por período
+
+Status: Concluída
+
+### Objetivo
+
+Refinar o visual do PDF (acento na cor do perfil, data/categoria antes do título, rótulos em negrito), adicionar prévia (exemplo) ao vivo no modal e filtro por período dos itens exportados.
+
+### Arquivos afetados
+
+- `index.html` (campos de período + contêiner da prévia no modal)
+- `app.js` (estado `_pdfDataInicio`/`_pdfDataFim`/`_pdfFotoCache`; `_pdfItensSelecionados()`, `_atualizarPreviaPdf()` e helpers de prévia; builder redesenhado — `_pdfBloco` com segmentos e réguas, `_pdfCampo` com rótulo em negrito, `_pdfCabecalho`/`_pdfLinhasEvento`/`_pdfLinhasConsulta`; `setPdfData`/`limparPdfData`)
+- `style.css` (estilos `.export-previa*`)
+- `sw.js` (bump v23 → v24)
+
+### Dependências
+
+Tarefas 1–4.
+
+### Critério de conclusão
+
+Critérios de aceite da seção 14 do spec: data/categoria antes do título, rótulos em negrito, acento moderado, prévia ao vivo, filtro por período com limpar.
+
+### Teste manual
+
+Abrir o modal em cada aba; alternar nível e ver a prévia mudar; marcar/desmarcar categorias e ver a prévia e a contagem mudarem; definir período e conferir que a prévia e o PDF respeitam o intervalo; gerar e conferir o novo visual.
+
+### Observações
+
+Validado via harness Node com o jsPDF real (12 → 4 itens ao aplicar período) e inspeção visual da 1ª página renderizada. Prévia usa HTML (não PDF embutido) por robustez no mobile.
