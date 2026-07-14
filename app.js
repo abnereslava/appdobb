@@ -1472,13 +1472,19 @@ function aplicarFiltroTipos() {
 
 /* ---------- Exportação em PDF (Histórico / Agenda) ---------- */
 
-let _pdfContexto = null;        // 'eventos' | 'consultas'
-let _pdfCatsTemp = [];          // categorias/tipos selecionados no modal
-let _pdfNivel    = 'detalhado'; // 'resumido' | 'detalhado'
+let _pdfContexto   = null;        // 'eventos' | 'consultas'
+let _pdfCatsTemp   = [];          // categorias/tipos selecionados no modal
+let _pdfNivel      = 'detalhado'; // 'resumido' | 'detalhado'
+let _pdfDataInicio = '';          // filtro de período (YYYY-MM-DD)
+let _pdfDataFim    = '';
+let _pdfFotoCache  = null;        // dataURL da foto do perfil (buscada ao abrir)
 
-function abrirExportPdf(contexto) {
-  _pdfContexto = contexto;
-  _pdfNivel    = 'detalhado';
+async function abrirExportPdf(contexto) {
+  _pdfContexto   = contexto;
+  _pdfNivel      = 'detalhado';
+  _pdfDataInicio = '';
+  _pdfDataFim    = '';
+  _pdfFotoCache  = null;
 
   // Pré-seleciona tudo que existe no cache do contexto
   if (contexto === 'eventos') {
@@ -1494,9 +1500,22 @@ function abrirExportPdf(contexto) {
     ? 'Escolha as categorias de evento que deseja incluir no relatório.'
     : 'Escolha os tipos de consulta que deseja incluir no relatório.';
 
+  const iIni = document.getElementById('export-data-inicio');
+  const iFim = document.getElementById('export-data-fim');
+  if (iIni) iIni.value = '';
+  if (iFim) iFim.value = '';
+
   _renderExportPdfLista();
   _renderExportPdfNivel();
+  _atualizarPdfDataLimpar();
+  _atualizarPreviaPdf();
   abrirModal('modal-export-pdf');
+
+  // Busca a foto local (assíncrona) e atualiza a prévia quando chegar
+  try {
+    _pdfFotoCache = profileIdAtivo ? await buscarAvatarLocal(profileIdAtivo) : null;
+    if (_pdfFotoCache) _atualizarPreviaPdf();
+  } catch (e) { /* segue sem foto */ }
 }
 
 function _renderExportPdfLista() {
@@ -1534,11 +1553,13 @@ function togglePdfCat(v) {
   const i = _pdfCatsTemp.indexOf(v);
   if (i === -1) _pdfCatsTemp.push(v); else _pdfCatsTemp.splice(i, 1);
   _renderExportPdfLista();
+  _atualizarPreviaPdf();
 }
 
 function setPdfNivel(n) {
   _pdfNivel = n;
   _renderExportPdfNivel();
+  _atualizarPreviaPdf();
 }
 
 function _renderExportPdfNivel() {
@@ -1548,42 +1569,220 @@ function _renderExportPdfNivel() {
   if (bD) bD.classList.toggle('active', _pdfNivel === 'detalhado');
 }
 
+function setPdfData(qual, valor) {
+  if (qual === 'inicio') _pdfDataInicio = valor || '';
+  else                   _pdfDataFim    = valor || '';
+  _atualizarPdfDataLimpar();
+  _atualizarPreviaPdf();
+}
+
+function limparPdfData() {
+  _pdfDataInicio = '';
+  _pdfDataFim    = '';
+  const iIni = document.getElementById('export-data-inicio');
+  const iFim = document.getElementById('export-data-fim');
+  if (iIni) iIni.value = '';
+  if (iFim) iFim.value = '';
+  _atualizarPdfDataLimpar();
+  _atualizarPreviaPdf();
+}
+
+function _atualizarPdfDataLimpar() {
+  const btn = document.getElementById('export-data-limpar');
+  if (btn) btn.style.display = (_pdfDataInicio || _pdfDataFim) ? '' : 'none';
+}
+
+// Itens selecionados (categoria/tipo + período), ordenados do mais recente
+// ao mais antigo. Compartilhado pela prévia e pela geração do PDF.
+function _pdfItensSelecionados() {
+  const ehEventos = _pdfContexto === 'eventos';
+  const base  = ehEventos ? eventosCache : consultasCache;
+  const chave = ehEventos ? (x => x.categoria) : (x => x.tipo || 'outro');
+  return base
+    .filter(x => _pdfCatsTemp.includes(chave(x)))
+    .filter(x => (!_pdfDataInicio || x.data >= _pdfDataInicio) && (!_pdfDataFim || x.data <= _pdfDataFim))
+    .slice()
+    .sort((a, b) => b.data.localeCompare(a.data));
+}
+
+/* ----- Prévia (HTML que imita a folha impressa) ----- */
+
+function _atualizarPreviaPdf() {
+  const cont = document.getElementById('export-pdf-previa');
+  if (!cont) return;
+  const perfil = carregarPerfil();
+  if (!perfil) { cont.innerHTML = ''; return; }
+
+  const ehEventos = _pdfContexto === 'eventos';
+  const cor   = CORES_PERFIL[corDoPerfil(perfil)]?.hex || CORES_PERFIL.beige.hex;
+  const itens = _pdfItensSelecionados();
+  const amostra = itens.slice(0, 2);
+
+  const metaNasc = perfil.dataNascimento
+    ? `${calcularIdade(perfil.dataNascimento)}  ·  Nascimento: ${formatarData(perfil.dataNascimento)}`
+    : '';
+
+  const fotoHtml = _pdfFotoCache
+    ? `<img class="export-previa-foto" src="${_pdfFotoCache}" alt="" />`
+    : '';
+
+  const secTitulo = ehEventos ? 'Histórico de Saúde' : 'Agenda de Consultas';
+  const nItens = itens.length;
+  const unidade = ehEventos ? (nItens === 1 ? 'evento' : 'eventos') : (nItens === 1 ? 'consulta' : 'consultas');
+
+  const itensHtml = amostra.length
+    ? amostra.map(it => ehEventos ? _previaItemEvento(it, cor) : _previaItemConsulta(it, cor)).join('')
+    : `<div class="export-previa-vazio">Apenas os dados do perfil (nenhum item na seleção).</div>`;
+
+  const restante = itens.length - amostra.length;
+
+  cont.innerHTML = `
+    <div class="export-previa-head">
+      ${fotoHtml}
+      <div>
+        <div class="export-previa-nome">${esc(perfil.nomeCompleto || 'Perfil')}</div>
+        ${metaNasc ? `<div class="export-previa-meta">${esc(metaNasc)}</div>` : ''}
+      </div>
+    </div>
+    <div class="export-previa-rule" style="background:${cor};"></div>
+    <div class="export-previa-sec" style="color:${cor};">${secTitulo} (${nItens} ${unidade})</div>
+    ${itensHtml}
+    ${restante > 0 ? `<div class="export-previa-mais">+ ${restante} ${restante === 1 ? 'item' : 'itens'} no PDF completo…</div>` : ''}
+  `;
+}
+
+function _previaCampo(rotulo, valor) {
+  return `<div class="export-previa-campo"><b>${esc(rotulo)}:</b> ${esc(valor)}</div>`;
+}
+
+function _previaItemEvento(e, cor) {
+  const cat = CATEGORIAS[e.categoria] || CATEGORIAS.outro;
+  const chip = `<div class="export-previa-chip"><span style="color:${cor};">${formatarData(e.data)}</span><span class="cat">  ·  ${esc(cat.label)}</span></div>`;
+  if (_pdfNivel === 'resumido') {
+    const extra = e.medico ? `  ·  ${esc(e.medico)}` : '';
+    return `<div class="export-previa-item">${chip}<div class="export-previa-titulo">${esc(e.titulo)}${extra}</div></div>`;
+  }
+  let campos = '';
+  if (e.descricao)            campos += _previaCampo('Descrição', e.descricao);
+  if (e.tratamento)           campos += _previaCampo('Tratamento', e.tratamento);
+  if (e.medico)               campos += _previaCampo('Médico', e.medico);
+  if (e.hospital)             campos += _previaCampo('Hospital / Posto', e.hospital);
+  if (e.medicamentos?.length) campos += _previaCampo('Medicamentos', e.medicamentos.join(', '));
+  if (e.custo)                campos += _previaCampo('Gasto', formatarDinheiro(parseFloat(e.custo)));
+  if (e.observacoes)          campos += _previaCampo('Observações', e.observacoes);
+  return `<div class="export-previa-item">${chip}<div class="export-previa-titulo">${esc(e.titulo)}</div>${campos}</div>`;
+}
+
+function _previaItemConsulta(c, cor) {
+  const tipo   = TIPOS_CONSULTA[c.tipo] || c.tipo || 'Consulta';
+  const status = { agendada: 'Agendada', realizada: 'Realizada', cancelada: 'Cancelada' }[c.status] || c.status || '';
+  const dataTxt = `${formatarData(c.data)}${c.hora ? ` às ${c.hora}` : ''}`;
+  const chip = `<div class="export-previa-chip"><span style="color:${cor};">${dataTxt}</span>${status ? `<span class="cat">  ·  ${esc(status)}</span>` : ''}</div>`;
+  if (_pdfNivel === 'resumido') {
+    const extra = c.medico ? `  ·  ${esc(c.medico)}` : '';
+    return `<div class="export-previa-item">${chip}<div class="export-previa-titulo">${esc(tipo)}${extra}</div></div>`;
+  }
+  let campos = '';
+  if (c.medico)      campos += _previaCampo('Médico', c.medico);
+  if (c.local)       campos += _previaCampo('Local', c.local);
+  if (c.observacoes) campos += _previaCampo('Observações', c.observacoes);
+  return `<div class="export-previa-item">${chip}<div class="export-previa-titulo">${esc(tipo)}</div>${campos}</div>`;
+}
+
+/* ----- Geração do PDF (jsPDF) ----- */
+
 // Geometria e paleta do documento (A4, mm). Cores fixas claras: o PDF não
 // acompanha o tema da tela e precisa ser legível em preto e branco.
 const _PDF = {
   margem: 15, largura: 210, altura: 297,
-  texto: [26, 26, 26], suave: [110, 110, 110], linha: [200, 200, 200],
+  texto: [26, 26, 26], suave: [110, 110, 110], linha: [200, 200, 200], linhaClara: [228, 228, 228],
+  accent: [58, 130, 196], // sobrescrito pela cor do perfil a cada geração
 };
 
-// Mede e desenha um bloco de linhas [{txt, size, bold, cor, gap}] com quebra
-// de página: se o bloco inteiro não couber, vai pra próxima página; blocos
-// maiores que uma página são paginados linha a linha.
+function _hexRgb(hex) {
+  const h = String(hex).replace('#', '');
+  return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
+}
+
+const _pdfLh = s => s * 0.42 + 1.6; // altura de linha (mm) por tamanho de fonte
+
+// Quebra "Rótulo: valor" com rótulo em negrito e valor normal, respeitando a
+// largura útil (primeira linha começa após o rótulo; continuações alinham à
+// margem). Devolve linhas já prontas com segmentos {txt, bold, cor}.
+function _pdfCampo(doc, rotulo, valor, size = 9.5) {
+  const larguraUtil = _PDF.largura - _PDF.margem * 2;
+  doc.setFontSize(size);
+  doc.setFont('helvetica', 'bold');
+  const labW = doc.getTextWidth(rotulo + ': ');
+  doc.setFont('helvetica', 'normal');
+
+  const palavras = String(valor).split(/\s+/).filter(Boolean);
+  const linhas = [];
+  let atual = '';
+  let primeira = true;
+  for (const p of palavras) {
+    const tentativa = atual ? atual + ' ' + p : p;
+    const disp = (primeira ? larguraUtil - labW : larguraUtil);
+    if (atual && doc.getTextWidth(tentativa) > disp) {
+      linhas.push(atual); atual = p; primeira = false;
+    } else {
+      atual = tentativa;
+    }
+  }
+  if (atual) linhas.push(atual);
+  if (!linhas.length) linhas.push('');
+
+  return linhas.map((txt, i) => i === 0
+    ? { size, segs: [{ txt: rotulo + ': ', bold: true }, { txt, bold: false }] }
+    : { size, x: _PDF.margem, segs: [{ txt, bold: false }] });
+}
+
+// Altura visual de uma linha do modelo (texto ou régua).
+function _pdfAltLinha(l) {
+  if (l.regua) return 0.5 + (l.gap || 0);
+  return _pdfLh(l.size) + (l.gap || 0);
+}
+
+// Desenha um bloco atômico [{...}] com quebra de página: se o bloco inteiro
+// não couber, vai pra próxima página; blocos maiores que uma página são
+// paginados linha a linha. Linhas aceitam: {txt|segs, size, bold, cor, gap, x}
+// ou {regua:true, cor, w, gap}.
 function _pdfBloco(doc, y, linhas) {
-  const lh = s => s * 0.42 + 1.6; // altura de linha (mm) por tamanho de fonte
-  const alturaTotal = linhas.reduce((a, l) => a + lh(l.size) + (l.gap || 0), 0);
   const limite = _PDF.altura - _PDF.margem;
+  const alturaTotal = linhas.reduce((a, l) => a + _pdfAltLinha(l), 0);
 
   if (y + alturaTotal > limite && alturaTotal <= limite - _PDF.margem) {
     doc.addPage();
     y = _PDF.margem;
   }
   for (const l of linhas) {
-    if (y + lh(l.size) > limite) { doc.addPage(); y = _PDF.margem; }
-    doc.setFont('helvetica', l.bold ? 'bold' : 'normal');
+    if (l.regua) {
+      if (y + 0.5 > limite) { doc.addPage(); y = _PDF.margem; }
+      doc.setDrawColor(...(l.cor || _PDF.linhaClara));
+      doc.setLineWidth(l.w || 0.2);
+      doc.line(_PDF.margem, y, _PDF.largura - _PDF.margem, y);
+      y += 0.5 + (l.gap || 0);
+      continue;
+    }
+    if (y + _pdfLh(l.size) > limite) { doc.addPage(); y = _PDF.margem; }
     doc.setFontSize(l.size);
-    doc.setTextColor(...(l.cor || _PDF.texto));
-    doc.text(l.txt, l.x ?? _PDF.margem, y + l.size * 0.35);
-    y += lh(l.size) + (l.gap || 0);
+    const baseY = y + l.size * 0.35;
+    if (l.segs) {
+      let x = l.x ?? _PDF.margem;
+      for (const s of l.segs) {
+        doc.setFont('helvetica', s.bold ? 'bold' : 'normal');
+        doc.setTextColor(...(s.cor || l.cor || _PDF.texto));
+        doc.text(s.txt, x, baseY);
+        x += doc.getTextWidth(s.txt);
+      }
+    } else {
+      doc.setFont('helvetica', l.bold ? 'bold' : 'normal');
+      doc.setTextColor(...(l.cor || _PDF.texto));
+      doc.text(l.txt, l.x ?? _PDF.margem, baseY);
+    }
+    y += _pdfLh(l.size) + (l.gap || 0);
   }
   return y;
-}
-
-// Quebra "Rótulo: valor longo..." na largura útil e devolve linhas prontas
-function _pdfCampo(doc, rotulo, valor, size = 9.5) {
-  doc.setFontSize(size);
-  const larguraUtil = _PDF.largura - _PDF.margem * 2;
-  return doc.splitTextToSize(`${rotulo}: ${valor}`, larguraUtil)
-    .map(txt => ({ txt, size }));
 }
 
 async function _pdfCabecalho(doc, perfil) {
@@ -1593,57 +1792,78 @@ async function _pdfCabecalho(doc, perfil) {
   // Foto do perfil (IndexedDB) — opcional; nunca impede a exportação
   let temFoto = false;
   try {
-    const foto = profileIdAtivo ? await buscarAvatarLocal(profileIdAtivo) : null;
-    if (foto) { doc.addImage(foto, 'JPEG', m, y, 24, 24); temFoto = true; }
+    const foto = _pdfFotoCache ?? (profileIdAtivo ? await buscarAvatarLocal(profileIdAtivo) : null);
+    if (foto) {
+      doc.addImage(foto, 'JPEG', m, y, 24, 24);
+      doc.setDrawColor(..._PDF.accent); doc.setLineWidth(0.4);
+      doc.rect(m, y, 24, 24);
+      temFoto = true;
+    }
   } catch (e) { /* segue sem foto */ }
 
   const xTexto = temFoto ? m + 29 : m;
   const hoje   = new Date();
   const emissao = `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
 
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(17); doc.setTextColor(..._PDF.texto);
-  doc.text(perfil.nomeCompleto || 'Perfil', xTexto, y + 6);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.setTextColor(..._PDF.texto);
+  doc.text(perfil.nomeCompleto || 'Perfil', xTexto, y + 6.5);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(..._PDF.suave);
   if (perfil.dataNascimento) {
-    doc.text(`${calcularIdade(perfil.dataNascimento)}  ·  Nascimento: ${formatarData(perfil.dataNascimento)}`, xTexto, y + 12.5);
+    doc.text(`${calcularIdade(perfil.dataNascimento)}   ·   Nascimento: ${formatarData(perfil.dataNascimento)}`, xTexto, y + 13);
   }
-  doc.text(`Documento emitido em ${emissao}`, xTexto, y + 18);
+  doc.text(`Documento emitido em ${emissao}`, xTexto, y + 18.5);
   y += temFoto ? 30 : 24;
 
+  // Régua de acento sob o cabeçalho
+  doc.setDrawColor(..._PDF.accent); doc.setLineWidth(1);
+  doc.line(m, y, _PDF.largura - m, y);
+  y += 6;
+
   const linhas = [];
-  if (perfil.tipoBebe) linhas.push({ txt: `Tipo sanguíneo: ${perfil.tipoBebe}`, size: 10, gap: 1 });
+  if (perfil.tipoBebe) linhas.push({ size: 10, gap: 2, segs: [{ txt: 'Tipo sanguíneo: ', bold: true }, { txt: perfil.tipoBebe, bold: false }] });
 
   const alergias = perfil.alergias || [];
-  linhas.push({ txt: 'Alergias', size: 11, bold: true, gap: 0.5 });
-  if (!alergias.length) linhas.push({ txt: 'Nenhuma alergia registrada', size: 9.5, cor: _PDF.suave, gap: 1.5 });
+  linhas.push({ txt: 'Alergias', size: 11, bold: true, cor: _PDF.accent, gap: 1 });
+  if (!alergias.length) linhas.push({ txt: 'Nenhuma alergia registrada', size: 9.5, cor: _PDF.suave, gap: 2 });
   alergias.forEach((a, i) => {
     const extras = [TIPOS_ALERGIA[a.tipo] || a.tipo, SEVERIDADES[a.severidade] || a.severidade].filter(Boolean).join(', ');
-    linhas.push({ txt: `•  ${a.descricao}${extras ? ` (${extras})` : ''}`, size: 9.5, gap: i === alergias.length - 1 ? 1.5 : 0 });
+    linhas.push({ txt: `•  ${a.descricao}${extras ? ` (${extras})` : ''}`, size: 9.5, gap: i === alergias.length - 1 ? 2 : 0.4 });
   });
 
   const doencas = perfil.doencasCronicas || [];
-  linhas.push({ txt: 'Doenças crônicas', size: 11, bold: true, gap: 0.5 });
+  linhas.push({ txt: 'Doenças crônicas', size: 11, bold: true, cor: _PDF.accent, gap: 1 });
   if (!doencas.length) linhas.push({ txt: 'Nenhuma doença crônica registrada', size: 9.5, cor: _PDF.suave });
   doencas.forEach(d => {
-    linhas.push({ txt: `•  ${d.descricao}${d.observacao ? ` — ${d.observacao}` : ''}`, size: 9.5 });
+    linhas.push({ txt: `•  ${d.descricao}${d.observacao ? ` — ${d.observacao}` : ''}`, size: 9.5, gap: 0.4 });
   });
 
-  y = _pdfBloco(doc, y, linhas) + 2;
-  doc.setDrawColor(..._PDF.linha);
+  y = _pdfBloco(doc, y, linhas) + 3;
+  doc.setDrawColor(..._PDF.linha); doc.setLineWidth(0.2);
   doc.line(m, y, _PDF.largura - m, y);
-  return y + 6;
+  return y + 7;
 }
 
-function _pdfLinhasEvento(doc, e) {
+function _pdfLinhasEvento(doc, e, primeiro) {
   const cat = CATEGORIAS[e.categoria] || CATEGORIAS.outro;
+  const linhas = [];
+  if (!primeiro) linhas.push({ regua: true, cor: _PDF.linhaClara, gap: 3 });
+
+  // Data (na cor do perfil) + categoria, antes do título
+  linhas.push({
+    size: 8.5, gap: 0.6,
+    segs: [
+      { txt: formatarData(e.data), bold: true, cor: _PDF.accent },
+      { txt: `   ${cat.label}`, bold: false, cor: _PDF.suave },
+    ],
+  });
+
   if (_pdfNivel === 'resumido') {
     const extra = e.medico ? `  ·  ${e.medico}` : '';
-    return _pdfCampo(doc, formatarData(e.data), `${e.titulo}${extra}`).map((l, i) => i === 0 ? { ...l, gap: 1.5 } : l);
+    linhas.push({ txt: `${e.titulo}${extra}`, size: 10.5, bold: true, gap: 1 });
+    return linhas;
   }
-  const linhas = [
-    { txt: e.titulo, size: 11.5, bold: true },
-    { txt: `${formatarData(e.data)}  ·  ${cat.label}`, size: 9, cor: _PDF.suave, gap: 0.5 },
-  ];
+
+  linhas.push({ txt: e.titulo, size: 12, bold: true, gap: 1 });
   if (e.descricao)             linhas.push(..._pdfCampo(doc, 'Descrição', e.descricao));
   if (e.tratamento)            linhas.push(..._pdfCampo(doc, 'Tratamento', e.tratamento));
   if (e.medico)                linhas.push(..._pdfCampo(doc, 'Médico', e.medico));
@@ -1651,25 +1871,36 @@ function _pdfLinhasEvento(doc, e) {
   if (e.medicamentos?.length)  linhas.push(..._pdfCampo(doc, 'Medicamentos', e.medicamentos.join(', ')));
   if (e.custo)                 linhas.push(..._pdfCampo(doc, 'Gasto', formatarDinheiro(parseFloat(e.custo))));
   if (e.observacoes)           linhas.push(..._pdfCampo(doc, 'Observações', e.observacoes));
-  linhas[linhas.length - 1] = { ...linhas[linhas.length - 1], gap: 4 };
+  linhas[linhas.length - 1] = { ...linhas[linhas.length - 1], gap: 4.5 };
   return linhas;
 }
 
-function _pdfLinhasConsulta(doc, c) {
+function _pdfLinhasConsulta(doc, c, primeiro) {
   const tipo   = TIPOS_CONSULTA[c.tipo] || c.tipo || 'Consulta';
   const status = { agendada: 'Agendada', realizada: 'Realizada', cancelada: 'Cancelada' }[c.status] || c.status || '';
+  const linhas = [];
+  if (!primeiro) linhas.push({ regua: true, cor: _PDF.linhaClara, gap: 3 });
+
+  const dataTxt = `${formatarData(c.data)}${c.hora ? ` às ${c.hora}` : ''}`;
+  linhas.push({
+    size: 8.5, gap: 0.6,
+    segs: [
+      { txt: dataTxt, bold: true, cor: _PDF.accent },
+      ...(status ? [{ txt: `   ${status}`, bold: false, cor: _PDF.suave }] : []),
+    ],
+  });
+
   if (_pdfNivel === 'resumido') {
     const extra = c.medico ? `  ·  ${c.medico}` : '';
-    return _pdfCampo(doc, formatarData(c.data), `${tipo}${extra}${status ? `  (${status})` : ''}`).map((l, i) => i === 0 ? { ...l, gap: 1.5 } : l);
+    linhas.push({ txt: `${tipo}${extra}`, size: 10.5, bold: true, gap: 1 });
+    return linhas;
   }
-  const linhas = [
-    { txt: tipo, size: 11.5, bold: true },
-    { txt: `${formatarData(c.data)}${c.hora ? ` às ${c.hora}` : ''}${status ? `  ·  ${status}` : ''}`, size: 9, cor: _PDF.suave, gap: 0.5 },
-  ];
+
+  linhas.push({ txt: tipo, size: 12, bold: true, gap: 1 });
   if (c.medico)      linhas.push(..._pdfCampo(doc, 'Médico', c.medico));
   if (c.local)       linhas.push(..._pdfCampo(doc, 'Local', c.local));
   if (c.observacoes) linhas.push(..._pdfCampo(doc, 'Observações', c.observacoes));
-  linhas[linhas.length - 1] = { ...linhas[linhas.length - 1], gap: 4 };
+  linhas[linhas.length - 1] = { ...linhas[linhas.length - 1], gap: 4.5 };
   return linhas;
 }
 
@@ -1679,28 +1910,29 @@ async function gerarPdfExport() {
   if (!window.jspdf?.jsPDF) { mostrarToast('Gerador de PDF ainda carregando. Tente novamente.', 'error'); return; }
 
   try {
+    _PDF.accent = _hexRgb(CORES_PERFIL[corDoPerfil(perfil)]?.hex || CORES_PERFIL.beige.hex);
+
     const doc = new jspdf.jsPDF({ unit: 'mm', format: 'a4' });
     let y = await _pdfCabecalho(doc, perfil);
 
     const ehEventos = _pdfContexto === 'eventos';
-    const itens = ehEventos
-      ? [...eventosCache].filter(e => _pdfCatsTemp.includes(e.categoria)).sort((a, b) => b.data.localeCompare(a.data))
-      : [...consultasCache].filter(c => _pdfCatsTemp.includes(c.tipo || 'outro')).sort((a, b) => b.data.localeCompare(a.data));
+    const itens = _pdfItensSelecionados();
 
-    y = _pdfBloco(doc, y, [{
-      txt: `${ehEventos ? 'Histórico de Saúde' : 'Agenda de Consultas'} (${itens.length} ${ehEventos ? (itens.length === 1 ? 'evento' : 'eventos') : (itens.length === 1 ? 'consulta' : 'consultas')})`,
-      size: 13, bold: true, gap: 3,
-    }]);
+    y = _pdfBloco(doc, y, [
+      { txt: `${ehEventos ? 'Histórico de Saúde' : 'Agenda de Consultas'} (${itens.length} ${ehEventos ? (itens.length === 1 ? 'evento' : 'eventos') : (itens.length === 1 ? 'consulta' : 'consultas')})`,
+        size: 13, bold: true, cor: _PDF.accent },
+      { regua: true, cor: _PDF.accent, w: 0.5, gap: 4 },
+    ]);
 
     if (!itens.length) {
       y = _pdfBloco(doc, y, [{ txt: ehEventos ? 'Nenhum evento na seleção escolhida.' : 'Nenhuma consulta na seleção escolhida.', size: 9.5, cor: _PDF.suave }]);
     }
-    for (const item of itens) {
-      y = _pdfBloco(doc, y, ehEventos ? _pdfLinhasEvento(doc, item) : _pdfLinhasConsulta(doc, item));
-    }
+    itens.forEach((item, i) => {
+      y = _pdfBloco(doc, y, ehEventos ? _pdfLinhasEvento(doc, item, i === 0) : _pdfLinhasConsulta(doc, item, i === 0));
+    });
 
     const nomeArq = (perfil.nomeCompleto.trim().split(/\s+/)[0] || 'perfil')
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      .normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
     const dataArq = new Date().toISOString().slice(0, 10);
     doc.save(`${ehEventos ? 'historico' : 'agenda'}-${nomeArq}-${dataArq}.pdf`);
 
@@ -1711,6 +1943,7 @@ async function gerarPdfExport() {
     mostrarToast('Erro ao gerar o PDF. Tente novamente.', 'error');
   }
 }
+
 
 
 /* ================================================

@@ -104,3 +104,26 @@ Após confirmar, o sistema monta o documento (cabeçalho do perfil, incluindo fo
 - [Respondida] A foto do perfil aparece no cabeçalho? Sim.
 - [Respondida] Perfil sem eventos/consultas? Exporta normalmente, só com os dados do perfil no cabeçalho.
 - [Respondida] Abordagem técnica? jsPDF (via CDN) — prioriza controle de estilização do layout, mesmo exigindo mais esforço de implementação do que `window.print()` + CSS de impressão.
+
+## 14. Iteração 2 — refinamento visual, prévia e filtro por período
+
+Melhorias solicitadas após a primeira entrega:
+
+1. **Visual mais elegante (sem exagerar)**: uso restrito da cor do perfil como acento — régua sob o cabeçalho, títulos de seção ("Alergias", "Doenças crônicas", título da seção principal) e a data de cada item. Texto do corpo permanece escuro; documento continua legível em preto e branco.
+2. **Data/categoria antes do título**: cada item começa por uma linha discreta com a data (na cor de acento) e a categoria/status, seguida do título em negrito maior.
+3. **Rótulos de campo em negrito**: cada campo do nível Detalhado é renderizado como `Rótulo:` em negrito + valor normal, com quebra de linha respeitando a largura útil (continuações alinhadas à margem).
+4. **Prévia (exemplo) no modal**: representação em HTML que imita a folha impressa (cabeçalho + até 2 primeiros itens), atualizada ao vivo conforme categorias/tipos, nível e período mudam. É uma amostra fiel do estilo — não o PDF real embutido —, escolha feita por robustez no mobile (visualizador de PDF em iframe é irregular nos navegadores móveis).
+5. **Filtro por período**: dois campos de data (início/fim) no modal restringem os itens que entram no PDF, com botão de limpar. Estado próprio (`_pdfDataInicio`/`_pdfDataFim`), independente dos filtros da aba.
+
+Notas de implementação:
+- A cor de acento vem de `corDoPerfil(perfil)` → `CORES_PERFIL[...].hex`, convertida para RGB em `_PDF.accent` no início de cada geração.
+- Separador fino entre itens (régua clara) que acompanha a quebra de página.
+- Prévia e geração compartilham `_pdfItensSelecionados()` (mesma seleção de categorias/tipos + período), garantindo que o exemplo reflita o resultado.
+
+### Critérios de aceite (iteração 2)
+
+- [x] Data e categoria/status aparecem antes do título em cada item.
+- [x] Rótulos dos campos em negrito no nível Detalhado.
+- [x] Acento na cor do perfil aplicado com moderação (cabeçalho, seções, datas).
+- [x] Prévia ao vivo no modal refletindo categorias/tipos, nível e período.
+- [x] Filtro por período (início/fim) restringe os itens exportados; botão de limpar.

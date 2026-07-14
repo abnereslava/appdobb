@@ -66,3 +66,36 @@ Pendências de teste manual no app real (não executáveis neste ambiente): foto
 ## 10. Conclusão
 
 Funcionalidade pronta para uso, com os critérios de aceite atendidos nos testes automatizados e visuais. Recomenda-se a verificação manual final no dispositivo (foto/offline) antes de considerar o item encerrado no diário.
+
+---
+
+## Revisão — Iteração 2 (refinamento visual, prévia e filtro por período)
+
+### Status
+
+Aprovado com ajustes (mesmas pendências de teste manual no dispositivo).
+
+### Resumo
+
+Implementada a Tarefa 5 do `tasks.md`:
+- **Visual**: acento na cor do perfil (régua do cabeçalho, títulos de seção e datas dos itens), separadores finos entre itens, cabeçalho com foto emoldurada.
+- **Ordem do item**: data (acento) + categoria/status antes do título em negrito.
+- **Rótulos em negrito**: novo `_pdfCampo` desenha `Rótulo:` em bold + valor normal, com quebra manual respeitando a largura útil.
+- **Prévia**: `_atualizarPreviaPdf()` gera HTML que imita a folha, atualizado ao vivo (categorias/tipos, nível, período); foto do perfil buscada uma vez ao abrir e reaproveitada na geração.
+- **Período**: `_pdfDataInicio`/`_pdfDataFim` + `_pdfItensSelecionados()` compartilhado entre prévia e geração.
+
+### Critérios de aceite (iteração 2)
+
+- [x] Data e categoria/status antes do título.
+- [x] Rótulos de campo em negrito (nível Detalhado).
+- [x] Acento moderado na cor do perfil.
+- [x] Prévia ao vivo refletindo as opções.
+- [x] Filtro por período restringe os itens; botão de limpar.
+
+### Testes realizados
+
+Harness Node com o jsPDF real: geração detalhada (12 itens → 4 páginas), filtro por período reduzindo 12 → 4 itens, e inspeção visual da 1ª página (acento roxo do perfil, seções coloridas, data+categoria antes do título, rótulos em negrito, separadores). Sintaxe de `app.js` validada.
+
+### Pendências
+
+- Teste manual no dispositivo: renderização da prévia com foto real (IndexedDB), diálogo de salvamento e comportamento offline.
