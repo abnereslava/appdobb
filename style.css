@@ -370,7 +370,9 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
   background: var(--bg-card);
   border-top: 1px solid var(--border);
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  /* minmax(0, 1fr) em vez de 1fr: com 1fr o mínimo é o conteúdo, então um
+     rótulo mais longo incha a própria coluna e espreme as vizinhas. */
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   align-items: center;
   z-index: 100;
   box-shadow: 0 -4px 16px rgba(0,0,0,0.07);
@@ -405,11 +407,6 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
 .nav-btn.active span { font-weight: 700; }
 
 /* Botão "+" do nav — círculo centralizado em sua coluna */
-/* Estado de contexto: usado no botão Histórico enquanto a view Medicamentos
-   (que não tem botão próprio na nav) está ativa. Deliberadamente mais fraco
-   que .active, para indicar proximidade sem afirmar que a aba está aberta. */
-.nav-btn-contexto { color: var(--primary); opacity: 0.55; }
-
 .nav-fab {
   width: 48px;
   height: 48px;
@@ -1085,16 +1082,6 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
 /* ================================================
    MEDICAMENTOS
    ================================================ */
-
-/* Indicador de posição na sequência de swipe. Necessário porque a view de
-   Medicamentos não tem botão na barra de navegação. */
-.view-pager { display: flex; justify-content: center; gap: 6px; margin-bottom: 14px; }
-.view-pager-dot {
-  width: 5px; height: 5px; border-radius: 50%;
-  background: var(--border);
-  transition: var(--transition);
-}
-.view-pager-dot.ativo { width: 16px; border-radius: 3px; background: var(--primary); }
 
 .med-secao-titulo {
   font-size: 13px; font-weight: 600; color: var(--text-muted);
