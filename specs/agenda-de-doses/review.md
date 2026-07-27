@@ -58,6 +58,19 @@ Tarefas 1 a 5 do `tasks.md`.
 - **Armadilha evitada na Tarefa 2**: `salvarMedicamento()` monta o objeto do zero, então `dosesExcecoes` precisou ser explicitamente preservado — sem isso, editar qualquer campo do medicamento apagaria silenciosamente todas as marcações do usuário.
 - Nenhum bug funcional remanescente nos cenários testados.
 
+## 6.1 Correção de segurança posterior à primeira entrega
+
+Levantada pelo usuário ao ver a funcionalidade em uso: exibir uma dose numa data além da data de fim declarada é perigoso, porque o paciente pode tomar mais do que deveria.
+
+**Diagnóstico**: o risco não estava na 21ª dose em si — ela é prescrita, e cortá-la produziria 20 doses num tratamento de 21, o que também é dano (antibiótico interrompido antes do fim favorece resistência). O risco estava na **contradição**: o app dizia "Fim: 07/03" no campo e listava uma dose em 08/03 na grade. Quem lesse não teria como saber qual das duas afirmações vale, e poderia errar para qualquer um dos lados.
+
+**Correção** — eliminar a contradição, não a dose:
+1. `_recalcularDataFim()` passou a derivar a data de fim **da última dose gerada**, sempre que há horário. Para 8/8h por 7 dias a partir das 08:00, a data de fim agora é 08/03, coincidindo com a última dose. O texto de ajuda do campo passou a dizer "Data da última das 21 doses do tratamento".
+2. A **última dose ganhou marca visual própria** na grade, para não sugerir que a posologia continua no dia seguinte.
+3. O **total de doses** passou a vir com o convite a conferir contra a prescrição e a quantidade em mãos — checagem barata que também pega erro de digitação na posologia.
+
+**Verificação** (Chromium real): a data de fim coincide com a data da última dose em 8/8h (08/03, 21 doses), 12/12h (07/03, 14 doses) e 1x ao dia (07/03, 7 doses); sem horário, o cálculo por dia antigo é preservado; a trava de data manual continua valendo (fixada em 04/03, não recalculada ao mudar a duração para 10 dias); e a grade renderiza exatamente uma marca de "última".
+
 ## 7. Alterações fora do escopo
 
 Nenhuma. Nenhum arquivo fora dos previstos no `plan.md` foi tocado; `firestore.rules` não precisou mudar (os campos entram em documentos de `medications`, já cobertos).

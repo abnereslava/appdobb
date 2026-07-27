@@ -211,7 +211,7 @@
                 </div>
                 <div class="form-group">
                   <label class="form-label" for="medicamento-horario">Horário da 1ª dose</label>
-                  <input class="form-input" type="time" id="medicamento-horario" />
+                  <input class="form-input" type="time" id="medicamento-horario" oninput="_recalcularDataFim()" />
                 </div>
               </div>
               <p class="med-regime-ajuda">Com o horário preenchido, o app calcula e lista todas as doses do tratamento.</p>

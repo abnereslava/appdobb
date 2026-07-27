@@ -2273,24 +2273,53 @@ function _recalcularDataFim() {
 
   const inicio  = document.getElementById('medicamento-inicio')?.value;
   const duracao = parseInt(document.getElementById('medicamento-duracao')?.value, 10);
-  if (inicio && Number.isFinite(duracao) && duracao > 0) {
-    // duração de 7 dias começando no dia 1 termina no dia 7, daí o -1
-    fimEl.value = _addDias(inicio, duracao - 1);
+  if (!inicio || !Number.isFinite(duracao) || duracao <= 0) { _atualizarAjudaFim(); return; }
+
+  // Quando há grade de doses, a data de fim é a da ÚLTIMA DOSE — não o
+  // último dia de calendário. É questão de segurança: com 8/8h por 7 dias
+  // começando às 08:00, a 21ª e última dose cai às 00:00 do 8º dia. Marcar o
+  // fim no 7º faria o app dizer "terminou" e ainda assim listar uma dose no
+  // dia seguinte; quem lesse não saberia qual das duas informações vale, e
+  // poderia tanto tomar a mais quanto interromper o tratamento antes da hora.
+  const horario = document.getElementById('medicamento-horario')?.value;
+  if (horario) {
+    const doses = _gerarDoses({
+      regime: 'temporario',
+      dataInicio: inicio,
+      duracaoDias: duracao,
+      horarioInicio: horario,
+      frequenciaValor: parseFloat(document.getElementById('medicamento-freq-valor')?.value),
+      frequenciaUnidade: document.getElementById('medicamento-freq-unidade')?.value,
+      dataFimEditadaManualmente: false,
+    });
+    if (doses.length) {
+      fimEl.value = doses[doses.length - 1].data;
+      _atualizarAjudaFim(doses.length);
+      return;
+    }
   }
+
+  // Sem horário não há grade: cai na conta por dia (duração de 7 dias
+  // começando no dia 1 termina no dia 7, daí o -1).
+  fimEl.value = _addDias(inicio, duracao - 1);
   _atualizarAjudaFim();
 }
 
-function _atualizarAjudaFim() {
+function _atualizarAjudaFim(totalDoses) {
   const el = document.getElementById('med-fim-ajuda');
   if (!el) return;
   const manual = document.getElementById('medicamento-fim-manual')?.value === '1';
-  if (_medRegimeTemp === 'temporario') {
-    el.textContent = manual
-      ? 'Data de fim definida manualmente — não será mais recalculada pela duração.'
-      : 'Calculada a partir do início e da duração. Editar aqui fixa o valor.';
-  } else {
+  if (_medRegimeTemp !== 'temporario') {
     el.textContent = 'Deixe em branco enquanto estiver em uso.';
+    return;
   }
+  if (manual) {
+    el.textContent = 'Data de fim definida manualmente — não será mais recalculada pela duração.';
+    return;
+  }
+  el.textContent = totalDoses
+    ? `Data da última das ${totalDoses} doses do tratamento. Editar aqui fixa o valor.`
+    : 'Calculada a partir do início e da duração. Editar aqui fixa o valor.';
 }
 
 function _verificarAlergiaMedicamento() {
@@ -2443,12 +2472,15 @@ let _medDetalheAtual = null;
 let _doseSelecionada = null;
 let _diasPassadosAbertos = false;
 
-function _htmlDose(m, dose) {
+function _htmlDose(m, dose, ehUltima) {
   const exc = _excecaoDe(m, dose.quando);
   const cls = exc?.status === 'pulada' ? ' dose-pulada' : exc?.status === 'remarcada' ? ' dose-remarcada' : '';
   const extra = exc?.status === 'remarcada' && exc.horarioReal ? `<b>${esc(exc.horarioReal)}</b>` : '';
-  return `<button type="button" class="dose-chip${cls}" onclick="abrirAcaoDose('${dose.quando}')">
-      <span class="dose-hora">${esc(dose.hora)}</span>${extra}
+  // A última dose é marcada explicitamente: é o que impede alguém de achar
+  // que o tratamento continua no dia seguinte e tomar dose a mais.
+  const fim = ehUltima ? `<span class="dose-ultima">última</span>` : '';
+  return `<button type="button" class="dose-chip${cls}${ehUltima ? ' dose-chip-ultima' : ''}" onclick="abrirAcaoDose('${dose.quando}')">
+      <span class="dose-hora">${esc(dose.hora)}</span>${extra}${fim}
     </button>`;
 }
 
@@ -2469,10 +2501,11 @@ function _htmlAgendaDoses(m) {
   const passados = dias.filter(([data]) => data < hoje);
   const restantes = dias.filter(([data]) => data >= hoje);
 
+  const ultimaChave = doses[doses.length - 1].quando;
   const linhaDia = ([data, lista]) => `
     <div class="dose-dia${data === hoje ? ' dose-dia-hoje' : ''}">
       <div class="dose-dia-data">${formatarData(data)}${data === hoje ? ' · hoje' : ''}</div>
-      <div class="dose-chips">${lista.map(d => _htmlDose(m, d)).join('')}</div>
+      <div class="dose-chips">${lista.map(d => _htmlDose(m, d, d.quando === ultimaChave)).join('')}</div>
     </div>`;
 
   const nMarcadas = (m.dosesExcecoes || []).length;
@@ -2480,7 +2513,8 @@ function _htmlAgendaDoses(m) {
   return `
     <div class="detail-section">
       <div class="detail-label">Doses previstas</div>
-      <div class="dose-resumo">${doses.length} dose${doses.length > 1 ? 's' : ''}${nMarcadas ? ` · ${nMarcadas} marcada${nMarcadas > 1 ? 's' : ''}` : ''}</div>
+      <div class="dose-resumo">${doses.length} dose${doses.length > 1 ? 's' : ''} no total${nMarcadas ? ` · ${nMarcadas} marcada${nMarcadas > 1 ? 's' : ''}` : ''}</div>
+      <div class="dose-aviso-total">Confira se o total bate com o que foi prescrito e com a quantidade que você tem.</div>
       ${passados.length && !_diasPassadosAbertos
         ? `<button type="button" class="dose-toggle-passados" onclick="_alternarDiasPassados()">Mostrar ${passados.length} dia(s) anterior(es)</button>`
         : passados.map(linhaDia).join('')}
