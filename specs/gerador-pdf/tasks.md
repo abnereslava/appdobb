@@ -181,3 +181,33 @@ Abrir o modal do Histórico: conferir que só existe o nível Detalhado (ou que 
 ### Observações
 
 `node --check app.js` validado. Rasterização dos ícones via canvas/Image (SVG→PNG) por ausência de plugin SVG no jsPDF vendorizado; cache por categoria evita retrabalho em exportações repetidas. Teste manual no dispositivo real (navegador) ainda pendente neste ambiente — mesma pendência recorrente das iterações anteriores.
+
+## Tarefa 7 — Iteração 4: remove prévia, opção "Tudo", corrige bug dos ícones
+
+Status: Concluída
+
+### Objetivo
+
+Adicionar a opção "Tudo" ao filtro de período (virando o padrão do modal), remover a prévia por completo, trocar o modo "Ano" de lista de botões para campo numérico único, e corrigir o bug pelo qual os ícones de categoria da Tarefa 6 não apareciam de fato no PDF gerado.
+
+### Arquivos afetados
+
+- `index.html` (adiciona botão "Tudo"; remove o bloco de prévia)
+- `app.js` (`_pdfPeriodoModo` default `'tudo'`; `_pdfAnosDisponiveis` removida, modo Ano vira `<input type="number">`; `_atualizarPreviaPdf`/`_previaCampo`/`_previaItemEvento`/`_previaItemConsulta` removidas; `_pdfFotoCache` removida (e a busca de foto em `_pdfCabecalho` ajustada); `xmlns="http://www.w3.org/2000/svg"` adicionado à rasterização do ícone em `_pdfIconeCategoria`)
+- `style.css` (remove todo o bloco `.export-previa-*`)
+
+### Dependências
+
+Tarefas 1–6.
+
+### Critério de conclusão
+
+Critérios de aceite da seção 16 do spec.md: 4 modos de período com "Tudo" como padrão; modal sem prévia; modo Ano como campo único; ícone de categoria visível de fato no PDF (confirmado visualmente); combinações de filtro sem itens não travam.
+
+### Teste manual
+
+Abrir o modal: conferir que "Tudo" é o modo ativo por padrão e que não há mais nenhuma prévia; trocar para "Ano" e conferir que é um campo numérico, não uma lista; gerar um PDF e conferir visualmente que o ícone de categoria aparece ao lado da data de cada evento; testar uma categoria sem itens no mês/ano escolhido e confirmar que o PDF sai só com o cabeçalho, sem travar.
+
+### Observações
+
+Bug dos ícones raiz: SVG rasterizado como `data:image/svg+xml` sem `xmlns="http://www.w3.org/2000/svg"` falha silenciosamente ao carregar como `Image` standalone (diferente de quando inserido via `innerHTML`). Diagnosticado e corrigido com Chromium real via Playwright (instalado globalmente no ambiente, `NODE_PATH=/opt/node22/lib/node_modules`), não só o harness `vm` com stubs usado na Tarefa 6 — os stubs de canvas/Image não eram capazes de reproduzir essa falha. Validação incluiu: comparação visual antes/depois do fix para as 8 categorias, PDF real gerado e renderizado via PyMuPDF pra inspeção visual, e testes de filtro categoria+período sem itens correspondentes. Também corrigida, antes do commit, uma regressão introduzida pela própria remoção da prévia (`_pdfCabecalho` referenciando a `_pdfFotoCache` já removida).

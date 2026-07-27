@@ -1472,23 +1472,21 @@ function aplicarFiltroTipos() {
 
 /* ---------- Exportação em PDF (Histórico / Agenda) ---------- */
 
-let _pdfContexto    = null;        // 'eventos' | 'consultas'
-let _pdfCatsTemp    = [];          // categorias/tipos selecionados no modal
-let _pdfPeriodoModo = 'intervalo'; // 'intervalo' | 'mes' | 'ano'
-let _pdfDataInicio  = '';          // filtro de período — modo intervalo (YYYY-MM-DD)
+let _pdfContexto    = null;   // 'eventos' | 'consultas'
+let _pdfCatsTemp    = [];     // categorias/tipos selecionados no modal
+let _pdfPeriodoModo = 'tudo'; // 'tudo' | 'intervalo' | 'mes' | 'ano'
+let _pdfDataInicio  = '';     // filtro de período — modo intervalo (YYYY-MM-DD)
 let _pdfDataFim     = '';
-let _pdfMes         = '';          // filtro de período — modo mês (YYYY-MM)
-let _pdfAno         = '';          // filtro de período — modo ano (YYYY)
-let _pdfFotoCache   = null;        // dataURL da foto do perfil (buscada ao abrir)
+let _pdfMes         = '';     // filtro de período — modo mês (YYYY-MM)
+let _pdfAno         = '';     // filtro de período — modo ano (YYYY)
 
-async function abrirExportPdf(contexto) {
+function abrirExportPdf(contexto) {
   _pdfContexto    = contexto;
-  _pdfPeriodoModo = 'intervalo';
+  _pdfPeriodoModo = 'tudo';
   _pdfDataInicio  = '';
   _pdfDataFim     = '';
   _pdfMes         = '';
   _pdfAno         = '';
-  _pdfFotoCache   = null;
 
   // Pré-seleciona tudo que existe no cache do contexto
   if (contexto === 'eventos') {
@@ -1506,14 +1504,7 @@ async function abrirExportPdf(contexto) {
 
   _renderExportPdfLista();
   _renderExportPdfPeriodo();
-  _atualizarPreviaPdf();
   abrirModal('modal-export-pdf');
-
-  // Busca a foto local (assíncrona) e atualiza a prévia quando chegar
-  try {
-    _pdfFotoCache = profileIdAtivo ? await buscarAvatarLocal(profileIdAtivo) : null;
-    if (_pdfFotoCache) _atualizarPreviaPdf();
-  } catch (e) { /* segue sem foto */ }
 }
 
 function _renderExportPdfLista() {
@@ -1551,7 +1542,6 @@ function togglePdfCat(v) {
   const i = _pdfCatsTemp.indexOf(v);
   if (i === -1) _pdfCatsTemp.push(v); else _pdfCatsTemp.splice(i, 1);
   _renderExportPdfLista();
-  _atualizarPreviaPdf();
 }
 
 function setPdfPeriodoModo(modo) {
@@ -1561,26 +1551,23 @@ function setPdfPeriodoModo(modo) {
   _pdfMes         = '';
   _pdfAno         = '';
   _renderExportPdfPeriodo();
-  _atualizarPreviaPdf();
 }
 
 function setPdfData(qual, valor) {
   if (qual === 'inicio') _pdfDataInicio = valor || '';
   else                   _pdfDataFim    = valor || '';
   _atualizarPdfDataLimpar();
-  _atualizarPreviaPdf();
 }
 
 function setPdfMes(valor) {
   _pdfMes = valor || '';
   _atualizarPdfDataLimpar();
-  _atualizarPreviaPdf();
 }
 
 function setPdfAno(valor) {
-  _pdfAno = String(valor || '');
-  _renderExportPdfPeriodo();
-  _atualizarPreviaPdf();
+  const v = String(valor || '').trim();
+  _pdfAno = /^\d{4}$/.test(v) ? v : '';
+  _atualizarPdfDataLimpar();
 }
 
 function limparPdfPeriodo() {
@@ -1589,21 +1576,14 @@ function limparPdfPeriodo() {
   _pdfMes        = '';
   _pdfAno        = '';
   _renderExportPdfPeriodo();
-  _atualizarPreviaPdf();
-}
-
-// Anos presentes no cache do contexto ativo (mais recente primeiro), pra
-// alimentar os botões do modo "Ano". Sem dados: cai no ano atual.
-function _pdfAnosDisponiveis() {
-  const base = _pdfContexto === 'eventos' ? eventosCache : consultasCache;
-  const anos = [...new Set(base.map(x => x.data?.slice(0, 4)).filter(Boolean))].sort((a, b) => b.localeCompare(a));
-  return anos.length ? anos : [String(new Date().getFullYear())];
 }
 
 function _renderExportPdfPeriodo() {
+  const bT = document.getElementById('export-periodo-btn-tudo');
   const bI = document.getElementById('export-periodo-btn-intervalo');
   const bM = document.getElementById('export-periodo-btn-mes');
   const bA = document.getElementById('export-periodo-btn-ano');
+  if (bT) bT.classList.toggle('active', _pdfPeriodoModo === 'tudo');
   if (bI) bI.classList.toggle('active', _pdfPeriodoModo === 'intervalo');
   if (bM) bM.classList.toggle('active', _pdfPeriodoModo === 'mes');
   if (bA) bA.classList.toggle('active', _pdfPeriodoModo === 'ano');
@@ -1613,17 +1593,17 @@ function _renderExportPdfPeriodo() {
     if (_pdfPeriodoModo === 'mes') {
       cont.innerHTML = `<input type="month" class="form-input" id="export-mes" value="${_pdfMes}" onchange="setPdfMes(this.value)">`;
     } else if (_pdfPeriodoModo === 'ano') {
-      const anos = _pdfAnosDisponiveis();
-      cont.innerHTML = `<div class="export-periodo-anos">${anos.map(a =>
-        `<button type="button" class="filter-btn ${a === _pdfAno ? 'active' : ''}" onclick="setPdfAno('${a}')">${a}</button>`
-      ).join('')}</div>`;
-    } else {
+      const anoAtual = new Date().getFullYear();
+      cont.innerHTML = `<input type="number" class="form-input" id="export-ano" placeholder="Ex: ${anoAtual}" min="1900" max="${anoAtual}" value="${_pdfAno}" onchange="setPdfAno(this.value)">`;
+    } else if (_pdfPeriodoModo === 'intervalo') {
       cont.innerHTML = `
         <div class="export-periodo-intervalo">
           <input type="date" class="form-input" id="export-data-inicio" value="${_pdfDataInicio}" onchange="setPdfData('inicio', this.value)">
           <span class="export-periodo-ate">até</span>
           <input type="date" class="form-input" id="export-data-fim" value="${_pdfDataFim}" onchange="setPdfData('fim', this.value)">
         </div>`;
+    } else {
+      cont.innerHTML = '';
     }
   }
   _atualizarPdfDataLimpar();
@@ -1633,12 +1613,14 @@ function _atualizarPdfDataLimpar() {
   const btn = document.getElementById('export-data-limpar');
   const ativo = _pdfPeriodoModo === 'mes' ? !!_pdfMes
     : _pdfPeriodoModo === 'ano' ? !!_pdfAno
-    : !!(_pdfDataInicio || _pdfDataFim);
+    : _pdfPeriodoModo === 'intervalo' ? !!(_pdfDataInicio || _pdfDataFim)
+    : false;
   if (btn) btn.style.display = ativo ? '' : 'none';
 }
 
 // Traduz o modo de período ativo em { inicio, fim } (YYYY-MM-DD), usado
-// tanto pela prévia quanto pela geração do PDF.
+// pela geração do PDF. Modo "tudo" (e intervalo sem valores) devolve vazio,
+// ou seja, sem restrição de período.
 function _pdfPeriodoEfetivo() {
   if (_pdfPeriodoModo === 'mes' && _pdfMes) {
     const [ano, mes] = _pdfMes.split('-').map(Number);
@@ -1652,7 +1634,7 @@ function _pdfPeriodoEfetivo() {
 }
 
 // Itens selecionados (categoria/tipo + período), ordenados do mais recente
-// ao mais antigo. Compartilhado pela prévia e pela geração do PDF.
+// ao mais antigo.
 function _pdfItensSelecionados() {
   const ehEventos = _pdfContexto === 'eventos';
   const base  = ehEventos ? eventosCache : consultasCache;
@@ -1663,85 +1645,6 @@ function _pdfItensSelecionados() {
     .filter(x => (!inicio || x.data >= inicio) && (!fim || x.data <= fim))
     .slice()
     .sort((a, b) => b.data.localeCompare(a.data));
-}
-
-/* ----- Prévia (HTML que imita a folha impressa) ----- */
-
-function _atualizarPreviaPdf() {
-  const cont = document.getElementById('export-pdf-previa');
-  if (!cont) return;
-  const perfil = carregarPerfil();
-  if (!perfil) { cont.innerHTML = ''; return; }
-
-  const ehEventos = _pdfContexto === 'eventos';
-  const cor   = CORES_PERFIL[corDoPerfil(perfil)]?.hex || CORES_PERFIL.beige.hex;
-  const itens = _pdfItensSelecionados();
-  const amostra = itens.slice(0, 2);
-
-  const metaNasc = perfil.dataNascimento
-    ? `${calcularIdade(perfil.dataNascimento)}  ·  Nascimento: ${formatarData(perfil.dataNascimento)}`
-    : '';
-
-  const fotoHtml = _pdfFotoCache
-    ? `<img class="export-previa-foto" src="${_pdfFotoCache}" alt="" />`
-    : '';
-
-  const secTitulo = ehEventos ? 'Histórico de Saúde' : 'Agenda de Consultas';
-  const nItens = itens.length;
-  const unidade = ehEventos ? (nItens === 1 ? 'evento' : 'eventos') : (nItens === 1 ? 'consulta' : 'consultas');
-
-  const itensHtml = amostra.length
-    ? amostra.map(it => ehEventos ? _previaItemEvento(it, cor) : _previaItemConsulta(it, cor)).join('')
-    : `<div class="export-previa-vazio">Apenas os dados do perfil (nenhum item na seleção).</div>`;
-
-  const restante = itens.length - amostra.length;
-
-  cont.innerHTML = `
-    <div class="export-previa-head">
-      ${fotoHtml}
-      <div>
-        <div class="export-previa-nome">${esc(perfil.nomeCompleto || 'Perfil')}</div>
-        ${metaNasc ? `<div class="export-previa-meta">${esc(metaNasc)}</div>` : ''}
-      </div>
-    </div>
-    <div class="export-previa-rule" style="background:${cor};"></div>
-    <div class="export-previa-sec" style="color:${cor};">${secTitulo} (${nItens} ${unidade})</div>
-    ${itensHtml}
-    ${restante > 0 ? `<div class="export-previa-mais">+ ${restante} ${restante === 1 ? 'item' : 'itens'} no PDF completo…</div>` : ''}
-  `;
-}
-
-function _previaCampo(rotulo, valor) {
-  return `<div class="export-previa-campo"><b>${esc(rotulo)}:</b> ${esc(valor)}</div>`;
-}
-
-function _previaItemEvento(e, cor) {
-  const cat = CATEGORIAS[e.categoria] || CATEGORIAS.outro;
-  const chip = `<div class="export-previa-chip">
-      <span class="event-recent-icon icon-${e.categoria}" style="width:18px;height:18px;">${cat.icone}</span>
-      <span style="color:${cor};">${formatarData(e.data)}</span><span class="cat">  ·  ${esc(cat.label)}</span>
-    </div>`;
-  let campos = '';
-  if (e.descricao)            campos += _previaCampo('Descrição', e.descricao);
-  if (e.tratamento)           campos += _previaCampo('Tratamento', e.tratamento);
-  if (e.medico)               campos += _previaCampo('Médico', e.medico);
-  if (e.hospital)             campos += _previaCampo('Hospital / Posto', e.hospital);
-  if (e.medicamentos?.length) campos += _previaCampo('Medicamentos', e.medicamentos.join(', '));
-  if (e.custo)                campos += _previaCampo('Gasto', formatarDinheiro(parseFloat(e.custo)));
-  if (e.observacoes)          campos += _previaCampo('Observações', e.observacoes);
-  return `<div class="export-previa-item">${chip}<div class="export-previa-titulo">${esc(e.titulo)}</div>${campos}</div>`;
-}
-
-function _previaItemConsulta(c, cor) {
-  const tipo   = TIPOS_CONSULTA[c.tipo] || c.tipo || 'Consulta';
-  const status = { agendada: 'Agendada', realizada: 'Realizada', cancelada: 'Cancelada' }[c.status] || c.status || '';
-  const dataTxt = `${formatarData(c.data)}${c.hora ? ` às ${c.hora}` : ''}`;
-  const chip = `<div class="export-previa-chip"><span style="color:${cor};">${dataTxt}</span>${status ? `<span class="cat">  ·  ${esc(status)}</span>` : ''}</div>`;
-  let campos = '';
-  if (c.medico)      campos += _previaCampo('Médico', c.medico);
-  if (c.local)       campos += _previaCampo('Local', c.local);
-  if (c.observacoes) campos += _previaCampo('Observações', c.observacoes);
-  return `<div class="export-previa-item">${chip}<div class="export-previa-titulo">${esc(tipo)}</div>${campos}</div>`;
 }
 
 /* ----- Geração do PDF (jsPDF) ----- */
@@ -1792,7 +1695,7 @@ function _pdfIconeCategoria(catKey) {
       const estilo = preenchido
         ? 'fill="#ffffff" stroke="none"'
         : 'fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"';
-      const svg = cat.icone.replace('<svg ', `<svg width="${size}" height="${size}" ${estilo} `);
+      const svg = cat.icone.replace('<svg ', `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" ${estilo} `);
 
       const canvas = document.createElement('canvas');
       canvas.width = size; canvas.height = size;
@@ -1910,7 +1813,7 @@ async function _pdfCabecalho(doc, perfil) {
   // Foto do perfil (IndexedDB) — opcional; nunca impede a exportação
   let temFoto = false;
   try {
-    const foto = _pdfFotoCache ?? (profileIdAtivo ? await buscarAvatarLocal(profileIdAtivo) : null);
+    const foto = profileIdAtivo ? await buscarAvatarLocal(profileIdAtivo) : null;
     if (foto) {
       doc.addImage(foto, 'JPEG', m, y, 24, 24);
       doc.setDrawColor(..._PDF.accent); doc.setLineWidth(0.4);

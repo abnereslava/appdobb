@@ -141,3 +141,28 @@ O markup do filtro de período (`export-data-inicio`/`export-data-fim`) e da pr�
 - `node --check app.js` para sintaxe.
 - Revisão manual do fluxo de período (mês vira 1º/último dia corretamente, incluindo fevereiro; ano vira 01-01/12-31) e conferência de que nenhuma referência a `_pdfNivel`/"resumido" sobra no código.
 - Teste manual no navegador (pendente neste ambiente, igual às iterações anteriores): abrir o modal, alternar os 3 modos de período, conferir prévia com ícones, gerar PDF de fato e inspecionar visualmente os ícones de categoria no corpo.
+
+## 12. Iteração 4 — remove prévia, opção "Tudo", correção do bug dos ícones
+
+### Opção "Tudo" e revisão do modo "Ano"
+
+- `_pdfPeriodoModo` ganha o valor `'tudo'`, que passa a ser o padrão em `abrirExportPdf()` (era `'intervalo'`). Em `_pdfPeriodoEfetivo()`, o modo "tudo" não precisa de tratamento especial: como nenhum campo é preenchido nesse modo, ele cai no mesmo `return { inicio: _pdfDataInicio, fim: _pdfDataFim }` do modo intervalo vazio — ambos já significam "sem restrição".
+- Modo "Ano" deixa de gerar uma linha de botões por ano presente no cache (`_pdfAnosDisponiveis()`, removida) e passa a um único `<input type="number" min="1900" max="<ano atual>">`, no mesmo padrão do `<input type="month">` do modo Mês — evita uma lista que só cresce com o tempo de uso do app.
+
+### Remoção da prévia
+
+Removidos por completo: `_atualizarPreviaPdf()`, `_previaCampo()`, `_previaItemEvento()`, `_previaItemConsulta()`, o contêiner `#export-pdf-previa` do `index.html` e todo o bloco `.export-previa-*` do `style.css`. Como a única razão de existir do pré-carregamento da foto do perfil em `abrirExportPdf()` (`_pdfFotoCache`) era alimentar a prévia, essa variável e o `await buscarAvatarLocal(...)` antecipado também saem — `_pdfCabecalho()` volta a buscar a foto sob demanda no momento da geração (já tinha esse fallback, então o comportamento do PDF final não muda).
+
+### Correção do bug dos ícones (não apareciam no PDF)
+
+Diagnóstico feito com Chromium real via Playwright (não só o harness `vm` com stubs de canvas/Image usado na iteração 3 — que não conseguia detectar esse tipo de falha, já que os stubs sempre "davam certo"): o `<svg>` rasterizado como `data:image/svg+xml` e atribuído a `Image.src` precisa do atributo `xmlns="http://www.w3.org/2000/svg"` para ser reconhecido como documento SVG standalone pelo decodificador de imagem do navegador — diferente de quando o mesmo SVG é inserido via `innerHTML` numa página HTML (onde o parser tolera a ausência do atributo). Sem o `xmlns`, `img.onerror` disparava silenciosamente, `_pdfIconeCategoria` resolvia `null`, e a linha correspondente em `_pdfBloco` simplesmente pulava o desenho do ícone — sem lançar nenhum erro visível. Corrigido adicionando `xmlns="http://www.w3.org/2000/svg"` na string do SVG antes de virar `data:` URI.
+
+### Regressão própria corrigida antes do commit
+
+Ao remover a prévia, a variável `_pdfFotoCache` foi apagada, mas `_pdfCabecalho()` ainda a referenciava (`_pdfFotoCache ?? (...)`), o que quebraria toda geração de PDF com um `ReferenceError`. Encontrado por revisão de código antes de subir a mudança; corrigido trocando para busca direta da foto (`profileIdAtivo ? await buscarAvatarLocal(profileIdAtivo) : null`).
+
+### Estratégia de teste (iteração 4)
+
+- `node --check app.js`.
+- Chromium real via Playwright (não harness com stubs): rasterização das 8 categorias comparada lado a lado antes/depois do fix do `xmlns` (todas falhavam antes, todas funcionam depois); composição visual das badges conferida por inspeção de imagem; PDF real gerado com o jsPDF vendorizado e os ícones, página renderizada via PyMuPDF e inspecionada visualmente — ícone aparece corretamente ao lado da data de cada evento.
+- Cenários de filtro inválido/vazio testados com dados reais no navegador: categoria sem nenhum item no período escolhido (0 itens, PDF só com cabeçalho, sem erro) e categorias mistas onde só uma tem itens no período (retorna somente os itens da categoria válida) — ambos confirmados sem exceções.
