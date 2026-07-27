@@ -110,7 +110,12 @@ Demais pontos: nenhuma superfície nova de exposição — os dados ficam sob o 
 
 - `showView('medicamentos')` funciona sem alteração estrutural: a função já é tolerante à ausência do botão (`if (navBtn) navBtn.classList.add('active')`, `app.js:461`).
 
-- **Problema a resolver**: como não existe `#nav-medicamentos`, ao entrar na tela a barra fica com *nenhum* item destacado — o usuário perde a referência de onde está. Solução dentro da restrição do spec (sem ícone novo): a própria view recebe um **cabeçalho com título "Medicamentos" e um indicador de posição no swipe** (pontos/pager), padrão consagrado para telas navegadas por gesto. Esse indicador é exatamente o "indício visual" exigido pelo spec §4, e resolve os dois problemas de uma vez: sinaliza que a tela existe (quando visto de relance nas vizinhas) e informa onde se está (quando dentro dela).
+- **Por que não simplesmente adicionar um 6º botão**: medição no CSS atual — `.bottom-nav` usa `grid-template-columns: repeat(5, 1fr)` com `max-width: 480px` e rótulo de `font-size: 9px`. Com 6 colunas, cada uma cairia para ~80px no máximo e ~60px num aparelho de 360px de largura; "Medicamentos" (12 caracteres) não cabe legível nesse espaço, e "Calendário" já é o limite hoje. A restrição de espaço do spec se confirma na prática.
+
+- **Problema a resolver**: como não existe `#nav-medicamentos`, ao entrar na tela a barra fica com *nenhum* item destacado — o usuário perde a referência de onde está. Três medidas combinadas, todas sem custo de espaço na nav:
+  1. **Porta de entrada tocável no cabeçalho do Histórico** — um botão ao lado dos que já existem lá (toggle de visualização e exportar PDF), seguindo o mesmo padrão `btn-ghost btn-sm`. Dá um caminho descobrível e acessível por toque, sem depender de o usuário conhecer o gesto, e reforça a relação semântica "Histórico de Saúde → Medicamentos".
+  2. **Estado "relacionado" no `nav-timeline`** quando a view ativa for `medicamentos` — a barra deixa de ficar completamente apagada e comunica "você está na área do Histórico". Implementado como uma classe própria (`nav-btn-contexto`), visualmente mais fraca que `.active` para não mentir dizendo que se está na aba Histórico.
+  3. **Cabeçalho próprio na view** com o título "Medicamentos" e um indicador de posição no swipe (pager), padrão consagrado para telas navegadas por gesto — é o "indício visual" exigido pelo spec §4.
 
 - `showView` ganha `'medicamentos'` na guarda de `!temPerfil` (`app.js:449`), junto de timeline/agenda/calendario.
 

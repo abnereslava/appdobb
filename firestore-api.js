@@ -146,6 +146,33 @@ window._db = {
     await updateDoc(doc(db, 'profiles', profileId), { consultationCount: increment(-1), updatedAt: serverTimestamp() });
   },
 
+  /* ---------- Medicamentos ---------- */
+
+  async listarMedicamentos(profileId) {
+    const snap = await getDocs(collection(db, 'profiles', profileId, 'medications'));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  },
+
+  async carregarMedicamento(profileId, medicamentoId) {
+    const snap = await getDoc(doc(db, 'profiles', profileId, 'medications', medicamentoId));
+    return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+  },
+
+  // Sem contador no documento do perfil: medicamentos não aparecem no seletor
+  // de perfis (ao contrário de eventos/consultas), então um contador só
+  // adicionaria uma escrita extra e uma chance de dessincronizar.
+  async salvarMedicamento(profileId, medicamento) {
+    const { id, ...dados } = medicamento;
+    await setDoc(doc(db, 'profiles', profileId, 'medications', id), {
+      ...dados,
+      updatedAt: serverTimestamp(),
+    });
+  },
+
+  async excluirMedicamento(profileId, medicamentoId) {
+    await deleteDoc(doc(db, 'profiles', profileId, 'medications', medicamentoId));
+  },
+
   /* ---------- Multi-perfil ---------- */
 
   async criarNovoPerfil(email, novoProfileId, uid, idsExistentes = []) {
@@ -260,6 +287,16 @@ window._db = {
     return onSnapshot(collection(db, 'profiles', profileId, 'consultations'), snap => {
       onChange(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
+  },
+
+  // Recebe também um callback de erro: a tela de medicamentos precisa sair do
+  // estado de carregamento mesmo se a leitura falhar (ver plan.md §6.2).
+  subscribeMedicamentos(profileId, onChange, onError) {
+    return onSnapshot(
+      collection(db, 'profiles', profileId, 'medications'),
+      snap => onChange(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      err => { if (onError) onError(err); }
+    );
   },
 
   aguardarSync() {

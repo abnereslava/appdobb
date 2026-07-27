@@ -115,6 +115,16 @@ service cloud.firestore {
         allow create, update: if isAdmin() || canUse(profileId, 'agenda', 'write');
         allow delete: if isAdmin() || canUse(profileId, 'agenda', 'delete');
       }
+
+      // Medicamentos reutilizam a permissão 'historico' de propósito: criar um
+      // recurso novo em permissions exigiria migrar todos os documentos de
+      // accessIndex já existentes — canUse() acessa permissions[recurso][acao],
+      // e uma chave ausente faz a regra errar e negar o acesso.
+      match /medications/{medicationId} {
+        allow read: if isAdmin() || canUse(profileId, 'historico', 'read');
+        allow create, update: if isAdmin() || canUse(profileId, 'historico', 'write');
+        allow delete: if isAdmin() || canUse(profileId, 'historico', 'delete');
+      }
     }
 
     match /{document=**} {

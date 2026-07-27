@@ -405,6 +405,11 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
 .nav-btn.active span { font-weight: 700; }
 
 /* Botão "+" do nav — círculo centralizado em sua coluna */
+/* Estado de contexto: usado no botão Histórico enquanto a view Medicamentos
+   (que não tem botão próprio na nav) está ativa. Deliberadamente mais fraco
+   que .active, para indicar proximidade sem afirmar que a aba está aberta. */
+.nav-btn-contexto { color: var(--primary); opacity: 0.55; }
+
 .nav-fab {
   width: 48px;
   height: 48px;
@@ -1076,6 +1081,72 @@ h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; line-height: 1.3; 
 .export-periodo-ate { font-size: 13px; color: var(--text-muted); flex-shrink: 0; }
 .export-periodo-anos { display: flex; flex-wrap: wrap; gap: 8px; }
 .export-periodo-anos .filter-btn { flex: 0 0 auto; }
+
+/* ================================================
+   MEDICAMENTOS
+   ================================================ */
+
+/* Indicador de posição na sequência de swipe. Necessário porque a view de
+   Medicamentos não tem botão na barra de navegação. */
+.view-pager { display: flex; justify-content: center; gap: 6px; margin-bottom: 14px; }
+.view-pager-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--border);
+  transition: var(--transition);
+}
+.view-pager-dot.ativo { width: 16px; border-radius: 3px; background: var(--primary); }
+
+.med-secao-titulo {
+  font-size: 13px; font-weight: 600; color: var(--text-muted);
+  margin: 18px 0 8px; display: flex; align-items: center; gap: 6px;
+}
+.med-secao-titulo:first-of-type { margin-top: 4px; }
+.med-secao-n {
+  font-size: 11px; font-weight: 600; color: var(--text-muted);
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 10px; padding: 1px 7px;
+}
+
+.med-lista { display: flex; flex-direction: column; gap: 8px; }
+.med-card {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  padding: 12px 14px; border-radius: var(--radius-md);
+  background: var(--bg-card); border: 1px solid var(--border);
+  color: var(--text); cursor: pointer; transition: var(--transition);
+}
+.med-card-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.med-card-topo { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.med-card-nome { font-size: 14px; font-weight: 600; }
+.med-card-dose { font-size: 12px; color: var(--text-muted); }
+.med-card-meta { font-size: 12px; color: var(--text-muted); }
+
+.med-badge {
+  flex-shrink: 0; font-size: 10px; font-weight: 600;
+  padding: 3px 9px; border-radius: 10px; white-space: nowrap;
+}
+.med-badge-uso { background: var(--primary-light); color: var(--primary-dark); }
+.med-badge-fim { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+
+.med-detalhe-icone {
+  width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+  background: var(--primary); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+}
+.med-detalhe-icone svg { width: 20px; height: 20px; }
+
+/* Seletor de regime de uso no formulário */
+.med-regime { display: flex; flex-wrap: wrap; gap: 6px; }
+.med-regime .filter-btn { flex: 1 1 auto; justify-content: center; text-align: center; }
+.med-regime-ajuda { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.45; }
+
+/* Aviso de alergia — informativo, nunca bloqueia o cadastro */
+.med-aviso-alergia {
+  margin-top: 8px; padding: 9px 11px; border-radius: var(--radius-md);
+  background: rgba(192, 57, 43, 0.09); border: 1px solid rgba(192, 57, 43, 0.28);
+  font-size: 12.5px; line-height: 1.45; color: var(--text);
+}
+
+.med-vinculo { font-size: 12.5px; color: var(--text-muted); }
 
 /* Busca */
 .search-box { position: relative; margin-bottom: 12px; }
