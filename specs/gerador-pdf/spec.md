@@ -127,3 +127,20 @@ Notas de implementação:
 - [x] Acento na cor do perfil aplicado com moderação (cabeçalho, seções, datas).
 - [x] Prévia ao vivo no modal refletindo categorias/tipos, nível e período.
 - [x] Filtro por período (início/fim) restringe os itens exportados; botão de limpar.
+
+## 15. Iteração 3 — remover nível resumido, período avançado (mês/ano) e ícones de categoria
+
+Ajustes solicitados após a iteração 2. Durante a análise para implementá-los, foi identificado que o markup (`index.html`) e o CSS (`style.css`) do filtro de período e da prévia da iteração 2 nunca haviam sido commitados — só a lógica em `app.js` existia, então o recurso estava inoperante no app publicado, apesar de `tasks.md`/`review.md` registrarem a tarefa como concluída. Essa lacuna é corrigida nesta iteração, como pré-requisito para os itens 2 e 3 abaixo.
+
+1. **Remover o nível "Resumido"**: a exportação passa a ter apenas o nível Detalhado (que já era o padrão) — sem seletor de nível no modal.
+2. **Filtro por data ampliado**: além do intervalo (data inicial/final, já existente na iteração 2), o usuário pode filtrar por **mês específico** ou **ano específico**. Os três modos são mutuamente exclusivos (um seletor de modo no modal); trocar de modo limpa a seleção anterior.
+3. **Ícones de categoria no corpo do PDF**: cada evento do Histórico exibe, ao lado da data, o mesmo ícone de categoria usado no restante do app (badge circular colorido com a silhueta branca do ícone Lucide correspondente). Como a Agenda de Consultas não tem ícones por tipo hoje (só rótulo de texto), este item não se aplica a ela.
+
+### Critérios de aceite (iteração 3)
+
+- [x] Modal de exportação não oferece mais a opção "Resumido"; toda exportação sai no nível Detalhado.
+- [x] Modal permite escolher entre filtrar por Intervalo, Mês ou Ano (um por vez), com opção de limpar o filtro.
+- [x] PDF do Histórico e a prévia respeitam o filtro de período escolhido em qualquer um dos três modos.
+- [x] Itens de evento no PDF exibem o ícone da categoria (mesmo desenho e cor de destaque usados no resto do app) ao lado da data.
+- [x] Prévia do modal reflete os mesmos ícones de categoria.
+- [x] Filtro/prévia de período voltam a funcionar de fato no app publicado (correção da lacuna da iteração 2).

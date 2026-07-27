@@ -150,3 +150,34 @@ Abrir o modal em cada aba; alternar nível e ver a prévia mudar; marcar/desmarc
 ### Observações
 
 Validado via harness Node com o jsPDF real (12 → 4 itens ao aplicar período) e inspeção visual da 1ª página renderizada. Prévia usa HTML (não PDF embutido) por robustez no mobile.
+
+## Tarefa 6 — Iteração 3: remove resumido, período mês/ano, ícones de categoria (e corrige markup faltante da Tarefa 5)
+
+Status: Concluída
+
+### Objetivo
+
+Remover o nível "Resumido" (fica só Detalhado), estender o filtro de período para Intervalo/Mês/Ano, adicionar ícones de categoria ao corpo do PDF do Histórico, e — pré-requisito descoberto durante a análise — commitar o markup/CSS do filtro de período e da prévia da Tarefa 5, que nunca haviam entrado em `index.html`/`style.css`.
+
+### Arquivos afetados
+
+- `index.html` (remove bloco de nível; adiciona campos de período nos 3 modos + contêiner `export-pdf-previa`)
+- `app.js` (remove `_pdfNivel`/`setPdfNivel`/`_renderExportPdfNivel` e ramos "resumido"; novo `_pdfPeriodoModo`/`_pdfMes`/`_pdfAno`/`_pdfPeriodoEfetivo`/`setPdfPeriodoModo`/`setPdfMes`/`setPdfAno`/`limparPdfPeriodo`/`_pdfAnosDisponiveis`; `_PDF_CAT_COR`/`_pdfRasterizarIcone`/`_pdfIconeCategoria`/`_pdfIconesCache`; `_pdfBloco` com suporte a linha com `icone`; `_pdfLinhasEvento` recebendo ícones pré-calculados; ícone na prévia)
+- `style.css` (remove `.export-nivel`; adiciona `.export-periodo-*` e `.export-previa-*`)
+- `sw.js` (bump v24 → v25)
+
+### Dependências
+
+Tarefas 1–5.
+
+### Critério de conclusão
+
+Critérios de aceite da seção 15 do spec.md: sem opção Resumido no modal; período funcionando nos 3 modos (prévia e PDF); ícone de categoria visível em cada evento do corpo do PDF e na prévia.
+
+### Teste manual
+
+Abrir o modal do Histórico: conferir que só existe o nível Detalhado (ou que o seletor de nível sumiu); alternar Intervalo/Mês/Ano e ver a prévia mudar a contagem de itens em cada modo; gerar o PDF e conferir visualmente o ícone de categoria ao lado da data de cada evento.
+
+### Observações
+
+`node --check app.js` validado. Rasterização dos ícones via canvas/Image (SVG→PNG) por ausência de plugin SVG no jsPDF vendorizado; cache por categoria evita retrabalho em exportações repetidas. Teste manual no dispositivo real (navegador) ainda pendente neste ambiente — mesma pendência recorrente das iterações anteriores.

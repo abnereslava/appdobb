@@ -1472,19 +1472,23 @@ function aplicarFiltroTipos() {
 
 /* ---------- Exportação em PDF (Histórico / Agenda) ---------- */
 
-let _pdfContexto   = null;        // 'eventos' | 'consultas'
-let _pdfCatsTemp   = [];          // categorias/tipos selecionados no modal
-let _pdfNivel      = 'detalhado'; // 'resumido' | 'detalhado'
-let _pdfDataInicio = '';          // filtro de período (YYYY-MM-DD)
-let _pdfDataFim    = '';
-let _pdfFotoCache  = null;        // dataURL da foto do perfil (buscada ao abrir)
+let _pdfContexto    = null;        // 'eventos' | 'consultas'
+let _pdfCatsTemp    = [];          // categorias/tipos selecionados no modal
+let _pdfPeriodoModo = 'intervalo'; // 'intervalo' | 'mes' | 'ano'
+let _pdfDataInicio  = '';          // filtro de período — modo intervalo (YYYY-MM-DD)
+let _pdfDataFim     = '';
+let _pdfMes         = '';          // filtro de período — modo mês (YYYY-MM)
+let _pdfAno         = '';          // filtro de período — modo ano (YYYY)
+let _pdfFotoCache   = null;        // dataURL da foto do perfil (buscada ao abrir)
 
 async function abrirExportPdf(contexto) {
-  _pdfContexto   = contexto;
-  _pdfNivel      = 'detalhado';
-  _pdfDataInicio = '';
-  _pdfDataFim    = '';
-  _pdfFotoCache  = null;
+  _pdfContexto    = contexto;
+  _pdfPeriodoModo = 'intervalo';
+  _pdfDataInicio  = '';
+  _pdfDataFim     = '';
+  _pdfMes         = '';
+  _pdfAno         = '';
+  _pdfFotoCache   = null;
 
   // Pré-seleciona tudo que existe no cache do contexto
   if (contexto === 'eventos') {
@@ -1500,14 +1504,8 @@ async function abrirExportPdf(contexto) {
     ? 'Escolha as categorias de evento que deseja incluir no relatório.'
     : 'Escolha os tipos de consulta que deseja incluir no relatório.';
 
-  const iIni = document.getElementById('export-data-inicio');
-  const iFim = document.getElementById('export-data-fim');
-  if (iIni) iIni.value = '';
-  if (iFim) iFim.value = '';
-
   _renderExportPdfLista();
-  _renderExportPdfNivel();
-  _atualizarPdfDataLimpar();
+  _renderExportPdfPeriodo();
   _atualizarPreviaPdf();
   abrirModal('modal-export-pdf');
 
@@ -1556,17 +1554,14 @@ function togglePdfCat(v) {
   _atualizarPreviaPdf();
 }
 
-function setPdfNivel(n) {
-  _pdfNivel = n;
-  _renderExportPdfNivel();
+function setPdfPeriodoModo(modo) {
+  _pdfPeriodoModo = modo;
+  _pdfDataInicio  = '';
+  _pdfDataFim     = '';
+  _pdfMes         = '';
+  _pdfAno         = '';
+  _renderExportPdfPeriodo();
   _atualizarPreviaPdf();
-}
-
-function _renderExportPdfNivel() {
-  const bR = document.getElementById('export-nivel-resumido');
-  const bD = document.getElementById('export-nivel-detalhado');
-  if (bR) bR.classList.toggle('active', _pdfNivel === 'resumido');
-  if (bD) bD.classList.toggle('active', _pdfNivel === 'detalhado');
 }
 
 function setPdfData(qual, valor) {
@@ -1576,20 +1571,84 @@ function setPdfData(qual, valor) {
   _atualizarPreviaPdf();
 }
 
-function limparPdfData() {
-  _pdfDataInicio = '';
-  _pdfDataFim    = '';
-  const iIni = document.getElementById('export-data-inicio');
-  const iFim = document.getElementById('export-data-fim');
-  if (iIni) iIni.value = '';
-  if (iFim) iFim.value = '';
+function setPdfMes(valor) {
+  _pdfMes = valor || '';
   _atualizarPdfDataLimpar();
   _atualizarPreviaPdf();
 }
 
+function setPdfAno(valor) {
+  _pdfAno = String(valor || '');
+  _renderExportPdfPeriodo();
+  _atualizarPreviaPdf();
+}
+
+function limparPdfPeriodo() {
+  _pdfDataInicio = '';
+  _pdfDataFim    = '';
+  _pdfMes        = '';
+  _pdfAno        = '';
+  _renderExportPdfPeriodo();
+  _atualizarPreviaPdf();
+}
+
+// Anos presentes no cache do contexto ativo (mais recente primeiro), pra
+// alimentar os botões do modo "Ano". Sem dados: cai no ano atual.
+function _pdfAnosDisponiveis() {
+  const base = _pdfContexto === 'eventos' ? eventosCache : consultasCache;
+  const anos = [...new Set(base.map(x => x.data?.slice(0, 4)).filter(Boolean))].sort((a, b) => b.localeCompare(a));
+  return anos.length ? anos : [String(new Date().getFullYear())];
+}
+
+function _renderExportPdfPeriodo() {
+  const bI = document.getElementById('export-periodo-btn-intervalo');
+  const bM = document.getElementById('export-periodo-btn-mes');
+  const bA = document.getElementById('export-periodo-btn-ano');
+  if (bI) bI.classList.toggle('active', _pdfPeriodoModo === 'intervalo');
+  if (bM) bM.classList.toggle('active', _pdfPeriodoModo === 'mes');
+  if (bA) bA.classList.toggle('active', _pdfPeriodoModo === 'ano');
+
+  const cont = document.getElementById('export-periodo-campos');
+  if (cont) {
+    if (_pdfPeriodoModo === 'mes') {
+      cont.innerHTML = `<input type="month" class="form-input" id="export-mes" value="${_pdfMes}" onchange="setPdfMes(this.value)">`;
+    } else if (_pdfPeriodoModo === 'ano') {
+      const anos = _pdfAnosDisponiveis();
+      cont.innerHTML = `<div class="export-periodo-anos">${anos.map(a =>
+        `<button type="button" class="filter-btn ${a === _pdfAno ? 'active' : ''}" onclick="setPdfAno('${a}')">${a}</button>`
+      ).join('')}</div>`;
+    } else {
+      cont.innerHTML = `
+        <div class="export-periodo-intervalo">
+          <input type="date" class="form-input" id="export-data-inicio" value="${_pdfDataInicio}" onchange="setPdfData('inicio', this.value)">
+          <span class="export-periodo-ate">até</span>
+          <input type="date" class="form-input" id="export-data-fim" value="${_pdfDataFim}" onchange="setPdfData('fim', this.value)">
+        </div>`;
+    }
+  }
+  _atualizarPdfDataLimpar();
+}
+
 function _atualizarPdfDataLimpar() {
   const btn = document.getElementById('export-data-limpar');
-  if (btn) btn.style.display = (_pdfDataInicio || _pdfDataFim) ? '' : 'none';
+  const ativo = _pdfPeriodoModo === 'mes' ? !!_pdfMes
+    : _pdfPeriodoModo === 'ano' ? !!_pdfAno
+    : !!(_pdfDataInicio || _pdfDataFim);
+  if (btn) btn.style.display = ativo ? '' : 'none';
+}
+
+// Traduz o modo de período ativo em { inicio, fim } (YYYY-MM-DD), usado
+// tanto pela prévia quanto pela geração do PDF.
+function _pdfPeriodoEfetivo() {
+  if (_pdfPeriodoModo === 'mes' && _pdfMes) {
+    const [ano, mes] = _pdfMes.split('-').map(Number);
+    const ultimoDia = new Date(ano, mes, 0).getDate();
+    return { inicio: `${_pdfMes}-01`, fim: `${_pdfMes}-${String(ultimoDia).padStart(2, '0')}` };
+  }
+  if (_pdfPeriodoModo === 'ano' && _pdfAno) {
+    return { inicio: `${_pdfAno}-01-01`, fim: `${_pdfAno}-12-31` };
+  }
+  return { inicio: _pdfDataInicio, fim: _pdfDataFim };
 }
 
 // Itens selecionados (categoria/tipo + período), ordenados do mais recente
@@ -1598,9 +1657,10 @@ function _pdfItensSelecionados() {
   const ehEventos = _pdfContexto === 'eventos';
   const base  = ehEventos ? eventosCache : consultasCache;
   const chave = ehEventos ? (x => x.categoria) : (x => x.tipo || 'outro');
+  const { inicio, fim } = _pdfPeriodoEfetivo();
   return base
     .filter(x => _pdfCatsTemp.includes(chave(x)))
-    .filter(x => (!_pdfDataInicio || x.data >= _pdfDataInicio) && (!_pdfDataFim || x.data <= _pdfDataFim))
+    .filter(x => (!inicio || x.data >= inicio) && (!fim || x.data <= fim))
     .slice()
     .sort((a, b) => b.data.localeCompare(a.data));
 }
@@ -1657,11 +1717,10 @@ function _previaCampo(rotulo, valor) {
 
 function _previaItemEvento(e, cor) {
   const cat = CATEGORIAS[e.categoria] || CATEGORIAS.outro;
-  const chip = `<div class="export-previa-chip"><span style="color:${cor};">${formatarData(e.data)}</span><span class="cat">  ·  ${esc(cat.label)}</span></div>`;
-  if (_pdfNivel === 'resumido') {
-    const extra = e.medico ? `  ·  ${esc(e.medico)}` : '';
-    return `<div class="export-previa-item">${chip}<div class="export-previa-titulo">${esc(e.titulo)}${extra}</div></div>`;
-  }
+  const chip = `<div class="export-previa-chip">
+      <span class="event-recent-icon icon-${e.categoria}" style="width:18px;height:18px;">${cat.icone}</span>
+      <span style="color:${cor};">${formatarData(e.data)}</span><span class="cat">  ·  ${esc(cat.label)}</span>
+    </div>`;
   let campos = '';
   if (e.descricao)            campos += _previaCampo('Descrição', e.descricao);
   if (e.tratamento)           campos += _previaCampo('Tratamento', e.tratamento);
@@ -1678,10 +1737,6 @@ function _previaItemConsulta(c, cor) {
   const status = { agendada: 'Agendada', realizada: 'Realizada', cancelada: 'Cancelada' }[c.status] || c.status || '';
   const dataTxt = `${formatarData(c.data)}${c.hora ? ` às ${c.hora}` : ''}`;
   const chip = `<div class="export-previa-chip"><span style="color:${cor};">${dataTxt}</span>${status ? `<span class="cat">  ·  ${esc(status)}</span>` : ''}</div>`;
-  if (_pdfNivel === 'resumido') {
-    const extra = c.medico ? `  ·  ${esc(c.medico)}` : '';
-    return `<div class="export-previa-item">${chip}<div class="export-previa-titulo">${esc(tipo)}${extra}</div></div>`;
-  }
   let campos = '';
   if (c.medico)      campos += _previaCampo('Médico', c.medico);
   if (c.local)       campos += _previaCampo('Local', c.local);
@@ -1705,6 +1760,63 @@ function _hexRgb(hex) {
 }
 
 const _pdfLh = s => s * 0.42 + 1.6; // altura de linha (mm) por tamanho de fonte
+
+// Mesmas cores de destaque usadas nos badges de categoria em style.css
+// (.event-recent-icon.icon-<categoria>), pro fundo do ícone rasterizado no PDF.
+const _PDF_CAT_COR = {
+  doenca:   '#e05c5c',
+  acidente: '#e07a3a',
+  alergia:  '#c9960a',
+  cirurgia: '#8b54c8',
+  dentes:   '#5b6cce',
+  exames:   '#1499a8',
+  vacina:   '#2ea87a',
+  outro:    '#8a8a9a',
+};
+
+// jsPDF vendorizado não tem plugin de SVG, então os ícones de categoria
+// (SVG inline) são rasterizados uma vez em PNG via <canvas>: círculo com a
+// cor da categoria + o ícone em branco por cima. Cache por categoria guarda
+// a Promise, evitando retrabalho em exportações repetidas na mesma sessão.
+let _pdfIconesCache = {};
+
+function _pdfIconeCategoria(catKey) {
+  if (_pdfIconesCache[catKey]) return _pdfIconesCache[catKey];
+  const cat = CATEGORIAS[catKey] || CATEGORIAS.outro;
+  const cor = _PDF_CAT_COR[catKey] || _PDF_CAT_COR.outro;
+
+  const promise = new Promise((resolve) => {
+    try {
+      const size = 96;
+      const preenchido = cat.icone.includes('category-icon-fill');
+      const estilo = preenchido
+        ? 'fill="#ffffff" stroke="none"'
+        : 'fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"';
+      const svg = cat.icone.replace('<svg ', `<svg width="${size}" height="${size}" ${estilo} `);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = cor;
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      const img = new Image();
+      img.onload = () => {
+        const pad = size * 0.24;
+        ctx.drawImage(img, pad, pad, size - pad * 2, size - pad * 2);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      img.onerror = () => resolve(null);
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    } catch (e) {
+      resolve(null);
+    }
+  });
+  _pdfIconesCache[catKey] = promise;
+  return promise;
+}
 
 // Quebra "Rótulo: valor" com rótulo em negrito e valor normal, respeitando a
 // largura útil (primeira linha começa após o rótulo; continuações alinham à
@@ -1745,8 +1857,9 @@ function _pdfAltLinha(l) {
 
 // Desenha um bloco atômico [{...}] com quebra de página: se o bloco inteiro
 // não couber, vai pra próxima página; blocos maiores que uma página são
-// paginados linha a linha. Linhas aceitam: {txt|segs, size, bold, cor, gap, x}
-// ou {regua:true, cor, w, gap}.
+// paginados linha a linha. Linhas aceitam: {txt|segs, size, bold, cor, gap, x, icone}
+// ou {regua:true, cor, w, gap}. `icone` (dataURL PNG) é desenhado antes do
+// texto da linha, deslocando o início do texto.
 function _pdfBloco(doc, y, linhas) {
   const limite = _PDF.altura - _PDF.margem;
   const alturaTotal = linhas.reduce((a, l) => a + _pdfAltLinha(l), 0);
@@ -1767,8 +1880,13 @@ function _pdfBloco(doc, y, linhas) {
     if (y + _pdfLh(l.size) > limite) { doc.addPage(); y = _PDF.margem; }
     doc.setFontSize(l.size);
     const baseY = y + l.size * 0.35;
+    let x = l.x ?? _PDF.margem;
+    if (l.icone) {
+      const tam = _pdfLh(l.size) * 0.85;
+      try { doc.addImage(l.icone, 'PNG', x, y - (tam - _pdfLh(l.size)) / 2, tam, tam); } catch (e) { /* segue sem ícone */ }
+      x += tam + 1.6;
+    }
     if (l.segs) {
-      let x = l.x ?? _PDF.margem;
       for (const s of l.segs) {
         doc.setFont('helvetica', s.bold ? 'bold' : 'normal');
         doc.setTextColor(...(s.cor || l.cor || _PDF.texto));
@@ -1778,7 +1896,7 @@ function _pdfBloco(doc, y, linhas) {
     } else {
       doc.setFont('helvetica', l.bold ? 'bold' : 'normal');
       doc.setTextColor(...(l.cor || _PDF.texto));
-      doc.text(l.txt, l.x ?? _PDF.margem, baseY);
+      doc.text(l.txt, x, baseY);
     }
     y += _pdfLh(l.size) + (l.gap || 0);
   }
@@ -1843,25 +1961,21 @@ async function _pdfCabecalho(doc, perfil) {
   return y + 7;
 }
 
-function _pdfLinhasEvento(doc, e, primeiro) {
+function _pdfLinhasEvento(doc, e, primeiro, icones) {
   const cat = CATEGORIAS[e.categoria] || CATEGORIAS.outro;
   const linhas = [];
   if (!primeiro) linhas.push({ regua: true, cor: _PDF.linhaClara, gap: 3 });
 
-  // Data (na cor do perfil) + categoria, antes do título
+  // Data (na cor do perfil) + categoria, antes do título; ícone da
+  // categoria (rasterizado previamente) ao lado, quando disponível.
   linhas.push({
     size: 8.5, gap: 0.6,
+    icone: icones?.[e.categoria] || null,
     segs: [
       { txt: formatarData(e.data), bold: true, cor: _PDF.accent },
       { txt: `   ${cat.label}`, bold: false, cor: _PDF.suave },
     ],
   });
-
-  if (_pdfNivel === 'resumido') {
-    const extra = e.medico ? `  ·  ${e.medico}` : '';
-    linhas.push({ txt: `${e.titulo}${extra}`, size: 10.5, bold: true, gap: 1 });
-    return linhas;
-  }
 
   linhas.push({ txt: e.titulo, size: 12, bold: true, gap: 1 });
   if (e.descricao)             linhas.push(..._pdfCampo(doc, 'Descrição', e.descricao));
@@ -1890,12 +2004,6 @@ function _pdfLinhasConsulta(doc, c, primeiro) {
     ],
   });
 
-  if (_pdfNivel === 'resumido') {
-    const extra = c.medico ? `  ·  ${c.medico}` : '';
-    linhas.push({ txt: `${tipo}${extra}`, size: 10.5, bold: true, gap: 1 });
-    return linhas;
-  }
-
   linhas.push({ txt: tipo, size: 12, bold: true, gap: 1 });
   if (c.medico)      linhas.push(..._pdfCampo(doc, 'Médico', c.medico));
   if (c.local)       linhas.push(..._pdfCampo(doc, 'Local', c.local));
@@ -1918,6 +2026,14 @@ async function gerarPdfExport() {
     const ehEventos = _pdfContexto === 'eventos';
     const itens = _pdfItensSelecionados();
 
+    // Ícones de categoria (eventos) rasterizados uma vez por categoria presente na seleção
+    let iconesPorCategoria = {};
+    if (ehEventos) {
+      const categorias = [...new Set(itens.map(it => it.categoria))];
+      const pares = await Promise.all(categorias.map(async c => [c, await _pdfIconeCategoria(c)]));
+      iconesPorCategoria = Object.fromEntries(pares);
+    }
+
     y = _pdfBloco(doc, y, [
       { txt: `${ehEventos ? 'Histórico de Saúde' : 'Agenda de Consultas'} (${itens.length} ${ehEventos ? (itens.length === 1 ? 'evento' : 'eventos') : (itens.length === 1 ? 'consulta' : 'consultas')})`,
         size: 13, bold: true, cor: _PDF.accent },
@@ -1928,7 +2044,7 @@ async function gerarPdfExport() {
       y = _pdfBloco(doc, y, [{ txt: ehEventos ? 'Nenhum evento na seleção escolhida.' : 'Nenhuma consulta na seleção escolhida.', size: 9.5, cor: _PDF.suave }]);
     }
     itens.forEach((item, i) => {
-      y = _pdfBloco(doc, y, ehEventos ? _pdfLinhasEvento(doc, item, i === 0) : _pdfLinhasConsulta(doc, item, i === 0));
+      y = _pdfBloco(doc, y, ehEventos ? _pdfLinhasEvento(doc, item, i === 0, iconesPorCategoria) : _pdfLinhasConsulta(doc, item, i === 0));
     });
 
     const nomeArq = (perfil.nomeCompleto.trim().split(/\s+/)[0] || 'perfil')
