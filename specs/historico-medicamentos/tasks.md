@@ -46,8 +46,8 @@ Criar a view `view-medicamentos`, colocá-la na sequência de swipe e mantê-la 
 ### Arquivos afetados
 
 - `index.html` (`<div id="view-medicamentos" class="view">`)
-- `app.js` (`medicamentosCache`, `_unsubMedicamentos`, `_unsubscribeAll`, `subscribeAoPerfilAtivo`, `ORDEM_VISTAS`, `showView`, `atualizarVistaAtiva`)
-- `style.css` (indicador visual de posição/pager e cabeçalho da view)
+- `app.js` (`medicamentosCache`, `_unsubMedicamentos`, `_unsubscribeAll`, `subscribeAoPerfilAtivo`, `ORDEM_VISTAS`, `showView`, `atualizarVistaAtiva`, botão de entrada no cabeçalho do Histórico em `renderizarTimeline`)
+- `style.css` (cabeçalho da view, indicador de posição/pager, classe `nav-btn-contexto`)
 
 ### Dependências
 
@@ -55,15 +55,15 @@ Tarefa 1.
 
 ### Critério de conclusão
 
-Swipe a partir do Histórico chega em Medicamentos (e volta); a view mostra estado de carregamento e depois a lista crua dos dados; `showView('medicamentos')` respeita a guarda de "crie um perfil primeiro"; nenhuma outra view fica inalcançável.
+Swipe a partir do Histórico chega em Medicamentos (e volta); botão no cabeçalho do Histórico abre a tela por toque; `nav-timeline` fica em estado "contexto" enquanto se está em Medicamentos; a view mostra estado de carregamento e depois a lista crua dos dados; `showView('medicamentos')` respeita a guarda de "crie um perfil primeiro"; nenhuma outra view fica inalcançável.
 
 ### Teste manual
 
-Percorrer toda a sequência de swipe nos dois sentidos (`home ↔ timeline ↔ medicamentos ↔ agenda ↔ calendario`); conferir que Agenda e Calendário continuam acessíveis pelos botões; entrar na tela e confirmar que o indicador visual mostra onde se está.
+Percorrer toda a sequência de swipe nos dois sentidos (`home ↔ timeline ↔ medicamentos ↔ agenda ↔ calendario`); abrir a tela pelo botão do cabeçalho do Histórico; conferir que a barra de navegação não fica totalmente apagada na tela nova; conferir que Agenda e Calendário continuam acessíveis pelos botões.
 
 ### Observações
 
-`ORDEM_VISTAS` recebe `'medicamentos'` **após `'timeline'`** (justificativa de descoberta no `plan.md` §6.1). A subscrição fica **fora** da condição de `_aoCarregarTudo()`/`_cacheReady` — incluí-la ali faria qualquer erro de leitura travar o app inteiro no spinner (`plan.md` §6.2). Como não há `#nav-medicamentos`, nenhum botão da nav fica destacado nessa tela: por isso a view precisa do próprio cabeçalho com título + indicador.
+`ORDEM_VISTAS` recebe `'medicamentos'` **após `'timeline'`** (justificativa de descoberta no `plan.md` §6.1). A subscrição fica **fora** da condição de `_aoCarregarTudo()`/`_cacheReady` — incluí-la ali faria qualquer erro de leitura travar o app inteiro no spinner (`plan.md` §6.2). Sem 6º botão na nav: medição do CSS mostra que não caberia legível (`plan.md` §6.1); em vez disso, entrada por botão no Histórico + estado de contexto na nav + cabeçalho com pager na view.
 
 ## Tarefa 3 — Lista estática de medicamentos + autocomplete
 
