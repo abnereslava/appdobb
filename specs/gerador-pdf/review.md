@@ -99,3 +99,56 @@ Harness Node com o jsPDF real: geração detalhada (12 itens → 4 páginas), fi
 ### Pendências
 
 - Teste manual no dispositivo: renderização da prévia com foto real (IndexedDB), diálogo de salvamento e comportamento offline.
+
+---
+
+## Revisão — Iteração 3 (remove resumido, período mês/ano, ícones de categoria)
+
+### Status
+
+Aprovado com ajustes (mesma pendência recorrente de teste manual no dispositivo/navegador real).
+
+### Resumo
+
+Implementada a Tarefa 6 do `tasks.md`:
+
+1. **Correção de lacuna da iteração 2**: o markup (`index.html`) e o CSS (`style.css`) do filtro de período e da prévia nunca haviam sido commitados — só a lógica em `app.js` existia (confirmado via `git show 6760878 --stat`, que não lista `index.html`/`style.css`). O recurso estava inoperante no app publicado apesar de `tasks.md`/`review.md` da iteração 2 registrarem "Concluída"/"Aprovado com ajustes". Corrigido nesta iteração: markup do modal (campos de período + contêiner `export-pdf-previa`) e todo o bloco `.export-previa-*` de CSS foram adicionados.
+2. **Remoção do nível "Resumido"**: removidos `_pdfNivel`, `setPdfNivel`, `_renderExportPdfNivel` e os ramos condicionais correspondentes em `_pdfLinhasEvento`, `_pdfLinhasConsulta`, `_previaItemEvento`, `_previaItemConsulta`. A exportação sempre usa o nível Detalhado (era o padrão já antes).
+3. **Filtro por período em 3 modos**: Intervalo (como antes), Mês (`<input type="month">`) e Ano (chips com os anos presentes no cache do contexto ativo). Estado novo (`_pdfPeriodoModo`/`_pdfMes`/`_pdfAno`) traduzido pra `{inicio, fim}` via `_pdfPeriodoEfetivo()`, consumido por `_pdfItensSelecionados()` (compartilhado por prévia e geração).
+4. **Ícones de categoria no corpo do PDF**: como o jsPDF vendorizado não tem plugin de SVG, os ícones (mesmos SVG inline Lucide usados no resto do app) são rasterizados em PNG via `<canvas>`/`Image` em tempo de execução (`_pdfIconeCategoria`/`_pdfRasterizarIcone` — nome de função consolidado em `_pdfIconeCategoria`), com cache por categoria (`_pdfIconesCache`, guarda a Promise). `_pdfBloco` ganhou suporte a um campo `icone` por linha, desenhado antes do texto. A prévia ganhou o mesmo badge, sem rasterização (é HTML normal). Escopo: só eventos (Histórico) — a Agenda não tem ícones por tipo de consulta hoje.
+
+### Critérios de aceite (iteração 3)
+
+- [x] Modal sem a opção "Resumido"; toda exportação sai Detalhada.
+- [x] Filtro de período com 3 modos (Intervalo/Mês/Ano), mutuamente exclusivos, com botão de limpar.
+- [x] PDF e prévia do Histórico respeitam o período escolhido nos 3 modos.
+- [x] Itens de evento no PDF exibem o ícone da categoria ao lado da data.
+- [x] Prévia reflete os mesmos ícones.
+- [x] Filtro/prévia de período voltam a funcionar de fato (markup e CSS agora existem).
+
+### Testes realizados
+
+- `node --check app.js`: sintaxe válida.
+- Harness Node (`vm` + jsPDF real vendorizado + `app.js` real, com stubs mínimos de `document`/`canvas`/`Image`):
+  - `typeof setPdfNivel === 'undefined'` — confirma remoção completa.
+  - Filtro por mês (`2026-01`) sobre 6 eventos de teste → 2 itens corretos.
+  - Filtro por ano (`2025`) → 1 item correto.
+  - Sem filtro → 6 itens.
+  - `_pdfIconeCategoria` resolvido sem erro para as 6 categorias usadas (incluindo "Dentes", que usa preenchimento em vez de traço).
+  - `gerarPdfExport`-equivalente (cabeçalho + corpo com ícones) gera PDF válido (`data:application/pdf`), 1 página para o volume de teste.
+- Matemática de fim de mês verificada isoladamente (fevereiro de ano não-bissexto → 28; abril → 30).
+- Grep de confirmação: nenhuma referência residual a `_pdfNivel`, `resumido`, `setPdfNivel`, `_renderExportPdfNivel` ou `.export-nivel` em `app.js`/`index.html`/`style.css`.
+
+### Problemas encontrados
+
+- Nenhum bug funcional nos cenários testados, além da lacuna de markup/CSS da iteração 2 já descrita e corrigida.
+- Limitação aceita: a rasterização real do ícone (canvas + Image decodificando SVG) só pode ser validada de fato num navegador — o harness Node usa stubs de canvas/Image que confirmam a ausência de erros na integração, não a fidelidade visual do PNG gerado.
+
+### Alterações fora do escopo
+
+Nenhuma além do já registrado (correção da lacuna de markup/CSS da iteração 2, necessária para o filtro de período pedido nesta rodada funcionar de fato).
+
+### Pendências
+
+- Teste manual no navegador: abrir o modal, alternar os 3 modos de período, conferir a prévia com os ícones de categoria, gerar o PDF e inspecionar visualmente o ícone (círculo colorido + silhueta branca) ao lado de cada evento.
+- Mesmas pendências de dispositivo já registradas nas iterações anteriores (foto real via IndexedDB, diálogo de salvamento, offline).
