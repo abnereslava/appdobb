@@ -7,7 +7,7 @@ Aprovado com ajustes — todas as 7 tarefas do `tasks.md` implementadas, com **u
 ## 2. Resumo da implementação
 
 - **Modelo de dados**: nova subcoleção `profiles/{id}/medications`, paralela a `events`/`consultations`, com CRUD e `onSnapshot` (`firestore-api.js`).
-- **Navegação**: `view-medicamentos` inserida em `ORDEM_VISTAS` entre `timeline` e `agenda`; botão de entrada no cabeçalho do Histórico; estado `nav-btn-contexto` no botão Histórico; cabeçalho próprio com pager na view.
+- **Navegação**: `view-medicamentos` inserida em `ORDEM_VISTAS` entre `timeline` e `agenda`, com **botão próprio na barra inferior** (`#nav-medicamentos`, rótulo "Remédios") na mesma posição — barra e swipe seguem a mesma ordem.
 - **Regimes**: contínuo, por tempo determinado (frequência + duração, com data de fim calculada) e conforme necessário/SOS.
 - **Trava da data de fim**: `dataFimEditadaManualmente` impede que um ajuste manual seja sobrescrito por mudança posterior de duração/frequência.
 - **Autocomplete**: `<datalist>` nativo alimentado por `dados/medicamentos.js` (98 itens) unido aos nomes já usados no perfil, deduplicado e com entrada livre preservada.
@@ -17,7 +17,7 @@ Aprovado com ajustes — todas as 7 tarefas do `tasks.md` implementadas, com **u
 
 ## 3. Critérios de aceite
 
-- [x] Tela "Medicamentos" com CRUD, acessível por swipe, com indício visual (pager + botão de entrada no Histórico).
+- [x] Tela "Medicamentos" com CRUD, acessível pelo botão "Remédios" na barra inferior e também por swipe.
 - [x] Campos: nome, dose/quantidade, regime (3 opções), início, fim, observações, evento relacionado.
 - [x] Lista distingue "em uso" de "encerrado" nos três regimes.
 - [x] Regime temporário sugere a data de fim; edição manual trava contra recálculo.
@@ -55,7 +55,8 @@ Tarefas 1 a 7 do `tasks.md`.
 ## 6. Problemas encontrados
 
 - Nenhum bug funcional nos cenários testados.
-- **Ponto frágil conhecido (por decisão de produto)**: a tela não tem botão na barra de navegação. Isso foi decidido no spec e confirmado por medição (`grid-template-columns: repeat(5, 1fr)` com `max-width: 480px` e rótulo de 9px — um 6º item cairia a ~60px de largura, onde "Medicamentos" não cabe legível). Mitigado com três medidas (posição no meio da sequência de swipe, botão no cabeçalho do Histórico, pager + estado de contexto na nav), mas continua sendo a parte da feature com maior risco de baixa descoberta. Vale reavaliar depois de uso real.
+- **Decisão de navegação revertida após uso real** (registrada aqui por transparência): a entrega original seguiu o spec, que definia acesso apenas por gesto, sem ícone na barra. Ao ver a tela em uso, ficou claro que uma view sem representação na navegação é difícil de encontrar e deixa a barra sem indicar onde o usuário está. A justificativa original — falta de espaço — **não se sustentou na medição**: o 6º item cabe. O que de fato quebrava o layout era o rótulo longo ("Medicamentos", 59px) inflando a própria coluna com `repeat(6, 1fr)`, cujo mínimo é o conteúdo, espremendo as vizinhas de 66px para 50px. Corrigido com rótulo curto "Remédios" (44px, mesma largura de "Calendário") e `repeat(6, minmax(0, 1fr))`. As três compensações que existiam pela falta do botão (porta de entrada no cabeçalho do Histórico, pager na view, classe `nav-btn-contexto`) foram removidas — a tela agora se comporta como qualquer outra aba.
+  - **Lição**: a estimativa inicial de largura estava certa na conclusão ("não cabe") mas errada na causa, e uma medição de verdade teria mostrado isso antes. O primeiro teste de medição também deu falso positivo por comparar `scrollWidth` com `clientWidth` num `span` sem `overflow:hidden` — que nunca acusa transbordo; só dumpar a geometria crua revelou o comportamento real do grid.
 - A regra de segurança precisa estar **publicada** antes de a interface chegar aos usuários; caso contrário a tela abre vazia com erro no console (a subscrição trata o erro e sai do carregamento, mas não há dados).
 
 ## 7. Alterações fora do escopo

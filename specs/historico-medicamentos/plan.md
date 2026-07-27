@@ -110,12 +110,13 @@ Demais pontos: nenhuma superfície nova de exposição — os dados ficam sob o 
 
 - `showView('medicamentos')` funciona sem alteração estrutural: a função já é tolerante à ausência do botão (`if (navBtn) navBtn.classList.add('active')`, `app.js:461`).
 
-- **Por que não simplesmente adicionar um 6º botão**: medição no CSS atual — `.bottom-nav` usa `grid-template-columns: repeat(5, 1fr)` com `max-width: 480px` e rótulo de `font-size: 9px`. Com 6 colunas, cada uma cairia para ~80px no máximo e ~60px num aparelho de 360px de largura; "Medicamentos" (12 caracteres) não cabe legível nesse espaço, e "Calendário" já é o limite hoje. A restrição de espaço do spec se confirma na prática.
+- **Botão próprio na barra inferior** (decisão revista — ver histórico abaixo): `#nav-medicamentos` com rótulo "Remédios", entre Histórico e Agenda, espelhando a posição na sequência de swipe.
 
-- **Problema a resolver**: como não existe `#nav-medicamentos`, ao entrar na tela a barra fica com *nenhum* item destacado — o usuário perde a referência de onde está. Três medidas combinadas, todas sem custo de espaço na nav:
-  1. **Porta de entrada tocável no cabeçalho do Histórico** — um botão ao lado dos que já existem lá (toggle de visualização e exportar PDF), seguindo o mesmo padrão `btn-ghost btn-sm`. Dá um caminho descobrível e acessível por toque, sem depender de o usuário conhecer o gesto, e reforça a relação semântica "Histórico de Saúde → Medicamentos".
-  2. **Estado "relacionado" no `nav-timeline`** quando a view ativa for `medicamentos` — a barra deixa de ficar completamente apagada e comunica "você está na área do Histórico". Implementado como uma classe própria (`nav-btn-contexto`), visualmente mais fraca que `.active` para não mentir dizendo que se está na aba Histórico.
-  3. **Cabeçalho próprio na view** com o título "Medicamentos" e um indicador de posição no swipe (pager), padrão consagrado para telas navegadas por gesto — é o "indício visual" exigido pelo spec §4.
+- **Medição que sustenta a decisão**: a primeira análise concluiu, por estimativa, que um 6º item não caberia. A medição real em Chromium mostrou outra coisa: nada é cortado, mas com `repeat(6, 1fr)` a coluna do rótulo longo **cresce** (o mínimo de `1fr` é o conteúdo) — "Medicamentos" ocupa 59px e infla sua coluna para 66px, espremendo as vizinhas para 50px e deixando a barra visivelmente torta. Duas correções resolvem: rótulo curto **"Remédios"** (44px, mesma largura de "Calendário", o maior rótulo atual) e `grid-template-columns: repeat(6, minmax(0, 1fr))`, que impede qualquer coluna de crescer além da fração. Verificado em 320/360/390/430px: colunas iguais, sem estouro de texto e sem rolagem horizontal.
+
+- **Compensações removidas**: com o botão na barra, deixaram de fazer sentido a porta de entrada no cabeçalho do Histórico, o pager na view e a classe `nav-btn-contexto` — os três só existiam para suprir a ausência do botão. A tela passou a se comportar como qualquer outra aba.
+
+- **Histórico da decisão**: o spec originalmente definia acesso só por gesto, para poupar espaço. Depois de implementado, ficou evidente que uma tela sem representação na navegação é difícil de descobrir e deixa a barra sem indicar onde o usuário está. A restrição que motivou a escolha original não se confirmou na medição.
 
 - `showView` ganha `'medicamentos'` na guarda de `!temPerfil` (`app.js:449`), junto de timeline/agenda/calendario.
 

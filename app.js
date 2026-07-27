@@ -485,20 +485,12 @@ function showView(nome) {
   }
 
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active', 'nav-btn-contexto'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
   const vista  = document.getElementById('view-' + nome);
   const navBtn = document.getElementById('nav-' + nome);
   if (vista)  vista.classList.add('active');
   if (navBtn) navBtn.classList.add('active');
-
-  // Medicamentos não tem botão próprio na nav (não caberia legível — ver
-  // specs/historico-medicamentos/plan.md §6.1). Sem isto a barra ficaria
-  // inteira apagada, sem indicar onde o usuário está; o estado de contexto
-  // é mais fraco que .active para não afirmar que se está na aba Histórico.
-  if (nome === 'medicamentos') {
-    document.getElementById('nav-timeline')?.classList.add('nav-btn-contexto');
-  }
 
   if (nome === 'home')         renderizarHome();
   if (nome === 'timeline')     { _resetFiltrosScroll = true; renderizarTimeline(); }
@@ -537,6 +529,7 @@ function fecharConfirmar(resultado) {
 function atualizarNavSemPerfil() {
   const btns = [
     document.getElementById('nav-timeline'),
+    document.getElementById('nav-medicamentos'),
     document.getElementById('nav-agenda'),
     document.getElementById('nav-calendario'),
     document.getElementById('nav-add'),
@@ -1328,9 +1321,6 @@ function renderizarTimeline() {
       <div class="tl-header" style="margin-bottom:12px;">
         <h1 class="page-title">Histórico de Saúde</h1>
         <div style="display:flex;gap:6px;">
-          <button class="btn-ghost btn-sm" onclick="showView('medicamentos')" title="Medicamentos" style="padding:7px 10px;">
-            ${ICON_PILULA}
-          </button>
           <button class="btn-ghost btn-sm" onclick="abrirExportPdf('eventos')" title="Exportar PDF" style="padding:7px 10px;">
             ${ICON_PDF}
           </button>
@@ -2072,15 +2062,6 @@ function _alergiasQueBatem(nome) {
     });
 }
 
-// Pontos indicando a posição da tela atual na sequência de swipe. É o
-// "indício visual" exigido pelo spec: como esta view não tem botão na nav,
-// sem isso o usuário não teria como saber onde está nem que ela existe.
-function _pagerVistas(nomeAtual) {
-  return `<div class="view-pager" aria-hidden="true">${
-    ORDEM_VISTAS.map(n => `<span class="view-pager-dot${n === nomeAtual ? ' ativo' : ''}"></span>`).join('')
-  }</div>`;
-}
-
 function renderizarMedicamentos() {
   const container = document.getElementById('view-medicamentos');
   if (!container) return;
@@ -2094,7 +2075,6 @@ function renderizarMedicamentos() {
         </button>
       </div>
     </div>
-    ${_pagerVistas('medicamentos')}
   `;
 
   if (!_medicamentosProntos) {
