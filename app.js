@@ -41,6 +41,7 @@ const MALE_SVG    = `<svg class="inline-icon" viewBox="0 0 24 24" style="margin-
 const FEMALE_SVG  = `<svg class="inline-icon" viewBox="0 0 24 24" style="margin-right: 4px; color: #a03458;"><circle cx="12" cy="9" r="5"/><path d="M12 14v7"/><path d="M9 18h6"/></svg>`;
 const NASCIMENTO_SVG = `<svg class="category-icon" viewBox="0 0 24 24"><path d="M12 2l2.39 4.84 5.34.78-3.86 3.77.91 5.32L12 14.98 7.22 16.5l.91-5.32L4.27 7.62l5.34-.78z"/></svg>`;
 const ICON_PDF       = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>`;
+const ICON_PILULA    = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>`;
 const IMG_PESSOA     = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
 const CAMERA_SVG     = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>`;
 
@@ -177,6 +178,12 @@ let _unsubPerfil    = null;
 let _unsubEventos   = null;
 let _unsubConsultas = null;
 let _cacheReady     = false;
+
+// Medicamentos — cache próprio, deliberadamente fora de _cacheReady: se esta
+// leitura falhar, só a tela de Medicamentos é afetada, nunca o app inteiro.
+let medicamentosCache    = [];
+let _unsubMedicamentos   = null;
+let _medicamentosProntos = false;
 
 // Estado dos formulários
 let medicamentosTemp = [];
@@ -349,12 +356,15 @@ function alterarFiltroData(inicio, fim) {
 function gerarId() { return Date.now().toString(36) + Math.random().toString(36).substr(2,5); }
 
 function _unsubscribeAll() {
-  if (_unsubPerfil)    { _unsubPerfil();    _unsubPerfil    = null; }
-  if (_unsubEventos)   { _unsubEventos();   _unsubEventos   = null; }
-  if (_unsubConsultas) { _unsubConsultas(); _unsubConsultas = null; }
+  if (_unsubPerfil)      { _unsubPerfil();      _unsubPerfil      = null; }
+  if (_unsubEventos)     { _unsubEventos();     _unsubEventos     = null; }
+  if (_unsubConsultas)   { _unsubConsultas();   _unsubConsultas   = null; }
+  if (_unsubMedicamentos){ _unsubMedicamentos();_unsubMedicamentos= null; }
   _perfilCache    = null;
   eventosCache    = [];
   consultasCache  = [];
+  medicamentosCache    = [];
+  _medicamentosProntos = false;
   eventosCursor   = null; eventosEsgotado  = false;
   consultasCursor = null; consultasEsgotado = false;
   _cacheReady     = false;
@@ -408,6 +418,28 @@ function subscribeAoPerfilAtivo(profileId) {
     if (v?.id === 'view-agenda')     renderizarAgenda();
     if (v?.id === 'view-calendario') renderizarAbaCalendario();
   });
+
+  // Fora do portão de _aoCarregarTudo() de propósito: incluir esta subscrição
+  // ali faria qualquer erro de leitura dos medicamentos deixar _cacheReady
+  // eternamente false, travando o app inteiro (Histórico e Agenda inclusive)
+  // na tela de carregamento por causa de uma funcionalidade secundária.
+  _unsubMedicamentos = window._db.subscribeMedicamentos(
+    profileId,
+    meds => {
+      medicamentosCache = meds.sort((a, b) => (b.dataInicio || '').localeCompare(a.dataInicio || ''));
+      _medicamentosProntos = true;
+      const v = document.querySelector('.view.active');
+      if (v?.id === 'view-medicamentos') renderizarMedicamentos();
+    },
+    err => {
+      console.error('Erro ao carregar medicamentos:', err);
+      // Marca como "pronto" mesmo em erro para a tela sair do spinner e poder
+      // mostrar um estado de falha em vez de carregar para sempre.
+      _medicamentosProntos = true;
+      const v = document.querySelector('.view.active');
+      if (v?.id === 'view-medicamentos') renderizarMedicamentos();
+    }
+  );
 }
 
 
@@ -446,24 +478,33 @@ function saltarBotaoPerfil() {
 }
 
 function showView(nome) {
-  if (!temPerfil && (nome === 'timeline' || nome === 'agenda' || nome === 'calendario')) {
+  if (!temPerfil && (nome === 'timeline' || nome === 'agenda' || nome === 'calendario' || nome === 'medicamentos')) {
     mostrarToast('Crie um perfil primeiro.', 'error');
     saltarBotaoPerfil();
     return;
   }
 
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active', 'nav-btn-contexto'));
 
   const vista  = document.getElementById('view-' + nome);
   const navBtn = document.getElementById('nav-' + nome);
   if (vista)  vista.classList.add('active');
   if (navBtn) navBtn.classList.add('active');
 
-  if (nome === 'home')       renderizarHome();
-  if (nome === 'timeline')   { _resetFiltrosScroll = true; renderizarTimeline(); }
-  if (nome === 'agenda')     renderizarAgenda();
-  if (nome === 'calendario') { diaCalendarioAberto = null; renderizarAbaCalendario(); }
+  // Medicamentos não tem botão próprio na nav (não caberia legível — ver
+  // specs/historico-medicamentos/plan.md §6.1). Sem isto a barra ficaria
+  // inteira apagada, sem indicar onde o usuário está; o estado de contexto
+  // é mais fraco que .active para não afirmar que se está na aba Histórico.
+  if (nome === 'medicamentos') {
+    document.getElementById('nav-timeline')?.classList.add('nav-btn-contexto');
+  }
+
+  if (nome === 'home')         renderizarHome();
+  if (nome === 'timeline')     { _resetFiltrosScroll = true; renderizarTimeline(); }
+  if (nome === 'medicamentos') renderizarMedicamentos();
+  if (nome === 'agenda')       renderizarAgenda();
+  if (nome === 'calendario')   { diaCalendarioAberto = null; renderizarAbaCalendario(); }
 
   window.scrollTo(0, 0);
   atualizarBotaoTopo();
@@ -1287,6 +1328,9 @@ function renderizarTimeline() {
       <div class="tl-header" style="margin-bottom:12px;">
         <h1 class="page-title">Histórico de Saúde</h1>
         <div style="display:flex;gap:6px;">
+          <button class="btn-ghost btn-sm" onclick="showView('medicamentos')" title="Medicamentos" style="padding:7px 10px;">
+            ${ICON_PILULA}
+          </button>
           <button class="btn-ghost btn-sm" onclick="abrirExportPdf('eventos')" title="Exportar PDF" style="padding:7px 10px;">
             ${ICON_PDF}
           </button>
@@ -1966,6 +2010,448 @@ async function gerarPdfExport() {
 
 
 /* ================================================
+   7.5 MEDICAMENTOS
+   ================================================ */
+
+const REGIMES_MEDICAMENTO = {
+  continuo:   { label: 'Contínuo',              ajuda: 'Uso sem data de fim definida (ex.: vitamina, remédio de pressão).' },
+  temporario: { label: 'Por tempo determinado', ajuda: 'Tratamento com posologia e duração (ex.: antibiótico de 8 em 8 horas por 7 dias).' },
+  sos:        { label: 'Conforme necessário',   ajuda: 'Tomado só quando preciso (ex.: analgésico para dor ocasional).' },
+};
+
+let _medRegimeTemp = 'continuo';
+
+async function gravarMedicamento(m) {
+  if (!profileIdAtivo || !window._db) return;
+  await _escrita(window._db.salvarMedicamento(profileIdAtivo, m));
+}
+
+async function excluirMedicamentoRegistro(id) {
+  if (!profileIdAtivo || !window._db) return;
+  await _escrita(window._db.excluirMedicamento(profileIdAtivo, id));
+}
+
+// Data de hoje em horário LOCAL. Não usar toISOString() aqui: ele converte
+// para UTC e, no fuso do Brasil, devolveria o dia seguinte à noite.
+function _hojeIso() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// Soma dias a uma data YYYY-MM-DD usando aritmética em UTC, imune a fuso
+// e a horário de verão.
+function _addDias(iso, n) {
+  if (!iso || !Number.isFinite(n)) return '';
+  const [a, m, d] = iso.split('-').map(Number);
+  return new Date(Date.UTC(a, m - 1, d) + n * 86400000).toISOString().slice(0, 10);
+}
+
+function _normalizarTexto(s) {
+  return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+}
+
+// Um medicamento está "em uso" enquanto não tiver data de fim (contínuo/SOS)
+// ou enquanto a data de fim não tiver passado (temporário) — inclusive quando
+// essa data foi só calculada, sem ninguém encerrar manualmente.
+function _medEmUso(m) {
+  if (!m?.dataFim) return true;
+  return m.dataFim >= _hojeIso();
+}
+
+// Alergias medicamentosas do perfil que casam com o nome informado.
+// Comparação sem acento e sem caixa, nos dois sentidos (o usuário pode
+// escrever "Amoxicilina 500" tendo registrado alergia a "amoxicilina").
+function _alergiasQueBatem(nome) {
+  const n = _normalizarTexto(nome);
+  if (!n) return [];
+  return (carregarPerfil()?.alergias || [])
+    .filter(a => a.tipo === 'medicamentosa' && a.descricao)
+    .filter(a => {
+      const d = _normalizarTexto(a.descricao);
+      return d && (n.includes(d) || d.includes(n));
+    });
+}
+
+// Pontos indicando a posição da tela atual na sequência de swipe. É o
+// "indício visual" exigido pelo spec: como esta view não tem botão na nav,
+// sem isso o usuário não teria como saber onde está nem que ela existe.
+function _pagerVistas(nomeAtual) {
+  return `<div class="view-pager" aria-hidden="true">${
+    ORDEM_VISTAS.map(n => `<span class="view-pager-dot${n === nomeAtual ? ' ativo' : ''}"></span>`).join('')
+  }</div>`;
+}
+
+function renderizarMedicamentos() {
+  const container = document.getElementById('view-medicamentos');
+  if (!container) return;
+
+  const cabecalho = `
+    <div class="tl-header" style="margin-bottom:4px;">
+      <h1 class="page-title">Medicamentos</h1>
+      <div style="display:flex;gap:6px;">
+        <button class="btn-ghost btn-sm" onclick="abrirFormMedicamento(null)" title="Novo medicamento" style="padding:7px 10px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+    </div>
+    ${_pagerVistas('medicamentos')}
+  `;
+
+  if (!_medicamentosProntos) {
+    container.innerHTML = `<div>${cabecalho}<div class="carregando-view"><div class="login-spinner"></div></div></div>`;
+    return;
+  }
+
+  if (!medicamentosCache.length) {
+    container.innerHTML = `
+      <div>
+        ${cabecalho}
+        <div class="empty-state">
+          <div class="empty-icon">${ICON_PILULA}</div>
+          <p class="empty-title">Nenhum medicamento registrado</p>
+          <p class="empty-text">Registre remédios de uso contínuo, tratamentos por tempo determinado ou de uso ocasional.</p>
+          <button class="btn-primary" onclick="abrirFormMedicamento(null)">Adicionar medicamento</button>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const emUso     = medicamentosCache.filter(m => _medEmUso(m));
+  const encerrados = medicamentosCache.filter(m => !_medEmUso(m));
+
+  const secao = (titulo, itens) => !itens.length ? '' : `
+    <h2 class="med-secao-titulo">${titulo} <span class="med-secao-n">${itens.length}</span></h2>
+    <div class="med-lista">${itens.map(_medCard).join('')}</div>`;
+
+  container.innerHTML = `<div>${cabecalho}
+    ${secao('Em uso', emUso)}
+    ${secao('Encerrados', encerrados)}
+  </div>`;
+}
+
+function _medCard(m) {
+  const regime = REGIMES_MEDICAMENTO[m.regime] || REGIMES_MEDICAMENTO.continuo;
+  const dose   = [m.quantidade, m.unidade].filter(v => v !== null && v !== undefined && v !== '').join(' ');
+  const emUso  = _medEmUso(m);
+
+  const periodo = m.dataFim
+    ? `${formatarData(m.dataInicio)} — ${formatarData(m.dataFim)}`
+    : `Desde ${formatarData(m.dataInicio)}`;
+
+  const posologia = m.regime === 'temporario' && m.frequenciaValor
+    ? (m.frequenciaUnidade === 'vezesAoDia'
+        ? `${m.frequenciaValor}x ao dia`
+        : `de ${m.frequenciaValor} em ${m.frequenciaValor} h`)
+    : '';
+
+  return `
+    <button type="button" class="med-card" onclick="abrirDetalheMedicamento('${m.id}')">
+      <span class="med-card-info">
+        <span class="med-card-topo">
+          <span class="med-card-nome">${esc(m.nome || '')}</span>
+          ${dose ? `<span class="med-card-dose">${esc(dose)}</span>` : ''}
+        </span>
+        <span class="med-card-meta">${esc(periodo)}${posologia ? ` · ${esc(posologia)}` : ''}</span>
+      </span>
+      <span class="med-badge ${emUso ? 'med-badge-uso' : 'med-badge-fim'}">${emUso ? 'Em uso' : 'Encerrado'}</span>
+    </button>`;
+}
+
+/* ----- Formulário ----- */
+
+function _popularDatalistMedicamentos() {
+  const dl = document.getElementById('lista-medicamentos-sugestoes');
+  if (!dl) return;
+
+  const daLista = (typeof MEDICAMENTOS_COMUNS !== 'undefined' ? MEDICAMENTOS_COMUNS : [])
+    .map(m => m.ativo ? `${m.nome} (${m.ativo})` : m.nome);
+  // Nomes que o próprio perfil já usou — é assim que a lista "aprende" e
+  // deixa de precisar ser exaustiva.
+  const doPerfil = medicamentosCache.map(m => m.nome).filter(Boolean);
+
+  const vistos = new Set();
+  const opcoes = [...doPerfil, ...daLista].filter(n => {
+    const k = _normalizarTexto(n);
+    if (!k || vistos.has(k)) return false;
+    vistos.add(k);
+    return true;
+  });
+
+  dl.innerHTML = opcoes.map(n => `<option value="${esc(n)}"></option>`).join('');
+}
+
+function setMedRegime(r) {
+  _medRegimeTemp = r;
+  Object.keys(REGIMES_MEDICAMENTO).forEach(k => {
+    document.getElementById('med-regime-' + k)?.classList.toggle('active', k === r);
+  });
+  const posologia = document.getElementById('med-campos-posologia');
+  if (posologia) posologia.style.display = r === 'temporario' ? '' : 'none';
+  const ajuda = document.getElementById('med-regime-ajuda');
+  if (ajuda) ajuda.textContent = REGIMES_MEDICAMENTO[r]?.ajuda || '';
+  _recalcularDataFim();
+}
+
+function _marcarFimManual() {
+  const el = document.getElementById('medicamento-fim-manual');
+  if (el) el.value = '1';
+  _atualizarAjudaFim();
+}
+
+// Sugere a data de fim a partir de início + duração, mas SÓ enquanto o
+// usuário não tiver editado esse campo à mão. Depois disso o valor fica
+// travado, para não descartar um ajuste manual (ex.: tratamento interrompido
+// antes do previsto) quando a duração for corrigida depois.
+function _recalcularDataFim() {
+  const manual = document.getElementById('medicamento-fim-manual')?.value === '1';
+  const fimEl  = document.getElementById('medicamento-fim');
+  if (!fimEl || manual || _medRegimeTemp !== 'temporario') { _atualizarAjudaFim(); return; }
+
+  const inicio  = document.getElementById('medicamento-inicio')?.value;
+  const duracao = parseInt(document.getElementById('medicamento-duracao')?.value, 10);
+  if (inicio && Number.isFinite(duracao) && duracao > 0) {
+    // duração de 7 dias começando no dia 1 termina no dia 7, daí o -1
+    fimEl.value = _addDias(inicio, duracao - 1);
+  }
+  _atualizarAjudaFim();
+}
+
+function _atualizarAjudaFim() {
+  const el = document.getElementById('med-fim-ajuda');
+  if (!el) return;
+  const manual = document.getElementById('medicamento-fim-manual')?.value === '1';
+  if (_medRegimeTemp === 'temporario') {
+    el.textContent = manual
+      ? 'Data de fim definida manualmente — não será mais recalculada pela duração.'
+      : 'Calculada a partir do início e da duração. Editar aqui fixa o valor.';
+  } else {
+    el.textContent = 'Deixe em branco enquanto estiver em uso.';
+  }
+}
+
+function _verificarAlergiaMedicamento() {
+  const aviso = document.getElementById('medicamento-aviso-alergia');
+  if (!aviso) return;
+  const nome = document.getElementById('medicamento-nome')?.value || '';
+  const batem = _alergiasQueBatem(nome);
+  if (!batem.length) { aviso.style.display = 'none'; aviso.innerHTML = ''; return; }
+  const desc = batem.map(a => esc(a.descricao)).join(', ');
+  aviso.style.display = '';
+  aviso.innerHTML = `${WARNING_SVG} Este perfil tem alergia medicamentosa registrada: <strong>${desc}</strong>. Confira antes de usar.`;
+}
+
+async function abrirFormMedicamento(id, pre) {
+  const form = document.getElementById('form-medicamento');
+  if (form) form.reset();
+  set('medicamento-id', '');
+  set('medicamento-evento-id', '');
+  set('medicamento-fim-manual', '');
+  set('medicamento-inicio', _hojeIso());
+  document.getElementById('titulo-modal-medicamento').textContent = id ? 'Editar Medicamento' : 'Novo Medicamento';
+
+  // Mesma trava de data do formulário de evento: nada antes do início da
+  // gestação viável do perfil.
+  const perfil = carregarPerfil();
+  const inicioEl = document.getElementById('medicamento-inicio');
+  if (perfil?.dataNascimento) {
+    const nascMs  = new Date(perfil.dataNascimento + 'T00:00:00').getTime();
+    const minDate = new Date(nascMs - 315 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    set('medicamento-data-min', minDate);
+    if (inicioEl) inicioEl.min = minDate;
+  } else {
+    set('medicamento-data-min', '');
+    if (inicioEl) inicioEl.removeAttribute('min');
+  }
+
+  _popularDatalistMedicamentos();
+
+  let regime = 'continuo';
+  let vinculoId = pre?.eventoRelacionadoId || '';
+
+  if (id) {
+    const m = await window._db.carregarMedicamento(profileIdAtivo, id);
+    if (!m) { mostrarToast('Medicamento não encontrado.', 'error'); return; }
+    set('medicamento-id', m.id);
+    set('medicamento-nome', m.nome || '');
+    set('medicamento-quantidade', m.quantidade ?? '');
+    set('medicamento-unidade', m.unidade || '');
+    set('medicamento-freq-valor', m.frequenciaValor ?? '');
+    set('medicamento-freq-unidade', m.frequenciaUnidade || 'horas');
+    set('medicamento-duracao', m.duracaoDias ?? '');
+    set('medicamento-inicio', m.dataInicio || '');
+    set('medicamento-fim', m.dataFim || '');
+    set('medicamento-obs', m.observacoes || '');
+    set('medicamento-fim-manual', m.dataFimEditadaManualmente ? '1' : '');
+    regime = m.regime || 'continuo';
+    vinculoId = m.eventoRelacionadoId || '';
+  } else if (pre?.nome) {
+    set('medicamento-nome', pre.nome);
+  }
+
+  set('medicamento-evento-id', vinculoId);
+  const vinculoEl = document.getElementById('medicamento-vinculo-evento');
+  if (vinculoEl) {
+    vinculoEl.style.display = vinculoId ? '' : 'none';
+    vinculoEl.innerHTML = vinculoId ? 'Vinculado a um evento do histórico.' : '';
+  }
+
+  setMedRegime(regime);
+  _verificarAlergiaMedicamento();
+  abrirModal('modal-medicamento-form');
+}
+
+async function salvarMedicamento(event) {
+  event.preventDefault();
+  const nome   = document.getElementById('medicamento-nome').value.trim();
+  const inicio = document.getElementById('medicamento-inicio').value;
+  if (!nome)   { mostrarToast('Informe o medicamento.', 'error'); return; }
+  if (!inicio) { mostrarToast('Informe a data de início.', 'error'); return; }
+
+  const dataMin = document.getElementById('medicamento-data-min')?.value;
+  if (dataMin && inicio < dataMin) {
+    const [a, m, d] = dataMin.split('-');
+    mostrarToast(`Data inválida: anterior a ${d}/${m}/${a}.`, 'error');
+    return;
+  }
+
+  const fim = document.getElementById('medicamento-fim').value || null;
+  if (fim && fim < inicio) { mostrarToast('A data de fim não pode ser anterior ao início.', 'error'); return; }
+
+  const ehTemporario = _medRegimeTemp === 'temporario';
+  const num = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : null; };
+  const idExistente = document.getElementById('medicamento-id').value;
+
+  const med = {
+    id:                        idExistente || gerarId(),
+    nome,
+    quantidade:                num(document.getElementById('medicamento-quantidade').value),
+    unidade:                   document.getElementById('medicamento-unidade').value.trim() || null,
+    regime:                    _medRegimeTemp,
+    frequenciaValor:           ehTemporario ? num(document.getElementById('medicamento-freq-valor').value) : null,
+    frequenciaUnidade:         ehTemporario ? document.getElementById('medicamento-freq-unidade').value : null,
+    duracaoDias:               ehTemporario ? num(document.getElementById('medicamento-duracao').value) : null,
+    dataInicio:                inicio,
+    dataFim:                   fim,
+    dataFimEditadaManualmente: document.getElementById('medicamento-fim-manual').value === '1',
+    observacoes:               document.getElementById('medicamento-obs').value.trim() || null,
+    eventoRelacionadoId:       document.getElementById('medicamento-evento-id').value || null,
+    criadoEm:                  idExistente ? null : new Date().toISOString(),
+  };
+
+  try {
+    await gravarMedicamento(med);
+    fecharModal('modal-medicamento-form');
+    atualizarVistaAtiva();
+    mostrarToast(idExistente ? 'Medicamento atualizado!' : 'Medicamento adicionado!', 'success');
+  } catch (e) {
+    console.error('Erro ao salvar medicamento:', e);
+    mostrarToast('Erro ao salvar. Tente novamente.', 'error');
+  }
+}
+
+/* ----- Detalhe ----- */
+
+async function abrirDetalheMedicamento(id) {
+  const m = await window._db.carregarMedicamento(profileIdAtivo, id);
+  if (!m) { mostrarToast('Medicamento não encontrado.', 'error'); return; }
+
+  const regime = REGIMES_MEDICAMENTO[m.regime] || REGIMES_MEDICAMENTO.continuo;
+  const emUso  = _medEmUso(m);
+  const dose   = [m.quantidade, m.unidade].filter(v => v !== null && v !== undefined && v !== '').join(' ');
+
+  const posologia = m.regime === 'temporario' && m.frequenciaValor
+    ? (m.frequenciaUnidade === 'vezesAoDia'
+        ? `${m.frequenciaValor} vezes ao dia`
+        : `De ${m.frequenciaValor} em ${m.frequenciaValor} horas`)
+      + (m.duracaoDias ? ` durante ${m.duracaoDias} dia${m.duracaoDias > 1 ? 's' : ''}` : '')
+    : '';
+
+  // O evento vinculado pode ter sido excluído depois — só oferece o link se
+  // ele ainda existir, para não abrir um detalhe inexistente.
+  let eventoVinculado = null;
+  if (m.eventoRelacionadoId) {
+    try { eventoVinculado = await window._db.carregarEvento(profileIdAtivo, m.eventoRelacionadoId); }
+    catch (e) { eventoVinculado = null; }
+  }
+
+  const campos = [
+    { label: 'Dose',        valor: dose },
+    { label: 'Uso',         valor: regime.label },
+    { label: 'Posologia',   valor: posologia },
+    { label: 'Início',      valor: formatarData(m.dataInicio) },
+    { label: 'Fim',         valor: m.dataFim ? formatarData(m.dataFim) : null },
+    { label: 'Observações', valor: m.observacoes },
+  ].filter(c => c.valor);
+
+  const alergias = _alergiasQueBatem(m.nome);
+
+  document.getElementById('titulo-modal-med-detalhe').textContent = m.nome || 'Medicamento';
+  document.getElementById('conteudo-medicamento-detalhe').innerHTML = `
+    <div class="event-detail-header" style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <span class="med-detalhe-icone">${ICON_PILULA}</span>
+      <div style="flex:1;min-width:0;">
+        <h3 class="event-detail-title" style="margin-bottom:4px;font-size:16px;">${esc(m.nome || '')}</h3>
+        <span class="med-badge ${emUso ? 'med-badge-uso' : 'med-badge-fim'}">${emUso ? 'Em uso' : 'Encerrado'}</span>
+      </div>
+    </div>
+    ${alergias.length ? `<div class="med-aviso-alergia" style="margin-bottom:14px;">${WARNING_SVG} Alergia medicamentosa registrada neste perfil: <strong>${alergias.map(a => esc(a.descricao)).join(', ')}</strong>.</div>` : ''}
+    ${campos.map(c => `<div class="detail-section"><div class="detail-label">${c.label}</div><div class="detail-value">${esc(c.valor)}</div></div>`).join('')}
+    ${eventoVinculado ? `
+      <div class="detail-section">
+        <div class="detail-label">Evento relacionado</div>
+        <button class="btn-secondary btn-sm" style="margin-top:6px;"
+                onclick="fecharModal('modal-medicamento-detalhe');abrirDetalheEvento('${eventoVinculado.id}')">
+          ${esc(eventoVinculado.titulo || 'Ver evento')}
+        </button>
+      </div>` : ''}
+    <div class="event-detail-actions">
+      ${emUso ? `<button class="btn-secondary" onclick="encerrarUsoHoje('${m.id}')">Encerrar uso hoje</button>` : ''}
+      <button class="btn-secondary" onclick="fecharModal('modal-medicamento-detalhe');abrirFormMedicamento('${m.id}')">Editar</button>
+      <button class="btn-danger" onclick="confirmarExclusaoMedicamento('${m.id}')">Excluir</button>
+    </div>`;
+
+  abrirModal('modal-medicamento-detalhe');
+}
+
+// Encerra o uso com a data de hoje e trava a data contra recálculo futuro.
+// Idempotente: reencerrar um já encerrado apenas reconfirma a data.
+async function encerrarUsoHoje(id) {
+  const m = await window._db.carregarMedicamento(profileIdAtivo, id);
+  if (!m) { mostrarToast('Medicamento não encontrado.', 'error'); return; }
+  const hoje = _hojeIso();
+  try {
+    await gravarMedicamento({
+      ...m,
+      // Se o uso começou depois de hoje (agendado), encerra no próprio início
+      // para não gravar um período negativo.
+      dataFim: m.dataInicio && m.dataInicio > hoje ? m.dataInicio : hoje,
+      dataFimEditadaManualmente: true,
+    });
+    fecharModal('modal-medicamento-detalhe');
+    atualizarVistaAtiva();
+    mostrarToast('Uso encerrado.', 'success');
+  } catch (e) {
+    console.error('Erro ao encerrar uso:', e);
+    mostrarToast('Erro ao encerrar. Tente novamente.', 'error');
+  }
+}
+
+async function confirmarExclusaoMedicamento(id) {
+  const ok = await confirmar({ titulo: 'Excluir medicamento', msg: 'Esta ação não pode ser desfeita.', txtOk: 'Excluir', destrutivo: true });
+  if (!ok) return;
+  try {
+    await excluirMedicamentoRegistro(id);
+    fecharModal('modal-medicamento-detalhe');
+    atualizarVistaAtiva();
+    mostrarToast('Medicamento excluído.', 'success');
+  } catch (e) {
+    console.error('Erro ao excluir medicamento:', e);
+    mostrarToast('Erro ao excluir. Tente novamente.', 'error');
+  }
+}
+
+
+/* ================================================
    8. FORMULÁRIO DE EVENTO
    ================================================ */
 
@@ -2060,15 +2546,57 @@ async function salvarEvento(event) {
     criadoEm:     idExistente ? null : new Date().toISOString(),
   };
 
+  const medsDoEvento = [...medicamentosTemp];
+
   try {
     await gravarEvento(ev, !idExistente);
     fecharModal('modal-evento-form');
     atualizarVistaAtiva();
     mostrarToast(idExistente ? 'Evento atualizado!' : 'Evento adicionado!', 'success');
+    // Ponte opcional com o histórico de medicamentos — só depois da gravação
+    // dar certo, para nunca atrapalhar o salvamento do evento em si.
+    await _oferecerRegistroMedicamentos(ev.id, medsDoEvento);
   } catch (e) {
     console.error('Erro ao salvar evento:', e);
     mostrarToast('Erro ao salvar. Tente novamente.', 'error');
   }
+}
+
+// Evita retrabalho de digitação: o medicamento anotado no evento pode virar
+// um registro do histórico (com regime, período e vínculo) em um toque.
+// Só oferece o que ainda não existe no histórico, para não sugerir duplicata.
+async function _oferecerRegistroMedicamentos(eventoId, nomes) {
+  if (!nomes?.length) return;
+
+  const jaRegistrados = new Set(medicamentosCache.map(m => _normalizarTexto(m.nome)));
+  const novos = nomes.filter(n => !jaRegistrados.has(_normalizarTexto(n)));
+  if (!novos.length) return;
+
+  const ok = await confirmar({
+    titulo: 'Registrar no histórico de medicamentos?',
+    msg: novos.length === 1
+      ? `Quer registrar "${novos[0]}" no histórico de medicamentos, com período e posologia?`
+      : `Quer registrar ${novos.length} medicamentos deste evento no histórico, um a um?`,
+    txtOk: 'Registrar',
+  });
+  if (!ok) return;
+
+  for (const nome of novos) {
+    await abrirFormMedicamento(null, { nome, eventoRelacionadoId: eventoId });
+    // Aguarda o modal ser fechado (salvo ou cancelado) antes do próximo.
+    await _aguardarFechamentoModal('modal-medicamento-form');
+  }
+}
+
+function _aguardarFechamentoModal(id) {
+  const el = document.getElementById(id);
+  if (!el || !el.classList.contains('open')) return Promise.resolve();
+  return new Promise(resolve => {
+    const obs = new MutationObserver(() => {
+      if (!el.classList.contains('open')) { obs.disconnect(); resolve(); }
+    });
+    obs.observe(el, { attributes: true, attributeFilter: ['class'] });
+  });
 }
 
 
@@ -2791,10 +3319,11 @@ function mostrarToast(msg, tipo='') {
 function atualizarVistaAtiva() {
   const v = document.querySelector('.view.active');
   if (!v) return;
-  if      (v.id === 'view-timeline')   renderizarTimeline();
-  else if (v.id === 'view-agenda')     renderizarAgenda();
-  else if (v.id === 'view-calendario') renderizarAbaCalendario();
-  else                                 renderizarHome();
+  if      (v.id === 'view-timeline')     renderizarTimeline();
+  else if (v.id === 'view-medicamentos') renderizarMedicamentos();
+  else if (v.id === 'view-agenda')       renderizarAgenda();
+  else if (v.id === 'view-calendario')   renderizarAbaCalendario();
+  else                                   renderizarHome();
 }
 
 
@@ -2894,7 +3423,11 @@ async function salvarNovoBebe(event) {
    14. SWIPE HORIZONTAL ENTRE VISTAS
    ================================================ */
 
-const ORDEM_VISTAS = ['home', 'timeline', 'agenda', 'calendario'];
+// 'medicamentos' entra logo após 'timeline': fica a 2 swipes da Home, tem
+// adjacência semântica com o Histórico e — principal — quem desliza de
+// Histórico para Agenda passa por ela e a descobre naturalmente, que é a
+// resposta ao risco de descoberta de uma tela sem botão na nav.
+const ORDEM_VISTAS = ['home', 'timeline', 'medicamentos', 'agenda', 'calendario'];
 
 function animarTransicaoVista(viewAtual, proximoNome, direcao) {
   const entradaClass = direcao === 'esquerda' ? 'vista-entrando-direita' : 'vista-entrando-esquerda';

@@ -6,7 +6,7 @@
 
 3. ~~Geradores de pdf~~ → feito: exportação em PDF no Histórico e na Agenda (botão no cabeçalho de cada aba → modal de categorias/tipos + nível de detalhamento → jsPDF vendorizado em `lib/`). Spec completa em `specs/gerador-pdf/` (spec/plan/tasks/review). Falta só validação manual no dispositivo (foto no cabeçalho + offline).
 
-4. Implementar histórico de medicamentos/tipos de medicamentos, independente da data do evento
+4. ~~Implementar histórico de medicamentos/tipos de medicamentos, independente da data do evento~~ → feito: tela própria de Medicamentos (subcoleção `medications`), com três regimes de uso (contínuo / por tempo determinado com posologia / conforme necessário), autocomplete, aviso de alergia cruzando com o perfil, vínculo opcional a um evento e atalho ao salvar evento com medicamentos. Acessada por swipe (entre Histórico e Agenda) e pelo botão no cabeçalho do Histórico — sem ícone novo na nav. Spec completa em `specs/historico-medicamentos/`. Falta: exportação em PDF dessa tela (entra como iteração de `specs/gerador-pdf/`) e validação manual no dispositivo.
 
 5. Retrabalhar inserção de eventos (revelando campos aos poucos de acordo com o evento que está sendo registrado).
 

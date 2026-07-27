@@ -8,7 +8,7 @@ Cada tarefa é implementável e testável isoladamente. Regra do projeto: uma ta
 
 ## Tarefa 1 — Regra de segurança + API do Firestore
 
-Status: Pendente
+Status: Concluída
 
 ### Objetivo
 
@@ -37,7 +37,7 @@ Pelo console do app logado: gravar um medicamento de teste, listar, carregar por
 
 ## Tarefa 2 — Cache, subscrição e navegação por swipe
 
-Status: Pendente
+Status: Concluída
 
 ### Objetivo
 
@@ -67,7 +67,7 @@ Percorrer toda a sequência de swipe nos dois sentidos (`home ↔ timeline ↔ m
 
 ## Tarefa 3 — Lista estática de medicamentos + autocomplete
 
-Status: Pendente
+Status: Concluída
 
 ### Objetivo
 
@@ -98,7 +98,7 @@ Lista **enxuta e de alta confiança** (~60–80 itens), não exaustiva: é dado 
 
 ## Tarefa 4 — Formulário de medicamento (criar/editar)
 
-Status: Pendente
+Status: Concluída
 
 ### Objetivo
 
@@ -128,7 +128,7 @@ Aritmética de data em UTC para não errar por fuso. Validação de data mínima
 
 ## Tarefa 5 — Lista, detalhe e "Encerrar uso hoje"
 
-Status: Pendente
+Status: Concluída
 
 ### Objetivo
 
@@ -158,7 +158,7 @@ Verificar a existência do evento antes de oferecer o link (`carregarEvento` dev
 
 ## Tarefa 6 — Ponte a partir de `evento.medicamentos[]`
 
-Status: Pendente
+Status: Concluída
 
 ### Objetivo
 
@@ -186,7 +186,7 @@ Não alterar o comportamento existente de `evento.medicamentos[]` (sem migraçã
 
 ## Tarefa 7 — Revisão e fechamento
 
-Status: Pendente
+Status: Concluída
 
 ### Objetivo
 

@@ -85,6 +85,10 @@
     <!-- Vista: Histórico (Linha do Tempo Ilustrada) -->
     <div id="view-timeline" class="view"></div>
 
+    <!-- Vista: Medicamentos (sem botão na nav — acessada por swipe e pelo
+         botão no cabeçalho do Histórico; ver specs/historico-medicamentos) -->
+    <div id="view-medicamentos" class="view"></div>
+
     <!-- Vista: Agenda de Consultas -->
     <div id="view-agenda" class="view"></div>
 
@@ -120,6 +124,135 @@
     </button>
   </div>
 
+  <!-- ================================================
+       MODAL: FORMULÁRIO DE MEDICAMENTO
+       ================================================ -->
+  <div id="modal-medicamento-form" class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-medicamento">
+    <div class="modal-overlay" onclick="fecharModal('modal-medicamento-form')"></div>
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h2 id="titulo-modal-medicamento" class="modal-title">Novo Medicamento</h2>
+        <button class="modal-close" onclick="fecharModal('modal-medicamento-form')" aria-label="Fechar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="form-medicamento" onsubmit="salvarMedicamento(event)" novalidate>
+          <input type="hidden" id="medicamento-id" />
+          <input type="hidden" id="medicamento-evento-id" />
+          <input type="hidden" id="medicamento-data-min" />
+          <input type="hidden" id="medicamento-fim-manual" />
+
+          <div class="form-section">
+            <div class="form-group">
+              <label class="form-label" for="medicamento-nome">Medicamento <span class="required">*</span></label>
+              <input class="form-input" type="text" id="medicamento-nome" list="lista-medicamentos-sugestoes"
+                     placeholder="Ex: Amoxicilina" autocomplete="off" required
+                     oninput="_verificarAlergiaMedicamento()" />
+              <datalist id="lista-medicamentos-sugestoes"></datalist>
+              <div id="medicamento-aviso-alergia" class="med-aviso-alergia" style="display:none;"></div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="medicamento-quantidade">Dose / quantidade</label>
+                <input class="form-input" type="number" id="medicamento-quantidade" step="any" min="0" placeholder="Ex: 500" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="medicamento-unidade">Unidade</label>
+                <input class="form-input" type="text" id="medicamento-unidade" list="lista-unidades-medicamento" placeholder="Ex: mg" autocomplete="off" />
+                <datalist id="lista-unidades-medicamento">
+                  <option value="mg"></option>
+                  <option value="g"></option>
+                  <option value="mcg"></option>
+                  <option value="ml"></option>
+                  <option value="comprimido(s)"></option>
+                  <option value="gota(s)"></option>
+                  <option value="UI"></option>
+                </datalist>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="form-section-title">Como é usado</h3>
+            <div class="form-group">
+              <div class="med-regime">
+                <button type="button" id="med-regime-continuo"   class="filter-btn" onclick="setMedRegime('continuo')">Contínuo</button>
+                <button type="button" id="med-regime-temporario" class="filter-btn" onclick="setMedRegime('temporario')">Por tempo determinado</button>
+                <button type="button" id="med-regime-sos"        class="filter-btn" onclick="setMedRegime('sos')">Conforme necessário</button>
+              </div>
+              <p id="med-regime-ajuda" class="med-regime-ajuda"></p>
+            </div>
+
+            <div id="med-campos-posologia" style="display:none;">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="medicamento-freq-valor">Frequência</label>
+                  <input class="form-input" type="number" id="medicamento-freq-valor" min="1" step="1" placeholder="Ex: 8" oninput="_recalcularDataFim()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="medicamento-freq-unidade">Intervalo</label>
+                  <select class="form-select" id="medicamento-freq-unidade" onchange="_recalcularDataFim()">
+                    <option value="horas">de X em X horas</option>
+                    <option value="vezesAoDia">X vezes ao dia</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="medicamento-duracao">Duração (dias)</label>
+                <input class="form-input" type="number" id="medicamento-duracao" min="1" step="1" placeholder="Ex: 7" oninput="_recalcularDataFim()" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="medicamento-inicio">Início <span class="required">*</span></label>
+                <input class="form-input" type="date" id="medicamento-inicio" required oninput="_recalcularDataFim()" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="medicamento-fim">Fim</label>
+                <input class="form-input" type="date" id="medicamento-fim" onchange="_marcarFimManual()" />
+              </div>
+            </div>
+            <p id="med-fim-ajuda" class="med-regime-ajuda"></p>
+          </div>
+
+          <div class="form-section">
+            <div class="form-group">
+              <label class="form-label" for="medicamento-obs">Observações</label>
+              <textarea class="form-textarea" id="medicamento-obs" rows="3" placeholder="Ex: tomar após as refeições"></textarea>
+            </div>
+            <div id="medicamento-vinculo-evento" class="med-vinculo" style="display:none;"></div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn-ghost" onclick="fecharModal('modal-medicamento-form')">Cancelar</button>
+            <button type="submit" class="btn-primary">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================
+       MODAL: DETALHE DO MEDICAMENTO
+       ================================================ -->
+  <div id="modal-medicamento-detalhe" class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-med-detalhe">
+    <div class="modal-overlay" onclick="fecharModal('modal-medicamento-detalhe')"></div>
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h2 id="titulo-modal-med-detalhe" class="modal-title">Medicamento</h2>
+        <button class="modal-close" onclick="fecharModal('modal-medicamento-detalhe')" aria-label="Fechar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="conteudo-medicamento-detalhe"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Menu rápido para adicionar (evento ou consulta) -->
   <div id="menu-adicionar" class="quick-menu" style="display:none;">
     <div class="quick-menu-overlay" onclick="fecharMenuAdicionar()"></div>
@@ -131,6 +264,15 @@
         <div>
           <div class="quick-menu-title">Novo Evento de Saúde</div>
           <div class="quick-menu-sub">Doença, acidente, vacina...</div>
+        </div>
+      </button>
+      <button class="quick-menu-item" onclick="fecharMenuAdicionar();abrirFormMedicamento(null)">
+        <span class="quick-menu-icon" style="background:#2ea87a;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
+        </span>
+        <div>
+          <div class="quick-menu-title">Novo Medicamento</div>
+          <div class="quick-menu-sub">Contínuo, tratamento ou SOS</div>
         </div>
       </button>
       <button class="quick-menu-item" onclick="fecharMenuAdicionar();abrirFormConsulta(null)">
@@ -648,6 +790,7 @@
   <div id="toast" class="toast" role="alert" aria-live="polite"></div>
 
   <script src="./lib/jspdf.umd.min.js" defer></script>
+  <script src="./dados/medicamentos.js"></script>
   <script type="module" src="firebase-config.js"></script>
   <script type="module" src="auth.js"></script>
   <script type="module" src="firestore-api.js"></script>
