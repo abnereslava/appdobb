@@ -77,6 +77,14 @@ Função **pura** (sem DOM, sem I/O), o que a torna testável isoladamente:
 
 Campo `<input type="time" id="medicamento-horario">` dentro do bloco de posologia (`#med-campos-posologia`), portanto visível apenas no regime `temporario` — a alternância já existente cuida disso sem código novo.
 
+### 6.5 Coerência entre `dataFim` e a grade (segurança)
+
+`_recalcularDataFim()` passa a derivar a data de fim **da última dose gerada**, e não de `início + duração − 1`, sempre que houver horário preenchido. Sem isso o app exibiria "Fim: 07/03" ao lado de uma dose em 08/03 — duas afirmações contraditórias sobre quando o tratamento acaba, o que pode levar tanto a dose a mais quanto a interrupção precoce.
+
+Não há circularidade: `_gerarDoses` só consulta `dataFim` no ramo `dataFimEditadaManualmente`, e o recálculo passa esse campo como `false` explicitamente. Quando o usuário fixa a data à mão, o recálculo nem roda (a trava já existente) e a grade passa a obedecer a data fixada.
+
+Complementos na exibição: a última dose recebe marca visual própria, e o total de doses vem acompanhado do convite a conferir contra a prescrição — checagem barata que expõe erro de digitação na posologia.
+
 ## 7. Impactos no sistema existente
 
 - Documentos de medicamento ganham dois campos opcionais; registros antigos seguem válidos sem migração (`horarioInicio` ausente = sem agenda).
@@ -94,6 +102,7 @@ Campo `<input type="time" id="medicamento-horario">` dentro do bloco de posologi
 | Modal muito longo em tratamento de 90 dias | Agrupamento por dia + dias passados recolhidos. |
 | Intervalo fracionário (`24/5 = 4,8h`) | Trabalhar em minutos e arredondar; grade fica consistente. |
 | Expectativa de que o app avise a hora | Fora do escopo, dito explicitamente no spec §4 e registrado no diário (item 8). |
+| **Contradição entre data de fim e grade levando a dose a mais ou a menos** | `dataFim` derivada da última dose (§6.5) + marca de "última" + total exibido para conferência. |
 
 ## 9. Estratégia de teste
 

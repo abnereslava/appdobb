@@ -40,9 +40,12 @@ A grade **não é armazenada**: é recalculada a cada exibição a partir da pos
 - A agenda só é exibida quando há **horário de início** preenchido. Medicamentos temporários já cadastrados sem horário continuam funcionando normalmente, apenas sem a seção — sem migração de dados.
 - **Cálculo dos horários**: as duas unidades de frequência são reduzidas a um intervalo em horas — `de X em X horas` usa X; `N vezes ao dia` usa `24 ÷ N`. A primeira dose é no início informado; cada dose seguinte soma o intervalo. Uma dose pode cair no dia seguinte (ex.: 8/8h começando às 20:00 gera uma dose às 04:00) e é exibida no dia real em que ocorre, não no dia da anterior.
   - [Decisão] Optou-se pelo intervalo puro em vez de distribuir as doses numa janela de vigília. É previsível e corresponde ao que o usuário informa; o custo é que posologias como 3x ao dia geram uma dose de madrugada. Como cada dose pode ter o horário alterado individualmente, o ajuste já está disponível. Reavaliar se incomodar na prática.
-- **Limite da grade**: "tomar por N dias" é interpretado como uma **janela de N × 24 horas contada da primeira dose**, não como N datas de calendário. A diferença é concreta: 8/8h por 7 dias a partir das 08:00 são **21 doses**, e a última cai às 00:00 do 8º dia — limitar pela data de fim geraria 20 e descartaria uma dose que o paciente de fato toma. Como consequência, a grade pode exibir uma data além da `dataFim` do medicamento; isso é esperado, porque `dataFim` é uma marcação por dia e a posologia é por hora.
+- **Limite da grade**: "tomar por N dias" é interpretado como uma **janela de N × 24 horas contada da primeira dose**, não como N datas de calendário. A diferença é concreta: 8/8h por 7 dias a partir das 08:00 são **21 doses**, e a última cai às 00:00 do 8º dia — limitar por data de calendário geraria 20 e descartaria uma dose prescrita (interromper um antibiótico antes do fim é dano real, não só imprecisão).
   - **Exceção**: se o usuário fixou a data de fim manualmente (interrompeu o tratamento antes do previsto — a trava já existente em `dataFimEditadaManualmente`), essa data passa a mandar e a grade para no fim daquele dia.
-  - A contagem total de doses é exibida para o usuário conferir se corresponde ao que foi prescrito.
+
+- **Coerência entre a data de fim e a grade (requisito de segurança)**: quando existe grade, a `dataFim` do medicamento é **a data da última dose**, não o último dia de calendário da duração. Sem isso o app se contradiz — diria "Fim: 07/03" e listaria uma dose em 08/03 —, e quem lesse não saberia qual das duas informações vale, podendo tanto tomar dose a mais quanto encerrar o tratamento antes da hora. Duas medidas complementares reforçam o limite:
+  - A **última dose é marcada explicitamente** na grade, para que não se suponha que a posologia continua no dia seguinte.
+  - O **total de doses** é exibido com o convite a conferir contra o que foi prescrito e contra a quantidade em mãos — é a checagem que pega erro de digitação na posologia.
 - **Exceções são identificadas pelo horário previsto** da dose. Se a posologia mudar (horário de início, frequência ou duração), a grade se desloca e marcações antigas podem deixar de corresponder a alguma dose. Nesse caso o sistema **avisa antes de salvar**, para o usuário decidir — nunca descarta em silêncio. Marcações órfãs são ignoradas na exibição.
 - Marcar dose **não** é obrigatório: o estado normal de uma dose é "prevista". Só o que fugiu do previsto vira registro — o app não é um controle de adesão que exige confirmar cada dose.
 
@@ -75,6 +78,7 @@ Nenhuma coleção nova. Nenhuma alteração nos campos existentes.
 | Dose pulada | Exibida riscada, com rótulo "não tomada" |
 | Dose remarcada | Exibe horário previsto e horário real |
 | Posologia alterada com marcações existentes | Confirmação avisando que as marcações podem não corresponder mais |
+| Grade calculada | `dataFim` passa a ser a data da última dose; a última dose é marcada como tal |
 
 ## 10. Casos extremos
 
@@ -91,6 +95,8 @@ Nenhuma coleção nova. Nenhuma alteração nos campos existentes.
 - [ ] Doses que cruzam a meia-noite aparecem no dia correto.
 - [ ] `N vezes ao dia` e `de X em X horas` produzem a mesma grade quando equivalentes (ex.: 2x ao dia = de 12 em 12 horas).
 - [ ] A grade cobre a janela de N × 24h da duração (7 dias de 8/8h = 21 doses), e para na data de fim quando ela foi fixada manualmente.
+- [ ] A data de fim do medicamento coincide com a data da última dose — o app nunca exibe uma dose depois do fim declarado.
+- [ ] A última dose do tratamento é marcada visualmente e o total de doses é exibido.
 - [ ] Dá para marcar uma dose como não tomada, alterar o horário real e desfazer as duas coisas.
 - [ ] As marcações persistem e reaparecem ao reabrir o medicamento.
 - [ ] Alterar a posologia de um medicamento com marcações pede confirmação antes de salvar.
