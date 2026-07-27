@@ -204,10 +204,17 @@
                   </select>
                 </div>
               </div>
-              <div class="form-group">
-                <label class="form-label" for="medicamento-duracao">Duração (dias)</label>
-                <input class="form-input" type="number" id="medicamento-duracao" min="1" step="1" placeholder="Ex: 7" oninput="_recalcularDataFim()" />
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="medicamento-duracao">Duração (dias)</label>
+                  <input class="form-input" type="number" id="medicamento-duracao" min="1" step="1" placeholder="Ex: 7" oninput="_recalcularDataFim()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="medicamento-horario">Horário da 1ª dose</label>
+                  <input class="form-input" type="time" id="medicamento-horario" />
+                </div>
               </div>
+              <p class="med-regime-ajuda">Com o horário preenchido, o app calcula e lista todas as doses do tratamento.</p>
             </div>
 
             <div class="form-row">
@@ -254,6 +261,35 @@
       </div>
       <div class="modal-body">
         <div id="conteudo-medicamento-detalhe"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================
+       MODAL: AÇÃO SOBRE UMA DOSE
+       ================================================ -->
+  <div id="modal-dose" class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-dose">
+    <div class="modal-overlay" onclick="fecharModal('modal-dose')"></div>
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h2 id="titulo-modal-dose" class="modal-title">Dose</h2>
+        <button class="modal-close" onclick="fecharModal('modal-dose')" aria-label="Fechar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p id="dose-descricao" class="dose-descricao"></p>
+        <div class="form-group">
+          <label class="form-label" for="dose-horario-real">Tomei em outro horário</label>
+          <div class="export-periodo-intervalo">
+            <input class="form-input" type="time" id="dose-horario-real" />
+            <button type="button" class="btn-secondary btn-sm" onclick="aplicarAcaoDose('remarcada')">Salvar horário</button>
+          </div>
+        </div>
+        <div class="form-actions" style="flex-direction:column;gap:8px;align-items:stretch;">
+          <button type="button" class="btn-secondary" onclick="aplicarAcaoDose('pulada')">Não tomei esta dose</button>
+          <button type="button" class="btn-ghost" onclick="aplicarAcaoDose('limpar')">Voltar ao previsto</button>
+        </div>
       </div>
     </div>
   </div>

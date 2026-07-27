@@ -2010,6 +2010,18 @@ const REGIMES_MEDICAMENTO = {
 };
 
 let _medRegimeTemp = 'continuo';
+// Marcações de dose do registro em edição. Precisam ser carregadas e
+// devolvidas ao salvar: salvarMedicamento monta o objeto do zero, e sem isso
+// editar um medicamento apagaria silenciosamente todas as marcações.
+let _medExcecoesTemp = [];
+let _medPosologiaOriginal = '';
+
+// Assinatura dos campos que definem a grade de doses. Serve para detectar,
+// ao salvar, se as marcações existentes podem ter deixado de corresponder.
+function _assinaturaPosologia(m) {
+  return [m?.dataInicio, m?.horarioInicio, m?.frequenciaValor, m?.frequenciaUnidade,
+          m?.duracaoDias, m?.dataFim, m?.dataFimEditadaManualmente ? '1' : ''].join('|');
+}
 
 async function gravarMedicamento(m) {
   if (!profileIdAtivo || !window._db) return;
@@ -2038,6 +2050,78 @@ function _addDias(iso, n) {
 
 function _normalizarTexto(s) {
   return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+}
+
+/* ----- Agenda de doses (specs/agenda-de-doses) ----- */
+
+// Teto rígido de doses geradas. Sem ele, um dado inconsistente (duração de
+// milhares de dias com intervalo de minutos) montaria uma lista gigantesca e
+// congelaria a aba durante o laço.
+const _MAX_DOSES = 2000;
+
+function _doisDig(n) { return String(n).padStart(2, '0'); }
+
+// Formata um Date em 'YYYY-MM-DD' e 'HH:mm' de horário LOCAL, componente a
+// componente. toISOString() converteria para UTC e devolveria dia/hora
+// errados no fuso do Brasil.
+function _partesLocais(d) {
+  const data = `${d.getFullYear()}-${_doisDig(d.getMonth() + 1)}-${_doisDig(d.getDate())}`;
+  const hora = `${_doisDig(d.getHours())}:${_doisDig(d.getMinutes())}`;
+  return { data, hora, quando: `${data}T${hora}` };
+}
+
+// Intervalo entre doses, em minutos. As duas unidades de frequência viram um
+// intervalo só: 'horas' usa o valor direto; 'vezesAoDia' divide 24 por ele.
+function _intervaloDoseMin(med) {
+  const v = Number(med?.frequenciaValor);
+  if (!Number.isFinite(v) || v <= 0) return 0;
+  const horas = med.frequenciaUnidade === 'vezesAoDia' ? 24 / v : v;
+  if (!Number.isFinite(horas) || horas <= 0) return 0;
+  return Math.round(horas * 60);
+}
+
+// Grade de doses previstas. Função pura: sem DOM, sem rede — a agenda nunca
+// é persistida, é recalculada a cada exibição (ver plan.md §1).
+function _gerarDoses(med) {
+  if (!med || med.regime !== 'temporario') return [];
+  if (!med.dataInicio || !med.horarioInicio) return [];
+
+  const intervalo = _intervaloDoseMin(med);
+  if (!intervalo) return [];
+
+  const [ai, mi, di] = med.dataInicio.split('-').map(Number);
+  const [hi, min]    = med.horarioInicio.split(':').map(Number);
+  if (![ai, mi, di, hi, min].every(Number.isFinite)) return [];
+
+  const inicio = new Date(ai, mi - 1, di, hi, min, 0, 0);
+
+  // Até quando gerar. "Tomar por 7 dias" é uma janela de 7 × 24h contada da
+  // primeira dose — e não 7 datas de calendário. A diferença é real: 8/8h por
+  // 7 dias a partir das 08:00 são 21 doses, e a última cai às 00:00 do 8º dia;
+  // limitar pela data de fim descartaria essa dose, que o paciente toma.
+  // Exceção: se o usuário fixou a data de fim à mão (interrompeu o
+  // tratamento), essa data manda e a grade para no fim daquele dia.
+  let limite;
+  if (med.dataFimEditadaManualmente && med.dataFim) {
+    const [af, mf, df] = med.dataFim.split('-').map(Number);
+    limite = new Date(af, mf - 1, df, 23, 59, 59, 999);
+  } else {
+    const dias = Number(med.duracaoDias);
+    if (!Number.isFinite(dias) || dias <= 0) return [];
+    limite = new Date(inicio.getTime() + dias * 24 * 60 * 60 * 1000);
+  }
+
+  const doses = [];
+  const atual = new Date(inicio.getTime());
+  while (doses.length < _MAX_DOSES && atual < limite) {
+    doses.push(_partesLocais(atual));
+    atual.setMinutes(atual.getMinutes() + intervalo);
+  }
+  return doses;
+}
+
+function _excecaoDe(med, quando) {
+  return (med?.dosesExcecoes || []).find(e => e.quando === quando) || null;
 }
 
 // Um medicamento está "em uso" enquanto não tiver data de fim (contínuo/SOS)
@@ -2227,6 +2311,8 @@ async function abrirFormMedicamento(id, pre) {
   set('medicamento-evento-id', '');
   set('medicamento-fim-manual', '');
   set('medicamento-inicio', _hojeIso());
+  _medExcecoesTemp = [];
+  _medPosologiaOriginal = '';
   document.getElementById('titulo-modal-medicamento').textContent = id ? 'Editar Medicamento' : 'Novo Medicamento';
 
   // Mesma trava de data do formulário de evento: nada antes do início da
@@ -2258,6 +2344,9 @@ async function abrirFormMedicamento(id, pre) {
     set('medicamento-freq-valor', m.frequenciaValor ?? '');
     set('medicamento-freq-unidade', m.frequenciaUnidade || 'horas');
     set('medicamento-duracao', m.duracaoDias ?? '');
+    set('medicamento-horario', m.horarioInicio || '');
+    _medExcecoesTemp = Array.isArray(m.dosesExcecoes) ? m.dosesExcecoes : [];
+    _medPosologiaOriginal = _assinaturaPosologia(m);
     set('medicamento-inicio', m.dataInicio || '');
     set('medicamento-fim', m.dataFim || '');
     set('medicamento-obs', m.observacoes || '');
@@ -2313,10 +2402,27 @@ async function salvarMedicamento(event) {
     dataInicio:                inicio,
     dataFim:                   fim,
     dataFimEditadaManualmente: document.getElementById('medicamento-fim-manual').value === '1',
+    horarioInicio:             ehTemporario ? (document.getElementById('medicamento-horario').value || null) : null,
+    // Preservado explicitamente: este objeto é montado do zero, então omitir
+    // aqui apagaria as marcações de dose do usuário a cada edição.
+    dosesExcecoes:             _medExcecoesTemp,
     observacoes:               document.getElementById('medicamento-obs').value.trim() || null,
     eventoRelacionadoId:       document.getElementById('medicamento-evento-id').value || null,
     criadoEm:                  idExistente ? null : new Date().toISOString(),
   };
+
+  // Mudar a posologia desloca a grade e pode desvincular marcações já feitas.
+  // Avisa antes em vez de descartar em silêncio (as órfãs não são apagadas,
+  // só deixam de casar com alguma dose).
+  if (_medExcecoesTemp.length && _medPosologiaOriginal &&
+      _assinaturaPosologia(med) !== _medPosologiaOriginal) {
+    const ok = await confirmar({
+      titulo: 'Alterar a posologia?',
+      msg: `Este medicamento tem ${_medExcecoesTemp.length} dose(s) marcada(s). Mudando horário, frequência ou duração, a grade se desloca e essas marcações podem deixar de corresponder às doses.`,
+      txtOk: 'Alterar mesmo assim',
+    });
+    if (!ok) return;
+  }
 
   try {
     await gravarMedicamento(med);
@@ -2325,6 +2431,113 @@ async function salvarMedicamento(event) {
     mostrarToast(idExistente ? 'Medicamento atualizado!' : 'Medicamento adicionado!', 'success');
   } catch (e) {
     console.error('Erro ao salvar medicamento:', e);
+    mostrarToast('Erro ao salvar. Tente novamente.', 'error');
+  }
+}
+
+/* ----- Agenda de doses: exibição ----- */
+
+// Medicamento aberto no detalhe, para as ações de dose não precisarem
+// reconsultar o Firestore a cada toque.
+let _medDetalheAtual = null;
+let _doseSelecionada = null;
+let _diasPassadosAbertos = false;
+
+function _htmlDose(m, dose) {
+  const exc = _excecaoDe(m, dose.quando);
+  const cls = exc?.status === 'pulada' ? ' dose-pulada' : exc?.status === 'remarcada' ? ' dose-remarcada' : '';
+  const extra = exc?.status === 'remarcada' && exc.horarioReal ? `<b>${esc(exc.horarioReal)}</b>` : '';
+  return `<button type="button" class="dose-chip${cls}" onclick="abrirAcaoDose('${dose.quando}')">
+      <span class="dose-hora">${esc(dose.hora)}</span>${extra}
+    </button>`;
+}
+
+function _htmlAgendaDoses(m) {
+  const doses = _gerarDoses(m);
+  if (!doses.length) return '';
+
+  // Agrupa pelo dia real da dose — uma dose de madrugada pertence ao dia
+  // seguinte, não ao dia da dose anterior.
+  const porDia = new Map();
+  doses.forEach(d => {
+    if (!porDia.has(d.data)) porDia.set(d.data, []);
+    porDia.get(d.data).push(d);
+  });
+
+  const hoje = _hojeIso();
+  const dias = [...porDia.entries()];
+  const passados = dias.filter(([data]) => data < hoje);
+  const restantes = dias.filter(([data]) => data >= hoje);
+
+  const linhaDia = ([data, lista]) => `
+    <div class="dose-dia${data === hoje ? ' dose-dia-hoje' : ''}">
+      <div class="dose-dia-data">${formatarData(data)}${data === hoje ? ' · hoje' : ''}</div>
+      <div class="dose-chips">${lista.map(d => _htmlDose(m, d)).join('')}</div>
+    </div>`;
+
+  const nMarcadas = (m.dosesExcecoes || []).length;
+
+  return `
+    <div class="detail-section">
+      <div class="detail-label">Doses previstas</div>
+      <div class="dose-resumo">${doses.length} dose${doses.length > 1 ? 's' : ''}${nMarcadas ? ` · ${nMarcadas} marcada${nMarcadas > 1 ? 's' : ''}` : ''}</div>
+      ${passados.length && !_diasPassadosAbertos
+        ? `<button type="button" class="dose-toggle-passados" onclick="_alternarDiasPassados()">Mostrar ${passados.length} dia(s) anterior(es)</button>`
+        : passados.map(linhaDia).join('')}
+      ${passados.length && _diasPassadosAbertos
+        ? `<button type="button" class="dose-toggle-passados" onclick="_alternarDiasPassados()">Ocultar dias anteriores</button>` : ''}
+      ${restantes.map(linhaDia).join('')}
+    </div>`;
+}
+
+function _alternarDiasPassados() {
+  _diasPassadosAbertos = !_diasPassadosAbertos;
+  if (_medDetalheAtual) abrirDetalheMedicamento(_medDetalheAtual.id);
+}
+
+/* ----- Agenda de doses: marcações ----- */
+
+function abrirAcaoDose(quando) {
+  if (!_medDetalheAtual) return;
+  _doseSelecionada = quando;
+  const [data, hora] = quando.split('T');
+  const exc = _excecaoDe(_medDetalheAtual, quando);
+
+  const estado = exc?.status === 'pulada' ? ' — marcada como não tomada'
+    : exc?.status === 'remarcada' ? ` — tomada às ${exc.horarioReal || '?'}`
+    : '';
+  const desc = document.getElementById('dose-descricao');
+  if (desc) desc.textContent = `Dose prevista para ${formatarData(data)} às ${hora}${estado}.`;
+  set('dose-horario-real', exc?.horarioReal || hora);
+
+  abrirModal('modal-dose');
+}
+
+async function aplicarAcaoDose(acao) {
+  if (!_medDetalheAtual || !_doseSelecionada) return;
+  const m = _medDetalheAtual;
+  const quando = _doseSelecionada;
+
+  // Remove qualquer marcação anterior desta dose antes de aplicar a nova —
+  // assim as três ações são idempotentes e nunca duplicam entrada.
+  const outras = (m.dosesExcecoes || []).filter(e => e.quando !== quando);
+  let novas = outras;
+
+  if (acao === 'pulada') {
+    novas = [...outras, { quando, status: 'pulada', horarioReal: null }];
+  } else if (acao === 'remarcada') {
+    const real = document.getElementById('dose-horario-real')?.value;
+    if (!real) { mostrarToast('Informe o horário.', 'error'); return; }
+    novas = [...outras, { quando, status: 'remarcada', horarioReal: real }];
+  }
+
+  try {
+    await gravarMedicamento({ ...m, dosesExcecoes: novas });
+    fecharModal('modal-dose');
+    await abrirDetalheMedicamento(m.id);
+    mostrarToast(acao === 'limpar' ? 'Marcação removida.' : 'Dose atualizada.', 'success');
+  } catch (e) {
+    console.error('Erro ao marcar dose:', e);
     mostrarToast('Erro ao salvar. Tente novamente.', 'error');
   }
 }
@@ -2364,6 +2577,7 @@ async function abrirDetalheMedicamento(id) {
   ].filter(c => c.valor);
 
   const alergias = _alergiasQueBatem(m.nome);
+  _medDetalheAtual = m;
 
   document.getElementById('titulo-modal-med-detalhe').textContent = m.nome || 'Medicamento';
   document.getElementById('conteudo-medicamento-detalhe').innerHTML = `
@@ -2384,6 +2598,7 @@ async function abrirDetalheMedicamento(id) {
           ${esc(eventoVinculado.titulo || 'Ver evento')}
         </button>
       </div>` : ''}
+    ${_htmlAgendaDoses(m)}
     <div class="event-detail-actions">
       ${emUso ? `<button class="btn-secondary" onclick="encerrarUsoHoje('${m.id}')">Encerrar uso hoje</button>` : ''}
       <button class="btn-secondary" onclick="fecharModal('modal-medicamento-detalhe');abrirFormMedicamento('${m.id}')">Editar</button>

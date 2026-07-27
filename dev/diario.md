@@ -6,7 +6,13 @@
 
 3. ~~Geradores de pdf~~ → feito: exportação em PDF no Histórico e na Agenda (botão no cabeçalho de cada aba → modal de categorias/tipos + nível de detalhamento → jsPDF vendorizado em `lib/`). Spec completa em `specs/gerador-pdf/` (spec/plan/tasks/review). Falta só validação manual no dispositivo (foto no cabeçalho + offline).
 
-4. ~~Implementar histórico de medicamentos/tipos de medicamentos, independente da data do evento~~ → feito: tela própria de Medicamentos (subcoleção `medications`), com três regimes de uso (contínuo / por tempo determinado com posologia / conforme necessário), autocomplete, aviso de alergia cruzando com o perfil, vínculo opcional a um evento e atalho ao salvar evento com medicamentos. Acessada por swipe (entre Histórico e Agenda) e pelo botão no cabeçalho do Histórico — sem ícone novo na nav. Spec completa em `specs/historico-medicamentos/`. Falta: exportação em PDF dessa tela (entra como iteração de `specs/gerador-pdf/`) e validação manual no dispositivo.
+4. ~~Implementar histórico de medicamentos/tipos de medicamentos, independente da data do evento~~ → feito: tela própria de Medicamentos (subcoleção `medications`), com três regimes de uso (contínuo / por tempo determinado com posologia / conforme necessário), autocomplete, aviso de alergia cruzando com o perfil, vínculo opcional a um evento e atalho ao salvar evento com medicamentos. Aba "Remédios" na barra inferior (entre Histórico e Agenda) + swipe. Spec completa em `specs/historico-medicamentos/`. Falta: exportação em PDF dessa tela (entra como iteração de `specs/gerador-pdf/`) e validação manual no dispositivo.
+
+8. **[Pendente] Notificações de horário de dose** — avisar ativamente "está na hora de tomar o remédio". Deliberadamente **fora** do escopo da agenda de doses (`specs/agenda-de-doses/`), que apenas exibe e permite marcar doses, sem alertar. Pontos a considerar antes de especificar:
+   - Numa PWA estática, exige Service Worker + Notification API + agendamento; não há servidor para disparar push.
+   - `setTimeout`/`setInterval` não sobrevivem ao app fechado — precisaria de `Notification Triggers` (suporte limitado) ou push real com backend.
+   - No iOS, notificação de PWA em segundo plano é irregular; pode ser que só funcione de fato depois do empacotamento com Capacitor (item 6), onde notificação local é nativa e confiável.
+   - Conversa diretamente com o item 2 (lembrete de consulta) — vale especificar os dois juntos como um único assunto de "lembretes", em vez de duas soluções separadas.
 
 5. Retrabalhar inserção de eventos (revelando campos aos poucos de acordo com o evento que está sendo registrado).
 
