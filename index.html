@@ -610,15 +610,13 @@
 
         <div class="form-label" style="margin-top:16px;">Filtrar por período</div>
         <div class="export-periodo-modo">
+          <button type="button" id="export-periodo-btn-tudo" class="filter-btn" onclick="setPdfPeriodoModo('tudo')">Tudo</button>
           <button type="button" id="export-periodo-btn-intervalo" class="filter-btn" onclick="setPdfPeriodoModo('intervalo')">Intervalo</button>
           <button type="button" id="export-periodo-btn-mes" class="filter-btn" onclick="setPdfPeriodoModo('mes')">Mês</button>
           <button type="button" id="export-periodo-btn-ano" class="filter-btn" onclick="setPdfPeriodoModo('ano')">Ano</button>
         </div>
         <div id="export-periodo-campos" class="export-periodo-campos"></div>
         <button type="button" id="export-data-limpar" class="btn-ghost btn-sm" style="display:none;margin-top:8px;" onclick="limparPdfPeriodo()">Limpar período</button>
-
-        <div class="form-label" style="margin-top:16px;">Prévia</div>
-        <div id="export-pdf-previa" class="export-previa"></div>
 
         <div class="form-actions">
           <button type="button" class="btn-ghost" onclick="fecharModal('modal-export-pdf')">Cancelar</button>

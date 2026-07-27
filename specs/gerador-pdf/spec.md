@@ -144,3 +144,20 @@ Ajustes solicitados após a iteração 2. Durante a análise para implementá-lo
 - [x] Itens de evento no PDF exibem o ícone da categoria (mesmo desenho e cor de destaque usados no resto do app) ao lado da data.
 - [x] Prévia do modal reflete os mesmos ícones de categoria.
 - [x] Filtro/prévia de período voltam a funcionar de fato no app publicado (correção da lacuna da iteração 2).
+
+## 16. Iteração 4 — remove prévia, opção "Tudo" no período, correção de bug dos ícones
+
+Ajustes solicitados após a iteração 3:
+
+1. **Opção "Tudo" no filtro de período**: junto de Intervalo/Mês/Ano, um quarto modo explícito que remove qualquer restrição de data (era o comportamento padrão implícito antes, agora vira uma opção visível e é o padrão ao abrir o modal).
+2. **Remoção da prévia**: a prévia (exemplo) ao vivo no modal, introduzida na iteração 2, é removida — não fazia parte do pedido original e o usuário não deseja mantê-la.
+3. **Modo "Ano" revisado**: em vez de uma fileira de botões (um por ano presente no cache, que cresceria indefinidamente ao longo dos anos de uso do app), passa a usar um campo numérico único — mesmo padrão de "campo único" do modo Mês.
+4. **Correção de bug**: os ícones de categoria da iteração 3 não apareciam de fato no PDF impresso. Causa raiz: a rasterização do SVG (via `<canvas>`/`Image`) não incluía o atributo `xmlns="http://www.w3.org/2000/svg"` no elemento `<svg>` — necessário quando o SVG é interpretado como documento standalone (caso do `data:image/svg+xml` usado como `src` de uma `Image`), diferente de quando é inserido via `innerHTML` (onde o parser HTML tolera a ausência do atributo). Sem o `xmlns`, o carregamento da imagem falhava silenciosamente (`onerror`), e o ícone saía do PDF sem erro visível. Corrigido e validado com Chromium real (Playwright), não apenas harness com stubs — ver `review.md`.
+
+### Critérios de aceite (iteração 4)
+
+- [x] Filtro de período tem 4 modos: Tudo (padrão), Intervalo, Mês, Ano.
+- [x] Modal não exibe mais nenhuma prévia/exemplo do relatório.
+- [x] Modo "Ano" usa um campo numérico único, não uma lista de botões por ano.
+- [x] Ícones de categoria aparecem de fato no corpo do PDF gerado (confirmado visualmente, não só por ausência de erro).
+- [x] Combinações de categoria + período sem nenhum item correspondente (ex.: só "Acidente" num mês sem acidentes) geram o PDF normalmente, só com o cabeçalho — sem travar.
