@@ -190,31 +190,42 @@
               <p id="med-regime-ajuda" class="med-regime-ajuda"></p>
             </div>
 
+            <!-- Posologia passo a passo: a escolha vem ANTES do número, e cada
+                 pergunta só aparece depois da anterior respondida. Evita o
+                 "número órfão" (digitar 8 sem saber ainda se é hora ou vez). -->
             <div id="med-campos-posologia" style="display:none;">
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label" for="medicamento-freq-valor">Frequência</label>
-                  <input class="form-input" type="number" id="medicamento-freq-valor" min="1" step="1" placeholder="Ex: 8" oninput="_recalcularDataFim()" />
-                </div>
-                <div class="form-group">
-                  <label class="form-label" for="medicamento-freq-unidade">Intervalo</label>
-                  <select class="form-select" id="medicamento-freq-unidade" onchange="_recalcularDataFim()">
-                    <option value="horas">de X em X horas</option>
-                    <option value="vezesAoDia">X vezes ao dia</option>
-                  </select>
+              <input type="hidden" id="medicamento-freq-unidade" value="" />
+
+              <div class="med-passo">
+                <div class="med-passo-pergunta">Como é a frequência?</div>
+                <div class="med-opcoes">
+                  <button type="button" id="med-freq-btn-horas" class="filter-btn" onclick="setMedFreqUnidade('horas')">De X em X horas</button>
+                  <button type="button" id="med-freq-btn-vezes" class="filter-btn" onclick="setMedFreqUnidade('vezesAoDia')">X vezes ao dia</button>
                 </div>
               </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label" for="medicamento-duracao">Duração (dias)</label>
-                  <input class="form-input" type="number" id="medicamento-duracao" min="1" step="1" placeholder="Ex: 7" oninput="_recalcularDataFim()" />
-                </div>
-                <div class="form-group">
-                  <label class="form-label" for="medicamento-horario">Horário da 1ª dose</label>
-                  <input class="form-input" type="time" id="medicamento-horario" oninput="_recalcularDataFim()" />
+
+              <div class="med-passo" id="med-passo-valor" style="display:none;">
+                <label class="med-passo-pergunta" id="med-label-freq-valor" for="medicamento-freq-valor">De quantas em quantas horas?</label>
+                <div class="med-campo-unidade">
+                  <input class="form-input" type="number" id="medicamento-freq-valor" min="1" step="1" placeholder="Ex: 8" oninput="_aoMudarPosologia()" />
+                  <span class="med-unidade" id="med-unidade-freq">horas</span>
                 </div>
               </div>
-              <p class="med-regime-ajuda">Com o horário preenchido, o app calcula e lista todas as doses do tratamento.</p>
+
+              <div class="med-passo" id="med-passo-duracao" style="display:none;">
+                <label class="med-passo-pergunta" for="medicamento-duracao">Por quantos dias?</label>
+                <div class="med-campo-unidade">
+                  <input class="form-input" type="number" id="medicamento-duracao" min="1" step="1" placeholder="Ex: 7" oninput="_aoMudarPosologia()" />
+                  <span class="med-unidade">dias</span>
+                </div>
+              </div>
+
+              <div class="med-passo" id="med-passo-horario" style="display:none;">
+                <label class="med-passo-pergunta" for="medicamento-horario">Que horas é a primeira dose?</label>
+                <input class="form-input" type="time" id="medicamento-horario" oninput="_aoMudarPosologia()" />
+              </div>
+
+              <div id="med-resumo-posologia" class="med-resumo" style="display:none;"></div>
             </div>
 
             <div class="form-row">

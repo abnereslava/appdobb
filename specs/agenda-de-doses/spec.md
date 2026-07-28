@@ -103,6 +103,23 @@ Nenhuma coleção nova. Nenhuma alteração nos campos existentes.
 - [ ] Medicamentos já cadastrados (sem horário) continuam funcionando, sem migração.
 - [ ] Nenhuma notificação é disparada em nenhum momento.
 
+## 12.1 Iteração — posologia passo a passo
+
+Ajuste solicitado após uso: o par "campo numérico + seletor de unidade" era confuso, porque o número era digitado **antes** de o usuário definir o que ele significava (8 horas? 8 vezes?), e o significado só aparecia no controle ao lado.
+
+A entrada de posologia passou a ser sequencial, uma pergunta de cada vez:
+
+1. **"Como é a frequência?"** — dois botões: *De X em X horas* / *X vezes ao dia*. A escolha vem antes de qualquer número.
+2. **"De quantas em quantas horas?"** ou **"Quantas vezes ao dia?"** — o rótulo e a unidade ao lado do campo mudam conforme a escolha do passo 1, então o número nunca fica ambíguo.
+3. **"Por quantos dias?"**
+4. **"Que horas é a primeira dose?"**
+
+Cada pergunta só aparece depois de a anterior ter resposta. Ao **editar** um registro já preenchido todas aparecem de uma vez, porque a condição olha o valor de cada campo, não a ordem de digitação — quem edita não precisa refazer o caminho.
+
+Ao final, um **resumo em uma frase** confirma o que foi montado: *"Tomar de 8 em 8 horas, por 7 dias, a partir de 01/03/2026 às 08:00 · 21 doses no total · última em 08/03/2026 às 00:00"*. É o que dá ao usuário certeza do que está configurando antes de salvar, e mostra o total de doses ainda no formulário.
+
+Sem mudança no modelo de dados: `frequenciaValor`, `frequenciaUnidade`, `duracaoDias` e `horarioInicio` continuam iguais. A unidade passou de `<select>` para um campo oculto alimentado pelos botões, o que manteve intactos todos os pontos que já liam esse valor.
+
 ## 12. Dúvidas respondidas
 
 - [Respondida] Notificações de horário? **Não** nesta funcionalidade — registrado como pendência 8 do `dev/diario.md`, para ser tratado junto com o lembrete de consulta (item 2) e provavelmente só depois do empacotamento nativo (item 6).
