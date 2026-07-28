@@ -2253,7 +2253,95 @@ function setMedRegime(r) {
   if (posologia) posologia.style.display = r === 'temporario' ? '' : 'none';
   const ajuda = document.getElementById('med-regime-ajuda');
   if (ajuda) ajuda.textContent = REGIMES_MEDICAMENTO[r]?.ajuda || '';
+  if (r === 'temporario') _aoMudarPosologia();
+  else _recalcularDataFim();
+}
+
+/* ----- Posologia passo a passo ----- */
+
+// A unidade é escolhida ANTES do número, e o rótulo da pergunta seguinte
+// muda junto — assim o número nunca fica órfão de significado.
+function setMedFreqUnidade(unidade) {
+  set('medicamento-freq-unidade', unidade);
+  document.getElementById('med-freq-btn-horas')?.classList.toggle('active', unidade === 'horas');
+  document.getElementById('med-freq-btn-vezes')?.classList.toggle('active', unidade === 'vezesAoDia');
+
+  const ehHoras = unidade === 'horas';
+  const lbl = document.getElementById('med-label-freq-valor');
+  if (lbl) lbl.textContent = ehHoras ? 'De quantas em quantas horas?' : 'Quantas vezes ao dia?';
+  const uni = document.getElementById('med-unidade-freq');
+  if (uni) uni.textContent = ehHoras ? 'horas' : 'vezes ao dia';
+  const inp = document.getElementById('medicamento-freq-valor');
+  if (inp) inp.placeholder = ehHoras ? 'Ex: 8' : 'Ex: 3';
+
+  _aoMudarPosologia();
+}
+
+// Revela uma pergunta por vez: a seguinte só aparece quando a anterior tem
+// resposta. Ao editar um registro já preenchido, todas aparecem de uma vez,
+// porque a condição olha o valor e não a ordem em que foi digitado.
+function _atualizarPassosPosologia() {
+  const val = id => (document.getElementById(id)?.value || '').trim();
+  const num = id => { const n = parseFloat(val(id)); return Number.isFinite(n) && n > 0; };
+
+  const temUnidade = !!val('medicamento-freq-unidade');
+  const temValor   = temUnidade && num('medicamento-freq-valor');
+  const temDuracao = temValor   && num('medicamento-duracao');
+
+  const mostrar = (id, cond) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = cond ? '' : 'none';
+  };
+  mostrar('med-passo-valor',   temUnidade);
+  mostrar('med-passo-duracao', temValor);
+  mostrar('med-passo-horario', temDuracao);
+  return temDuracao && !!val('medicamento-horario');
+}
+
+// Resumo em uma frase do que foi montado, com o total de doses e a última.
+// É o que dá ao usuário certeza do que está configurando antes de salvar.
+function _atualizarResumoPosologia() {
+  const box = document.getElementById('med-resumo-posologia');
+  if (!box) return;
+
+  const v  = id => document.getElementById(id)?.value || '';
+  const med = {
+    regime: 'temporario',
+    dataInicio: v('medicamento-inicio'),
+    duracaoDias: parseFloat(v('medicamento-duracao')),
+    horarioInicio: v('medicamento-horario'),
+    frequenciaValor: parseFloat(v('medicamento-freq-valor')),
+    frequenciaUnidade: v('medicamento-freq-unidade'),
+    dataFimEditadaManualmente: false,
+  };
+
+  const doses = _gerarDoses(med);
+  if (!doses.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+
+  const ehHoras = med.frequenciaUnidade === 'horas';
+  const freqTxt = ehHoras
+    ? `de ${med.frequenciaValor} em ${med.frequenciaValor} horas`
+    : `${med.frequenciaValor}x ao dia`;
+  const ultima = doses[doses.length - 1];
+
+  const dias = med.duracaoDias === 1 ? '1 dia' : `${med.duracaoDias} dias`;
+  const tot  = doses.length === 1 ? '1 dose' : `${doses.length} doses`;
+
+  box.style.display = '';
+  box.innerHTML = `
+    <div class="med-resumo-frase">
+      Tomar <b>${esc(freqTxt)}</b>, por <b>${esc(dias)}</b>,
+      a partir de <b>${formatarData(med.dataInicio)} às ${esc(med.horarioInicio)}</b>.
+    </div>
+    <div class="med-resumo-total">
+      <b>${esc(tot)}</b> no total · última em ${formatarData(ultima.data)} às ${esc(ultima.hora)}
+    </div>`;
+}
+
+function _aoMudarPosologia() {
+  _atualizarPassosPosologia();
   _recalcularDataFim();
+  _atualizarResumoPosologia();
 }
 
 function _marcarFimManual() {
@@ -2362,6 +2450,9 @@ async function abrirFormMedicamento(id, pre) {
 
   let regime = 'continuo';
   let vinculoId = pre?.eventoRelacionadoId || '';
+  // Sem unidade escolhida, o formulário abre no primeiro passo (a pergunta
+  // "como é a frequência?"), em vez de já mostrar um número sem contexto.
+  let freqUnidade = '';
 
   if (id) {
     const m = await window._db.carregarMedicamento(profileIdAtivo, id);
@@ -2371,7 +2462,6 @@ async function abrirFormMedicamento(id, pre) {
     set('medicamento-quantidade', m.quantidade ?? '');
     set('medicamento-unidade', m.unidade || '');
     set('medicamento-freq-valor', m.frequenciaValor ?? '');
-    set('medicamento-freq-unidade', m.frequenciaUnidade || 'horas');
     set('medicamento-duracao', m.duracaoDias ?? '');
     set('medicamento-horario', m.horarioInicio || '');
     _medExcecoesTemp = Array.isArray(m.dosesExcecoes) ? m.dosesExcecoes : [];
@@ -2382,8 +2472,16 @@ async function abrirFormMedicamento(id, pre) {
     set('medicamento-fim-manual', m.dataFimEditadaManualmente ? '1' : '');
     regime = m.regime || 'continuo';
     vinculoId = m.eventoRelacionadoId || '';
+    freqUnidade = m.frequenciaUnidade || '';
   } else if (pre?.nome) {
     set('medicamento-nome', pre.nome);
+  }
+
+  set('medicamento-freq-unidade', freqUnidade);
+  if (freqUnidade) setMedFreqUnidade(freqUnidade);
+  else {
+    document.getElementById('med-freq-btn-horas')?.classList.remove('active');
+    document.getElementById('med-freq-btn-vezes')?.classList.remove('active');
   }
 
   set('medicamento-evento-id', vinculoId);
@@ -2426,7 +2524,7 @@ async function salvarMedicamento(event) {
     unidade:                   document.getElementById('medicamento-unidade').value.trim() || null,
     regime:                    _medRegimeTemp,
     frequenciaValor:           ehTemporario ? num(document.getElementById('medicamento-freq-valor').value) : null,
-    frequenciaUnidade:         ehTemporario ? document.getElementById('medicamento-freq-unidade').value : null,
+    frequenciaUnidade:         ehTemporario ? (document.getElementById('medicamento-freq-unidade').value || null) : null,
     duracaoDias:               ehTemporario ? num(document.getElementById('medicamento-duracao').value) : null,
     dataInicio:                inicio,
     dataFim:                   fim,
